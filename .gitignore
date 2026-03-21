@@ -1,0 +1,8 @@
+# Local Codex runtime state (machine/user specific)
+.codex/*
+!.codex/prompts/
+!.codex/prompts/*.md
+
+# Common local noise
+.DS_Store
+Thumbs.db
