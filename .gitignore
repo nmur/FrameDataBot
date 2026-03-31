@@ -6,3 +6,16 @@
 # Common local noise
 .DS_Store
 Thumbs.db
+
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+packages/
+
+# Editor and temp artifacts
+.vscode/
+.idea/
+*.tmp
+*.swp

@@ -1,0 +1,182 @@
+openapi: 3.0.3
+info:
+  title: 3s Frame Data Bot Service API
+  version: 0.1.0
+  description: Internal API contract for move lookup and ingestion operations.
+servers:
+  - url: http://localhost:8080
+paths:
+  /v1/moves/query:
+    post:
+      summary: Query move frame data
+      operationId: queryMove
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveQueryRequest'
+      responses:
+        '200':
+          description: Match found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveQueryResponse'
+        '300':
+          description: Ambiguous query; candidates returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveAmbiguousResponse'
+        '404':
+          description: No suitable match
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/ingestion/runs:
+    post:
+      summary: Trigger ingestion run
+      operationId: triggerIngestion
+      responses:
+        '202':
+          description: Ingestion accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionAcceptedResponse'
+  /v1/ingestion/runs/{runId}:
+    get:
+      summary: Get ingestion run status
+      operationId: getIngestionRun
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Run status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionRunResponse'
+        '404':
+          description: Run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    MoveQueryRequest:
+      type: object
+      required: [character, moveInput]
+      properties:
+        character:
+          type: string
+        moveInput:
+          type: string
+        allowFuzzy:
+          type: boolean
+          default: true
+    MoveQueryResponse:
+      type: object
+      required: [character, matchedMove, section, frameData]
+      properties:
+        character:
+          type: string
+        matchedMove:
+          type: string
+        section:
+          type: string
+          enum: [Normals, Specials, SuperArts, Misc]
+        matchedBy:
+          type: string
+          enum: [Exact, Alias, Fuzzy]
+        frameData:
+          $ref: '#/components/schemas/FrameData'
+        media:
+          $ref: '#/components/schemas/MoveMedia'
+    MoveAmbiguousResponse:
+      type: object
+      required: [message, candidates]
+      properties:
+        message:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/MoveCandidate'
+    MoveCandidate:
+      type: object
+      required: [moveName, section, score]
+      properties:
+        moveName:
+          type: string
+        section:
+          type: string
+          enum: [Normals, Specials, SuperArts, Misc]
+        score:
+          type: number
+          format: float
+    FrameData:
+      type: object
+      properties:
+        startup:
+          type: string
+        active:
+          type: string
+        recovery:
+          type: string
+        onHit:
+          type: string
+        onBlock:
+          type: string
+    MoveMedia:
+      type: object
+      properties:
+        lastActiveFrameImageUrl:
+          type: string
+    IngestionAcceptedResponse:
+      type: object
+      required: [runId, status]
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [Running]
+    IngestionRunResponse:
+      type: object
+      required: [runId, status, startedAt]
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [Running, Succeeded, PartiallySucceeded, Failed]
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        charactersProcessed:
+          type: integer
+        movesProcessed:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

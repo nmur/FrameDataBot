@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: framedata
+      POSTGRES_USER: framedata
+      POSTGRES_PASSWORD: framedata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata
+    depends_on:
+      - postgres
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingestion
+    environment:
+      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
