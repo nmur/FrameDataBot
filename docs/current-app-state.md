@@ -1,60 +1,60 @@
+# Current-State Architecture
+
 ```mermaid
-flowchart TD
-  %% Current app state for 3sFrameDataBot (2026-03-31)
-  %% Reflects rollback to Phase 1-only scaffolding.
+flowchart LR
+  %% Deployment-oriented architecture snapshot (2026-03-31)
+  %% Phase 1 is implemented scaffolding; most runtime flows are planned.
 
-  Dev[Developer]
   User[Discord User]
+  Maintainer[Maintainer]
 
-  subgraph Bot[FrameData.Bot]
-    BotProgram[Program.cs\nScaffold only]
+  subgraph BotSvc[Bot Service - Deployed]
+    BotProc[Bot process<br/>Program scaffold]
   end
 
-  subgraph Api[FrameData.Api]
-    ApiProgram[Program.cs\nTemplate minimal API]
-    Root[/GET / -> Hello World!/]
+  subgraph ApiSvc[API Service - Deployed]
+    ApiProc[API host<br/>minimal template]
+    Root[/GET /<br/>Hello World!/]
   end
 
-  subgraph Ingestion[FrameData.Ingestion]
-    IngestionProgram[Program.cs\nScaffold only]
+  subgraph IngSvc[Ingestion Service - Deployed]
+    IngProc[Ingestion process<br/>Program scaffold]
   end
 
-  subgraph Scraper[FrameData.Scraper]
-    ScraperClass[Class1.cs\nPlaceholder]
+  subgraph Data[Data Services]
+    PG[(PostgreSQL<br/>planned integration)]
   end
 
-  subgraph Domain[FrameData.Domain]
-    DomainClass[Class1.cs\nPlaceholder]
-  end
+  User -.planned /3s command path.- BotProc
+  BotProc -.planned HTTP call.- ApiProc
+  ApiProc --> Root
 
-  subgraph Infrastructure[FrameData.Infrastructure]
-    InfraClass[Class1.cs\nPlaceholder]
-  end
+  Maintainer -.planned ingestion trigger/status.- ApiProc
+  ApiProc -.planned persistence.- PG
+  IngProc -.planned persistence/export.- PG
 
-  subgraph Shared[FrameData.Shared]
-    SharedClass[Class1.cs\nPlaceholder]
-  end
+  classDef implemented fill:#e8f7ea,stroke:#2e7d32,color:#1b5e20
+  classDef scaffold fill:#fff4e5,stroke:#ef6c00,color:#7f3a00
+  classDef planned stroke-dasharray: 5 5
 
-  subgraph Tests[Test Projects]
-    Unit[unit/*\nProject scaffolds + UnitTest1]
-    Integration[integration/*\nProject scaffolds + UnitTest1]
-    Contract[contract/*\nProject scaffold + UnitTest1]
-  end
-
-  Dev --> BotProgram
-  Dev --> ApiProgram
-  Dev --> IngestionProgram
-  User -.planned.- BotProgram
-  ApiProgram --> Root
-
-  BotProgram -.no command pipeline yet.- DomainClass
-  ApiProgram -.no domain/infra wiring yet.- DomainClass
-  IngestionProgram -.no scraper/persistence wiring yet.- ScraperClass
-  IngestionProgram -.no persistence wiring yet.- InfraClass
-  DomainClass -.shared model layer planned.- SharedClass
-  Unit -.validates future implementation.- DomainClass
-  Integration -.validates future service integration.- ApiProgram
-  Contract -.validates future API contracts.- ApiProgram
-
-  classDef planned stroke-dasharray: 5 5;
+  class ApiProc,Root implemented
+  class BotProc,IngProc,PG scaffold
 ```
+
+## Component Notes (Current State)
+
+| Component | Role | Implemented | Not Yet Implemented |
+|---|---|---|---|
+| Bot Service | Runs Discord-facing command flow and response UX. | Process scaffold (`Program.cs`) and project wiring. | Command parser/handler, API client flow, response formatter behavior. |
+| API Service | Provides HTTP boundary for query and ingestion operations. | Minimal host template and root endpoint (`GET /`). | Move query endpoint, ingestion endpoints, health + DI wiring, contract-complete responses. |
+| Ingestion Service | Coordinates scraping, transforms, persistence, and export. | Process scaffold (`Program.cs`) and project wiring. | Orchestrator, run-status lifecycle, partial-success handling, export workflow. |
+| Scraper Library | Retrieves and parses source data pages. | Library scaffold only. | HTTP loader, section parsers, hitbox parser. |
+| Domain Library | Core entities and business rules shared by services. | Library scaffold only. | Character/move models, lookup logic, alias/fuzzy matching, metadata/media models. |
+| Infrastructure Library | DB/storage adapters and persistence implementations. | Library scaffold only. | DB connection + migrations, repositories, JSON/image storage services. |
+| Shared Library | Shared contracts/primitives reused across services. | Library scaffold only. | Shared DTO/contracts, result/error primitives. |
+| PostgreSQL | Persistent store for queryable move/ingestion data. | Not integrated yet. | Schema, migrations, repositories, runtime connectivity from API/Ingestion. |
+
+## Notes on Mermaid Line Breaks
+
+- If your renderer is strict, prefer `<br/>` over `\\n` in node labels.
+- This diagram uses `<br/>` for compatibility across common Mermaid extensions.
