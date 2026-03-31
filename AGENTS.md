@@ -26,7 +26,7 @@ tests/
 
 ## Recent Changes
 - 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
-- 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion services; scraper utility + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp,
+- 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
 - 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion services; scraper utility + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp,
 
 <!-- MANUAL ADDITIONS START -->

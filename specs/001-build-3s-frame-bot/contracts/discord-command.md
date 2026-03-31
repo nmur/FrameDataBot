@@ -2,18 +2,20 @@
 
 ## Command
 
-- `/3s move`
+- `/framedata`
 
 ## Parameters
 
 - `character` (required, string)
 - `move` (required, string)
+- `game` (optional, string; defaults to current 3s dataset when omitted)
 
 ## Behavior
 
 - Exact canonical move-name lookup is required for MVP.
 - Later phases enable alias/notation/fuzzy matching.
 - Ambiguous fuzzy matches return candidate options for user confirmation.
+- Unsupported `game` values return a clear unsupported-game response.
 
 ## Response Shapes
 

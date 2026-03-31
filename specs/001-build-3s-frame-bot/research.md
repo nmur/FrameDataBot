@@ -103,3 +103,13 @@ Security baseline controls:
 - Alternatives considered:
   - Informal qualitative review only: rejected due to ambiguous acceptance standards.
   - External penetration testing as mandatory gate: deferred for later scale.
+
+## Decision 10: Command Namespace and Game Parameter
+
+- Decision: Use `/framedata` as the canonical Discord command with required
+  `character` and `move` parameters, plus optional `game`.
+- Rationale: Removes game-specific command naming and enables forward-compatible
+  expansion to additional games without command surface churn.
+- Alternatives considered:
+  - Keep `/3s move`: rejected because it hardcodes one game into command naming.
+  - Require `game` always: rejected for MVP ergonomics when only one dataset exists.

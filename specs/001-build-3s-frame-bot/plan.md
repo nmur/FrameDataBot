@@ -10,9 +10,9 @@ scope for this feature: 1) exact move lookup MVP, 2) source ingestion/persistenc
 3) fuzzy alias resolution, 4) last active-frame hitbox image support,
 5) storage-impact analysis, and 6) advanced metadata/media expansion.
 
-The plan explicitly incorporates clarified quality gates: mandatory pre-production
-security checklist, repeatable sampled measurement methodology, and partial-ingestion
-failure handling with explicit run status.
+Command surface is generalized for future game expansion: `/framedata` with required
+`character` and `move`, plus optional `game` (defaulting to current 3s dataset in this
+feature iteration).
 
 ## Technical Context
 
@@ -24,7 +24,7 @@ failure handling with explicit run status.
 **Project Type**: Multi-service backend (Bot, API, Ingestion, Scraper + shared libs)  
 **Performance Goals**: SC-001 validation run: >=95% valid exact-name queries complete in <3 seconds, measured with fixed-size representative samples across API query and bot end-to-end latency; ingestion completes full roster within maintenance window  
 **Constraints**: .NET-only implementation for this feature iteration; no Moq; no FluentAssertions; secure least-privilege container deployment; CI/CD via GitHub + cloud deploy integration  
-**Scale/Scope**: Single-bot deployment, full 3s roster, story-by-story incremental release
+**Scale/Scope**: Single-bot deployment for initial 3s dataset with optional `game` parameter reserved for forward-compatible expansion
 
 ## Constitution Check
 
@@ -56,11 +56,12 @@ Post-Phase 1 Re-check:
 
 ### Step 2: MVP Query Path (US1)
 
-- Implement exact canonical move lookup (`T016-T026`).
-- Output: `/v1/moves/query` exact behavior + Discord command response path.
+- Implement `/framedata` query flow via `POST /v1/moves/query` (`T016-T026`).
+- Output: exact behavior + clear handling for unsupported characters/moves and optional unsupported `game` values.
 - References:
   - Story behavior: [spec.md](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/spec.md)
   - API contract: [bot-api.yaml](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/contracts/bot-api.yaml)
+  - Command contract: [discord-command.md](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/contracts/discord-command.md)
   - Core entities: [data-model.md](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/data-model.md)
 
 ### Step 3: Ingestion Backbone (US2)
@@ -106,7 +107,7 @@ Post-Phase 1 Re-check:
 
 ### Step 8: Cross-Cutting Hardening
 
-- Execute polish tasks (`T065-T069`) after selected story completion.
+- Execute polish tasks (`T065-T070`) after selected story completion.
 - Output: observability, deploy pipeline, performance validation, security-gate verification, implementation report.
 - References:
   - Deployment flow: [quickstart.md](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/quickstart.md)

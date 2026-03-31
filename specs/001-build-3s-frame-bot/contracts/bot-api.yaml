@@ -75,6 +75,9 @@ components:
       type: object
       required: [character, moveInput]
       properties:
+        game:
+          type: string
+          description: Optional game identifier. Defaults to current 3s dataset when omitted.
         character:
           type: string
         moveInput:

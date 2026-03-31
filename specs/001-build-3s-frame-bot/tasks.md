@@ -68,14 +68,14 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 **⚠️ CRITICAL**: No user story work starts before this phase is complete.
 
-- [ ] T008 Create PostgreSQL schema bootstrap and migration baseline in `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql`
-- [ ] T009 [P] Implement database connectivity and unit-of-work abstractions in `src/FrameData.Infrastructure/Persistence/DbConnectionFactory.cs` and `src/FrameData.Infrastructure/Persistence/UnitOfWork.cs`
-- [ ] T010 [P] Implement JSON export storage service in `src/FrameData.Infrastructure/Storage/CharacterJsonExportService.cs`
-- [ ] T011 [P] Implement shared domain primitives and result/error model in `src/FrameData.Domain/Common/` and `src/FrameData.Shared/Contracts/`
-- [ ] T012 Implement API host bootstrap with health endpoint and DI wiring in `src/FrameData.Api/Program.cs`
-- [ ] T013 [P] Implement ingestion run tracking entity/repository baseline in `src/FrameData.Domain/Ingestion/IngestionRun.cs` and `src/FrameData.Infrastructure/Persistence/Repositories/IngestionRunRepository.cs`
-- [ ] T014 [P] Create Testcontainers PostgreSQL fixture for integration tests in `tests/integration/FrameData.Api.IntegrationTests/Fixtures/PostgresContainerFixture.cs`
-- [ ] T015 [P] Add CI build/test baseline workflow in `.github/workflows/ci.yml`
+- [X] T008 Create PostgreSQL schema bootstrap and migration baseline in `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql`
+- [X] T009 [P] Implement database connectivity and unit-of-work abstractions in `src/FrameData.Infrastructure/Persistence/DbConnectionFactory.cs` and `src/FrameData.Infrastructure/Persistence/UnitOfWork.cs`
+- [X] T010 [P] Implement JSON export storage service in `src/FrameData.Infrastructure/Storage/CharacterJsonExportService.cs`
+- [X] T011 [P] Implement shared domain primitives and result/error model in `src/FrameData.Domain/Common/` and `src/FrameData.Shared/Contracts/`
+- [X] T012 Implement API host bootstrap with health endpoint and DI wiring in `src/FrameData.Api/Program.cs`
+- [X] T013 [P] Implement ingestion run tracking entity/repository baseline in `src/FrameData.Domain/Ingestion/IngestionRun.cs` and `src/FrameData.Infrastructure/Persistence/Repositories/IngestionRunRepository.cs`
+- [X] T014 [P] Create Testcontainers PostgreSQL fixture for integration tests in `tests/integration/FrameData.Api.IntegrationTests/Fixtures/PostgresContainerFixture.cs`
+- [X] T015 [P] Add CI build/test baseline workflow in `.github/workflows/ci.yml`
 
 **Checkpoint**: Foundation complete; user stories can proceed.
 
@@ -83,26 +83,26 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ## Phase 3: User Story 1 - Exact Move Lookup MVP (Priority: P1) 🎯
 
-**Goal**: Provide exact canonical move-name lookup via Discord command and API response.
+**Goal**: Provide exact canonical move-name lookup via `/framedata` command and API response.
 
-**Independent Test**: Query a supported character + exact canonical move and receive correct frame data; unknown inputs return clear not-found responses.
+**Independent Test**: Query a supported character + exact canonical move and receive correct frame data; unknown character/move/game inputs return clear not-found or unsupported responses.
 
 ### Tests for User Story 1 (MANDATORY) ⚠️
 
-- [ ] T016 [P] [US1] Add unit tests for exact move query service in `tests/unit/FrameData.Domain.Tests/MoveLookup/ExactMoveLookupServiceTests.cs`
-- [ ] T017 [P] [US1] Add unit tests for Discord command input validation in `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
-- [ ] T018 [P] [US1] Add API integration tests for `POST /v1/moves/query` exact and not-found cases in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryExactTests.cs`
-- [ ] T019 [P] [US1] Add contract tests for exact-match response schema in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs`
+- [X] T016 [P] [US1] Add unit tests for exact move query service in `tests/unit/FrameData.Domain.Tests/MoveLookup/ExactMoveLookupServiceTests.cs`
+- [X] T017 [P] [US1] Add unit tests for `/framedata` input validation including optional `game` defaults in `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
+- [X] T018 [P] [US1] Add API integration tests for `POST /v1/moves/query` exact and not-found cases in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryExactTests.cs`
+- [X] T019 [P] [US1] Add contract tests for exact-match response schema including optional `game` request field in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs`
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] Implement Character and Move aggregate models in `src/FrameData.Domain/Characters/Character.cs` and `src/FrameData.Domain/Moves/Move.cs`
-- [ ] T021 [P] [US1] Implement MoveFrameData model in `src/FrameData.Domain/Moves/MoveFrameData.cs`
-- [ ] T022 [US1] Implement exact lookup domain service in `src/FrameData.Domain/MoveLookup/ExactMoveLookupService.cs`
-- [ ] T023 [US1] Implement move query repository in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
-- [ ] T024 [US1] Implement API endpoint for `POST /v1/moves/query` exact mode in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
-- [ ] T025 [US1] Implement Discord `/3s move` exact-query handler in `src/FrameData.Bot/Commands/MoveCommandHandler.cs`
-- [ ] T026 [US1] Implement not-found/unsupported-character response mapper in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [X] T020 [P] [US1] Implement Character and Move aggregate models in `src/FrameData.Domain/Characters/Character.cs` and `src/FrameData.Domain/Moves/Move.cs`
+- [X] T021 [P] [US1] Implement MoveFrameData model in `src/FrameData.Domain/Moves/MoveFrameData.cs`
+- [X] T022 [US1] Implement exact lookup domain service in `src/FrameData.Domain/MoveLookup/ExactMoveLookupService.cs`
+- [X] T023 [US1] Implement move query repository in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
+- [X] T024 [US1] Implement API endpoint for `POST /v1/moves/query` exact mode in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
+- [X] T025 [US1] Implement Discord `/framedata` exact-query handler in `src/FrameData.Bot/Commands/MoveCommandHandler.cs`
+- [X] T026 [US1] Implement not-found/unsupported-character/unsupported-game response mapper in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
 
 **Checkpoint**: US1 fully testable and deployable as MVP.
 
