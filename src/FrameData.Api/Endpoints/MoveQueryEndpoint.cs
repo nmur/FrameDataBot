@@ -1,5 +1,6 @@
 using FrameData.Domain.MoveLookup;
 using FrameData.Shared.Contracts;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FrameData.Api.Endpoints;
 
@@ -7,9 +8,14 @@ public static class MoveQueryEndpoint
 {
     public static void MapMoveQueryEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/v1/moves/query", async (MoveQueryRequest request, ExactMoveLookupService lookupService, CancellationToken cancellationToken) =>
+        app.MapGet("/v1/moves/query", async (
+            [FromQuery] string character,
+            [FromQuery] string moveInput,
+            [FromQuery] string? game,
+            ExactMoveLookupService lookupService,
+            CancellationToken cancellationToken) =>
         {
-            var result = await lookupService.LookupAsync(request.Game, request.Character, request.MoveInput, cancellationToken);
+            var result = await lookupService.LookupAsync(game, character, moveInput, cancellationToken);
             if (!result.IsFound || result.Move is null)
             {
                 return Results.NotFound(new ErrorResponse

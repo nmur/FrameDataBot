@@ -1,13 +1,5 @@
 namespace FrameData.Shared.Contracts;
 
-public sealed class MoveQueryRequest
-{
-    public string? Game { get; init; }
-    public required string Character { get; init; }
-    public required string MoveInput { get; init; }
-    public bool AllowFuzzy { get; init; } = true;
-}
-
 public sealed class MoveQueryResponse
 {
     public required string Character { get; init; }

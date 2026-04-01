@@ -113,3 +113,42 @@ Security baseline controls:
 - Alternatives considered:
   - Keep `/3s move`: rejected because it hardcodes one game into command naming.
   - Require `game` always: rejected for MVP ergonomics when only one dataset exists.
+
+## Decision 11: `/v1/moves/query` Method (`GET` vs `POST`)
+
+### Option A: `GET /v1/moves/query?character=...&moveInput=...&game=...`
+
+Pros:
+- Aligns with HTTP semantics for read-only operations (safe/idempotent intent).
+- Improves operational clarity in logs/metrics and standard API tooling.
+- Enables straightforward caching behavior (client/proxy/CDN where applicable).
+- Easier ad-hoc/manual invocation from browser/curl without JSON body.
+- Better contract discoverability for simple query inputs.
+
+Cons:
+- Query-string payloads become awkward as request shape grows (extra knobs/options).
+- Less ergonomic for nested/complex query criteria in future expansions.
+- URL length and encoding constraints can become a concern for richer inputs.
+- Can expose query values in URL surfaces more broadly (history/proxy logs), which may be undesirable for sensitive inputs.
+
+### Option B: `POST /v1/moves/query` with JSON body
+
+Pros:
+- Flexible request envelope for future expansion without query-string churn.
+- Cleaner transport for optional/structured fields and future advanced options.
+- Avoids URL-length/encoding constraints.
+- Keeps transport shape consistent with other command-like API operations.
+
+Cons:
+- Weaker semantic fit for a read-only query endpoint.
+- Less cache-friendly by default and less intuitive for “query” behavior.
+- Harder to inspect quickly in basic tooling compared with query params.
+- Can obscure idempotent read intent unless explicitly documented.
+
+### Recommendation
+
+- Use `GET` as the canonical method for the current exact lookup endpoint because the current request shape is simple (`character`, `moveInput`, optional `game`) and behavior is read-only.
+- Keep `POST` only if/when advanced query payloads are needed (for example, richer matching options or future structured query criteria), potentially as a separate advanced endpoint to keep semantics clear.
+
+Rationale:
+- This balances correctness of HTTP semantics and observability simplicity today while preserving a clean path for future complexity.

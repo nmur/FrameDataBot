@@ -15,13 +15,9 @@ public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task PostMoveQuery_WhenExactMatch_ReturnsOk()
+    public async Task GetMoveQuery_WhenExactMatch_ReturnsOk()
     {
-        var response = await _client.PostAsJsonAsync("/v1/moves/query", new MoveQueryRequest
-        {
-            Character = "makoto",
-            MoveInput = "2mk"
-        });
+        var response = await _client.GetAsync("/v1/moves/query?character=makoto&moveInput=2mk");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
@@ -31,13 +27,9 @@ public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task PostMoveQuery_WhenMoveNotFound_ReturnsNotFound()
+    public async Task GetMoveQuery_WhenMoveNotFound_ReturnsNotFound()
     {
-        var response = await _client.PostAsJsonAsync("/v1/moves/query", new MoveQueryRequest
-        {
-            Character = "makoto",
-            MoveInput = "5lk"
-        });
+        var response = await _client.GetAsync("/v1/moves/query?character=makoto&moveInput=5lk");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();

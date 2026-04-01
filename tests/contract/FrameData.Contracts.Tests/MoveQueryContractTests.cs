@@ -5,17 +5,16 @@ namespace FrameData.Contracts.Tests;
 public sealed class MoveQueryContractTests
 {
     [Fact]
-    public void MoveQueryRequest_GameField_IsOptional()
+    public void ErrorResponse_ContainsExpectedFields()
     {
-        var request = new MoveQueryRequest
+        var error = new ErrorResponse
         {
-            Character = "makoto",
-            MoveInput = "2mk"
+            Code = "not_found",
+            Message = "Move not found"
         };
 
-        Assert.Null(request.Game);
-        Assert.Equal("makoto", request.Character);
-        Assert.Equal("2mk", request.MoveInput);
+        Assert.Equal("not_found", error.Code);
+        Assert.Equal("Move not found", error.Message);
     }
 
     [Fact]

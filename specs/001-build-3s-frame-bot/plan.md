@@ -56,7 +56,7 @@ Post-Phase 1 Re-check:
 
 ### Step 2: MVP Query Path (US1)
 
-- Implement `/framedata` query flow via `POST /v1/moves/query` (`T016-T026`).
+- Implement `/framedata` query flow via `GET /v1/moves/query` (`T016-T026`).
 - Output: exact behavior + clear handling for unsupported characters/moves and optional unsupported `game` values.
 - References:
   - Story behavior: [spec.md](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/spec.md)
