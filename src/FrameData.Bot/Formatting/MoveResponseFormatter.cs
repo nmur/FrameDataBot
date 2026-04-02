@@ -14,7 +14,6 @@ public sealed class MoveResponseFormatter
         return error.Code switch
         {
             "unsupported_character" => "Unsupported character. Try a supported character name.",
-            "unsupported_game" => "Unsupported game. Omit game or use sf3_3s.",
             "move_not_found" => "Move not found. Check spelling or use canonical notation.",
             _ => error.Message
         };

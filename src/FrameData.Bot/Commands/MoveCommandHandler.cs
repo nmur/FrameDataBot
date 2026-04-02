@@ -1,5 +1,4 @@
 using FrameData.Bot.Formatting;
-using FrameData.Domain.MoveLookup;
 using FrameData.Shared.Contracts;
 
 namespace FrameData.Bot.Commands;
@@ -15,7 +14,7 @@ public sealed class MoveCommandHandler
         _formatter = formatter;
     }
 
-    public string Handle(string[] args, Func<string, string, string?, Task<(MoveQueryResponse? Response, ErrorResponse? Error)>> query)
+    public string Handle(string[] args, Func<string, string, Task<(MoveQueryResponse? Response, ErrorResponse? Error)>> query)
     {
         var parsed = _parser.Parse(args);
         if (!parsed.IsValid)
@@ -23,7 +22,7 @@ public sealed class MoveCommandHandler
             return parsed.Error ?? "Invalid command";
         }
 
-        var result = query(parsed.Character!, parsed.Move!, parsed.Game ?? ExactMoveLookupService.DefaultGame).GetAwaiter().GetResult();
+        var result = query(parsed.Character!, parsed.Move!).GetAwaiter().GetResult();
 
         if (result.Response is not null)
         {

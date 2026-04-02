@@ -11,11 +11,10 @@ public static class MoveQueryEndpoint
         app.MapGet("/v1/moves/query", async (
             [FromQuery] string character,
             [FromQuery] string moveInput,
-            [FromQuery] string? game,
             ExactMoveLookupService lookupService,
             CancellationToken cancellationToken) =>
         {
-            var result = await lookupService.LookupAsync(game, character, moveInput, cancellationToken);
+            var result = await lookupService.LookupAsync(character, moveInput, cancellationToken);
             if (!result.IsFound || result.Move is null)
             {
                 return Results.NotFound(new ErrorResponse

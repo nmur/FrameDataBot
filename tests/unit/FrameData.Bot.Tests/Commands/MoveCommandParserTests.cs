@@ -8,23 +8,22 @@ public sealed class MoveCommandParserTests
     private readonly MoveCommandParser _parser = new();
 
     [Fact]
-    public void Parse_WhenCharacterAndMoveProvided_ParsesSuccessfullyWithDefaultGame()
+    public void Parse_WhenCharacterAndMoveProvided_ParsesSuccessfully()
     {
         var result = _parser.Parse(["makoto", "2mk"]);
 
         result.IsValid.ShouldBeTrue();
         result.Character.ShouldBe("makoto");
         result.Move.ShouldBe("2mk");
-        result.Game.ShouldBeNull();
     }
 
     [Fact]
-    public void Parse_WhenGameProvided_ParsesSuccessfully()
+    public void Parse_WhenExtraArgumentProvided_ReturnsInvalid()
     {
         var result = _parser.Parse(["makoto", "2mk", "sf3_3s"]);
 
-        result.IsValid.ShouldBeTrue();
-        result.Game.ShouldBe("sf3_3s");
+        result.IsValid.ShouldBeFalse();
+        result.Error.ShouldBe("Usage: /framedata <character> <move>");
     }
 
     [Fact]

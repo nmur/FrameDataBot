@@ -85,12 +85,12 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 **Goal**: Provide exact canonical move-name lookup via `/framedata` command and API response.
 
-**Independent Test**: Query a supported character + exact canonical move and receive correct frame data; unknown character/move/game inputs return clear not-found or unsupported responses.
+**Independent Test**: Query a supported character + exact canonical move and receive correct frame data; unknown character/move inputs return clear not-found or unsupported responses.
 
 ### Tests for User Story 1 (MANDATORY) ⚠️
 
 - [X] T016 [P] [US1] Add unit tests for exact move query service in `tests/unit/FrameData.Domain.Tests/MoveLookup/ExactMoveLookupServiceTests.cs`
-- [X] T017 [P] [US1] Add unit tests for `/framedata` input validation including optional `game` defaults in `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
+- [X] T017 [P] [US1] Add unit tests for `/framedata` input validation for required `character` and `move` inputs in `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
 - [X] T018 [P] [US1] Add API integration tests for `GET /v1/moves/query` exact and not-found cases in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryExactTests.cs`
 - [X] T019 [P] [US1] Add contract tests for exact-match and error response schemas for `GET /v1/moves/query` in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs`
 
@@ -102,7 +102,14 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T023 [US1] Implement move query repository in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
 - [X] T024 [US1] Implement API endpoint for `GET /v1/moves/query` exact mode in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
 - [X] T025 [US1] Implement Discord `/framedata` exact-query handler in `src/FrameData.Bot/Commands/MoveCommandHandler.cs`
-- [X] T026 [US1] Implement not-found/unsupported-character/unsupported-game response mapper in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [X] T026 [US1] Implement not-found/unsupported-character response mapper in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+
+### Scope Simplification Follow-Up (Single-Game Interface)
+
+- [X] T071 [P] [US1] Remove `game` input from Discord command parser/handler flow and update affected unit tests in `src/FrameData.Bot/Commands/MoveCommandParser.cs`, `src/FrameData.Bot/Commands/MoveCommandHandler.cs`, and `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
+- [X] T072 [P] [US1] Remove `game` query parameter and unsupported-game path from move query endpoint and API integration tests in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs` and `tests/integration/FrameData.Api.IntegrationTests/MoveQueryExactTests.cs`
+- [X] T073 [US1] Remove game-discriminator handling from exact lookup service/repository interface and related domain tests in `src/FrameData.Domain/MoveLookup/ExactMoveLookupService.cs`, `src/FrameData.Domain/MoveLookup/IMoveQueryRepository.cs`, `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`, and `tests/unit/FrameData.Domain.Tests/MoveLookup/ExactMoveLookupServiceTests.cs`
+- [X] T074 [US1] Update contract tests and response formatting for single-game behavior in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs` and `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
 
 **Checkpoint**: US1 fully testable and deployable as MVP.
 

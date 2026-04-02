@@ -36,4 +36,5 @@ public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Pr
         Assert.NotNull(payload);
         Assert.Equal("move_not_found", payload.Code);
     }
+
 }

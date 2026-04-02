@@ -27,17 +27,12 @@ public sealed class MoveRepository : IMoveQueryRepository
         }
     ];
 
-    public Task<bool> SupportsGameAsync(string game, CancellationToken cancellationToken = default)
-        => Task.FromResult(string.Equals(game, "sf3_3s", StringComparison.OrdinalIgnoreCase));
+    public Task<bool> SupportsCharacterAsync(string character, CancellationToken cancellationToken = default)
+        => Task.FromResult(Moves.Any(m => string.Equals(m.CharacterName, character, StringComparison.OrdinalIgnoreCase)));
 
-    public Task<bool> SupportsCharacterAsync(string game, string character, CancellationToken cancellationToken = default)
-        => Task.FromResult(Moves.Any(m => string.Equals(m.Game, game, StringComparison.OrdinalIgnoreCase) &&
-                                          string.Equals(m.CharacterName, character, StringComparison.OrdinalIgnoreCase)));
-
-    public Task<Move?> FindExactMoveAsync(string game, string character, string move, CancellationToken cancellationToken = default)
+    public Task<Move?> FindExactMoveAsync(string character, string move, CancellationToken cancellationToken = default)
     {
         var found = Moves.FirstOrDefault(m =>
-            string.Equals(m.Game, game, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(m.CharacterName, character, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(m.CanonicalName, move, StringComparison.OrdinalIgnoreCase));
 

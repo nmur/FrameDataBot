@@ -18,7 +18,6 @@ public sealed class MoveLookupResult
     public Move? Move { get; }
 
     public static MoveLookupResult Found(Move move) => new(true, null, null, move);
-    public static MoveLookupResult UnsupportedGame(string game) => new(false, "unsupported_game", $"Unsupported game: {game}", null);
     public static MoveLookupResult UnsupportedCharacter(string character) => new(false, "unsupported_character", $"Unsupported character: {character}", null);
     public static MoveLookupResult NotFound(string move) => new(false, "move_not_found", $"Move not found: {move}", null);
 }

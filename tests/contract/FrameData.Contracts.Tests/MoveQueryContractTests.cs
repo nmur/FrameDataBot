@@ -9,12 +9,24 @@ public sealed class MoveQueryContractTests
     {
         var error = new ErrorResponse
         {
-            Code = "not_found",
+            Code = "move_not_found",
             Message = "Move not found"
         };
 
-        Assert.Equal("not_found", error.Code);
+        Assert.Equal("move_not_found", error.Code);
         Assert.Equal("Move not found", error.Message);
+    }
+
+    [Fact]
+    public void ErrorResponse_UsesSupportedErrorCodes()
+    {
+        var error = new ErrorResponse
+        {
+            Code = "unsupported_character",
+            Message = "Unsupported character: remy"
+        };
+
+        Assert.Equal("unsupported_character", error.Code);
     }
 
     [Fact]

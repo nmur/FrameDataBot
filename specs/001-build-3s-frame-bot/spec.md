@@ -14,7 +14,7 @@
 - Q: What sampling standard should be used for sampled success criteria? → A: Minimum 100 samples per criterion, stratified across characters and move categories, with consistent methodology each run.
 - Q: What should ingestion do when some characters/sections fail? → A: Allow partial success; commit successful updates and mark failed characters/sections with explicit run status indicating retry is needed.
 - Q: What is the scraper implementation scope for this feature? → A: .NET-only scraper scope for this feature, with no Python fallback included.
-- Q: What should the canonical Discord command be for future multi-game support? → A: Use `/framedata` with required `character` and `move`, and optional `game` parameter.
+- Q: What should the canonical Discord command surface be for the current lean scope? → A: Use `/framedata` with required `character` and `move` parameters only.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -163,7 +163,6 @@ properties without breaking MVP fields.
 - Source page is unreachable during refresh.
 - Source page structure changes and one or more sections cannot be parsed.
 - Character or move names contain inconsistent punctuation/casing.
-- Optional `game` parameter is provided with an unsupported value.
 - User input matches multiple moves with similar confidence.
 - User input does not match any move above minimum confidence.
 - Hitbox display page exists but last active frame cannot be identified.
@@ -176,7 +175,7 @@ properties without breaking MVP fields.
 ### Functional Requirements
 
 - **FR-001**: Users MUST be able to request move data via `/framedata` by providing
-  required `character` and `move` values and an optional `game` value.
+  required `character` and `move` values.
 - **FR-002**: MVP lookup MUST support exact canonical move-name matching.
 - **FR-003**: MVP responses MUST include startup, active, recovery, and frame advantage
   values when available for the requested move.
@@ -247,8 +246,8 @@ properties without breaking MVP fields.
 - Initial release prioritizes exact canonical move-name matching before fuzzy/alias
   resolution.
 - Bot command usage is limited to one move lookup per request.
-- If `game` is omitted, the system defaults to the current Street Fighter III: 3rd
-  Strike dataset for this feature iteration.
+- The current feature iteration targets Street Fighter III: 3rd Strike only and does
+  not expose a game-selection parameter in bot or API query interfaces.
 - Basic frame-data fields are authoritative from source unless explicitly overridden by
   maintainers.
 - Last active-frame image capture is attempted only when frame sequencing is available

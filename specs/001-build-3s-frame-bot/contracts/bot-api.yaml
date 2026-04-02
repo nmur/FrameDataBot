@@ -21,12 +21,6 @@ paths:
           required: true
           schema:
             type: string
-        - in: query
-          name: game
-          required: false
-          schema:
-            type: string
-          description: Optional game identifier. Defaults to current 3s dataset when omitted.
       responses:
         '200':
           description: Match found

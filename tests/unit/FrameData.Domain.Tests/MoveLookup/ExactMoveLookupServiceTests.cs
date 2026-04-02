@@ -16,23 +16,11 @@ public sealed class ExactMoveLookupServiceTests
     }
 
     [Fact]
-    public async Task LookupAsync_WhenGameNotSupported_ReturnsUnsupportedGame()
-    {
-        _repository.SupportsGameAsync("sf2", Arg.Any<CancellationToken>()).Returns(false);
-
-        var result = await _service.LookupAsync("sf2", "makoto", "2mk");
-
-        result.IsFound.ShouldBeFalse();
-        result.ErrorCode.ShouldBe("unsupported_game");
-    }
-
-    [Fact]
     public async Task LookupAsync_WhenCharacterNotSupported_ReturnsUnsupportedCharacter()
     {
-        _repository.SupportsGameAsync("sf3_3s", Arg.Any<CancellationToken>()).Returns(true);
-        _repository.SupportsCharacterAsync("sf3_3s", "q", Arg.Any<CancellationToken>()).Returns(false);
+        _repository.SupportsCharacterAsync("q", Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await _service.LookupAsync(null, "q", "2mk");
+        var result = await _service.LookupAsync("q", "2mk");
 
         result.IsFound.ShouldBeFalse();
         result.ErrorCode.ShouldBe("unsupported_character");
@@ -41,11 +29,10 @@ public sealed class ExactMoveLookupServiceTests
     [Fact]
     public async Task LookupAsync_WhenMoveNotFound_ReturnsMoveNotFound()
     {
-        _repository.SupportsGameAsync("sf3_3s", Arg.Any<CancellationToken>()).Returns(true);
-        _repository.SupportsCharacterAsync("sf3_3s", "makoto", Arg.Any<CancellationToken>()).Returns(true);
-        _repository.FindExactMoveAsync("sf3_3s", "makoto", "5lk", Arg.Any<CancellationToken>()).Returns((Move?)null);
+        _repository.SupportsCharacterAsync("makoto", Arg.Any<CancellationToken>()).Returns(true);
+        _repository.FindExactMoveAsync("makoto", "5lk", Arg.Any<CancellationToken>()).Returns((Move?)null);
 
-        var result = await _service.LookupAsync(null, "makoto", "5lk");
+        var result = await _service.LookupAsync("makoto", "5lk");
 
         result.IsFound.ShouldBeFalse();
         result.ErrorCode.ShouldBe("move_not_found");
@@ -65,11 +52,10 @@ public sealed class ExactMoveLookupServiceTests
             FrameData = new MoveFrameData { Startup = "6", Active = "3", Recovery = "17" }
         };
 
-        _repository.SupportsGameAsync("sf3_3s", Arg.Any<CancellationToken>()).Returns(true);
-        _repository.SupportsCharacterAsync("sf3_3s", "makoto", Arg.Any<CancellationToken>()).Returns(true);
-        _repository.FindExactMoveAsync("sf3_3s", "makoto", "2mk", Arg.Any<CancellationToken>()).Returns(move);
+        _repository.SupportsCharacterAsync("makoto", Arg.Any<CancellationToken>()).Returns(true);
+        _repository.FindExactMoveAsync("makoto", "2mk", Arg.Any<CancellationToken>()).Returns(move);
 
-        var result = await _service.LookupAsync(null, "makoto", "2mk");
+        var result = await _service.LookupAsync("makoto", "2mk");
 
         result.IsFound.ShouldBeTrue();
         result.Move.ShouldNotBeNull();

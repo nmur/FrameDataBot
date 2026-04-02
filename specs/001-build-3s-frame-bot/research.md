@@ -104,19 +104,20 @@ Security baseline controls:
   - Informal qualitative review only: rejected due to ambiguous acceptance standards.
   - External penetration testing as mandatory gate: deferred for later scale.
 
-## Decision 10: Command Namespace and Game Parameter
+## Decision 10: Command Namespace and Single-Game Scope
 
 - Decision: Use `/framedata` as the canonical Discord command with required
-  `character` and `move` parameters, plus optional `game`.
-- Rationale: Removes game-specific command naming and enables forward-compatible
-  expansion to additional games without command surface churn.
+  `character` and `move` parameters only.
+- Rationale: Keeps the implementation lean for the current 3s-only scope and removes
+  unnecessary request-path complexity from interfaces and backend logic.
 - Alternatives considered:
   - Keep `/3s move`: rejected because it hardcodes one game into command naming.
-  - Require `game` always: rejected for MVP ergonomics when only one dataset exists.
+  - Keep optional `game`: rejected because it introduces unused branching and
+    unsupported-game handling overhead while only one dataset is active.
 
 ## Decision 11: `/v1/moves/query` Method (`GET` vs `POST`)
 
-### Option A: `GET /v1/moves/query?character=...&moveInput=...&game=...`
+### Option A: `GET /v1/moves/query?character=...&moveInput=...`
 
 Pros:
 - Aligns with HTTP semantics for read-only operations (safe/idempotent intent).
@@ -147,7 +148,7 @@ Cons:
 
 ### Recommendation
 
-- Use `GET` as the canonical method for the current exact lookup endpoint because the current request shape is simple (`character`, `moveInput`, optional `game`) and behavior is read-only.
+- Use `GET` as the canonical method for the current exact lookup endpoint because the current request shape is simple (`character`, `moveInput`) and behavior is read-only.
 - Keep `POST` only if/when advanced query payloads are needed (for example, richer matching options or future structured query criteria), potentially as a separate advanced endpoint to keep semantics clear.
 
 Rationale:

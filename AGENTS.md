@@ -1,6 +1,6 @@
 # 3sFrameDataBot Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-31
+Auto-generated from all feature plans. Last updated: 2026-04-02
 
 ## Active Technologies
 - .NET 10 (C#) for bot/API/ingestion services; scraper utility + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, (001-build-3s-frame-bot)
@@ -27,7 +27,7 @@ tests/
 ## Recent Changes
 - 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
 - 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
-- 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion services; scraper utility + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp,
+- 001-build-3s-frame-bot: Added .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

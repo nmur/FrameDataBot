@@ -66,11 +66,9 @@
 1. Trigger ingestion and confirm one JSON export per character.
 2. Query known exact move names via Discord command:
    - `/framedata makoto 2mk`
-   - Optional game example: `/framedata game:sf3_3s character:makoto move:2mk`
 3. Confirm expected frame-data fields are returned.
 4. Confirm unknown move/character responses are clear.
-5. Confirm unsupported-game responses are clear when optional `game` is provided.
-6. Confirm partial-ingestion behavior: successful character updates are committed while failed scopes are marked for retry in run status.
+5. Confirm partial-ingestion behavior: successful character updates are committed while failed scopes are marked for retry in run status.
 
 ## Security Baseline
 
