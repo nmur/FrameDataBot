@@ -123,19 +123,19 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
-- [ ] T027 [P] [US2] Add unit tests for source section parsing in `tests/unit/FrameData.Ingestion.Tests/Scraping/CharacterSectionParserTests.cs`
-- [ ] T028 [P] [US2] Add unit tests for JSON export generation in `tests/unit/FrameData.Ingestion.Tests/Export/CharacterJsonExportServiceTests.cs`
-- [ ] T029 [P] [US2] Add ingestion integration tests for success and partial-success persistence in `tests/integration/FrameData.Ingestion.IntegrationTests/IngestionPersistenceTests.cs`
-- [ ] T030 [P] [US2] Add contract tests for ingestion run statuses (`Running|Succeeded|PartiallySucceeded|Failed`) in `tests/contract/FrameData.Contracts.Tests/IngestionRunContractTests.cs`
+- [X] T027 [P] [US2] Add unit tests for source section parsing in `tests/unit/FrameData.Ingestion.Tests/Scraping/CharacterSectionParserTests.cs`
+- [X] T028 [P] [US2] Add unit tests for JSON export generation in `tests/unit/FrameData.Ingestion.Tests/Export/CharacterJsonExportServiceTests.cs`
+- [X] T029 [P] [US2] Add ingestion integration tests for success and partial-success persistence in `tests/integration/FrameData.Ingestion.IntegrationTests/IngestionPersistenceTests.cs`
+- [X] T030 [P] [US2] Add contract tests for ingestion run statuses (`Running|Succeeded|PartiallySucceeded|Failed`) in `tests/contract/FrameData.Contracts.Tests/IngestionRunContractTests.cs`
 
 ### Implementation for User Story 2
 
-- [ ] T031 [P] [US2] Implement scraper HTTP client and HTML document loader in `src/FrameData.Scraper/Source/SourceHttpClient.cs`
-- [ ] T032 [P] [US2] Implement section parsers for Normals/Specials/Super Arts/Misc in `src/FrameData.Scraper/Parsing/CharacterSectionParser.cs`
-- [ ] T033 [US2] Implement ingestion orchestrator with partial-success status handling in `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
-- [ ] T034 [US2] Implement persistence mappers for character/move upserts in `src/FrameData.Infrastructure/Persistence/Repositories/CharacterRepository.cs` and `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
-- [ ] T035 [US2] Implement character JSON export workflow in `src/FrameData.Ingestion/Services/CharacterExportWorkflow.cs`
-- [ ] T036 [US2] Implement ingestion trigger/status endpoints with explicit retry-required failure reporting in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
+- [X] T031 [P] [US2] Implement scraper HTTP client and HTML document loader in `src/FrameData.Scraper/Source/SourceHttpClient.cs`
+- [X] T032 [P] [US2] Implement section parsers for Normals/Specials/Super Arts/Misc in `src/FrameData.Scraper/Parsing/CharacterSectionParser.cs`
+- [X] T033 [US2] Implement ingestion orchestrator with partial-success status handling in `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
+- [X] T034 [US2] Implement persistence mappers for character/move upserts in `src/FrameData.Infrastructure/Persistence/Repositories/CharacterRepository.cs` and `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
+- [X] T035 [US2] Implement character JSON export workflow in `src/FrameData.Ingestion/Services/CharacterExportWorkflow.cs`
+- [X] T036 [US2] Implement ingestion trigger/status endpoints with explicit retry-required failure reporting in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
 
 **Checkpoint**: US1+US2 operational with refreshable data pipeline.
 
