@@ -5,7 +5,7 @@ namespace FrameData.Infrastructure.Persistence.Repositories;
 
 public sealed class MoveRepository : IMoveQueryRepository
 {
-    private static readonly List<Move> Moves =
+    private readonly List<Move> _moves =
     [
         new()
         {
@@ -28,14 +28,30 @@ public sealed class MoveRepository : IMoveQueryRepository
     ];
 
     public Task<bool> SupportsCharacterAsync(string character, CancellationToken cancellationToken = default)
-        => Task.FromResult(Moves.Any(m => string.Equals(m.CharacterName, character, StringComparison.OrdinalIgnoreCase)));
+        => Task.FromResult(_moves.Any(m => string.Equals(m.CharacterName, character, StringComparison.OrdinalIgnoreCase)));
 
     public Task<Move?> FindExactMoveAsync(string character, string move, CancellationToken cancellationToken = default)
     {
-        var found = Moves.FirstOrDefault(m =>
+        var found = _moves.FirstOrDefault(m =>
             string.Equals(m.CharacterName, character, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(m.CanonicalName, move, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(found);
+    }
+
+    public Task UpsertMovesAsync(string characterId, IReadOnlyCollection<Move> moves, CancellationToken cancellationToken = default)
+    {
+        _moves.RemoveAll(m => string.Equals(m.CharacterId, characterId, StringComparison.OrdinalIgnoreCase));
+        _moves.AddRange(moves);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<Move>> GetByCharacterIdAsync(string characterId, CancellationToken cancellationToken = default)
+    {
+        var found = _moves
+            .Where(m => string.Equals(m.CharacterId, characterId, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<Move>>(found);
     }
 }

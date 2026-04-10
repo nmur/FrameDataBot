@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="..\FrameData.Domain\FrameData.Domain.csproj" />
     <ProjectReference Include="..\FrameData.Infrastructure\FrameData.Infrastructure.csproj" />
+    <ProjectReference Include="..\FrameData.Ingestion\FrameData.Ingestion.csproj" />
+    <ProjectReference Include="..\FrameData.Scraper\FrameData.Scraper.csproj" />
     <ProjectReference Include="..\FrameData.Shared\FrameData.Shared.csproj" />
   </ItemGroup>
 

@@ -1,17 +1,38 @@
 using FrameData.Api.Endpoints;
 using FrameData.Domain.MoveLookup;
 using FrameData.Infrastructure.Persistence.Repositories;
+using FrameData.Infrastructure.Storage;
+using FrameData.Ingestion.Services;
+using FrameData.Scraper.Parsing;
+using FrameData.Scraper.Source;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<IMoveQueryRepository, MoveRepository>();
+builder.Services.AddSingleton<CharacterRepository>();
+builder.Services.AddSingleton<MoveRepository>();
+builder.Services.AddSingleton<IMoveQueryRepository>(sp => sp.GetRequiredService<MoveRepository>());
 builder.Services.AddSingleton<ExactMoveLookupService>();
+builder.Services.AddSingleton<IngestionRunRepository>();
+builder.Services.AddSingleton<CharacterJsonExportService>();
+builder.Services.AddSingleton<CharacterSectionParser>();
+builder.Services.AddSingleton(sp =>
+{
+    var exportPath = builder.Configuration["Ingestion:ExportPath"] ?? Path.Combine("exports", "characters");
+    return new CharacterExportWorkflow(sp.GetRequiredService<CharacterJsonExportService>(), exportPath);
+});
+builder.Services.AddHttpClient<ISourceHttpClient, SourceHttpClient>((sp, client) =>
+{
+    var baseUrl = builder.Configuration["Ingestion:SourceBaseUrl"] ?? "http://ensabahnur.free.fr/BastonNew/index.php";
+    client.BaseAddress = new Uri(baseUrl);
+});
+builder.Services.AddSingleton<IngestionOrchestrator>();
 
 var app = builder.Build();
 
 app.MapGet("/", () => "Hello World!");
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapMoveQueryEndpoint();
+app.MapIngestionEndpoints();
 
 app.Run();
 
