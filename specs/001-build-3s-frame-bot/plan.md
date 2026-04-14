@@ -17,7 +17,7 @@ environments (local Compose and cloud image pipelines).
 **Primary Dependencies**: Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql  
 **Storage**: PostgreSQL (JSONB for nested move/frame structures), character JSON exports on disk  
 **Testing**: xUnit + Shouldly + NSubstitute (unit); Testcontainers for .NET (integration); contract tests for API payloads  
-**Target Platform**: Linux Docker containers (local Compose, Render, and self-hosted NAS)  
+**Target Platform**: Linux Docker containers (local Compose and self-hosted or managed container hosts)  
 **Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)  
 **Performance Goals**: SC-001 validation run: >=95% valid exact-name queries complete in <3 seconds across API and bot end-to-end latency, fixed representative sampling  
 **Constraints**: .NET-only implementation scope; no Moq/FluentAssertions; secure least-privilege container deployment; Bot must have first-class container/deploy parity with API/Ingestion  

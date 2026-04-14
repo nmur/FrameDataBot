@@ -5,7 +5,7 @@
 - Docker and Docker Compose (for local parity builds)
 - .NET 10 SDK (for local non-container development)
 - Discord bot token and guild/application IDs
-- Render account connected to GitHub repository
+- Container image registry account (for example GHCR)
 
 ## Configuration
 
@@ -18,20 +18,19 @@
 2. Configure ingestion schedule and source base URL.
 3. Configure data volume path for JSON exports.
 
-## Deploy Services (Cloud)
+## Deploy Services (Container Host)
 
 1. Build and test locally:
    - `docker compose build`
    - `dotnet test tests/unit`
-2. Configure Render services from repository:
-   - Create service(s) from repo using Docker runtime
-   - Configure separate Bot service using `Dockerfile.bot`
+2. Configure your target Docker host:
+   - Deploy separate Bot service using `Dockerfile.bot`
    - Set required env vars/secrets
-   - Provision PostgreSQL service and wire connection string
+   - Provision PostgreSQL and wire connection string
    - Configure persistent disk for JSON exports where needed
 3. Deploy:
-   - Use Render auto-deploy on push, or
-   - Trigger deploy through GitHub Actions using Render deploy hook
+   - Pull tagged images from registry and restart services, or
+   - Trigger host deployment through GitHub Actions + self-hosted runner
 4. Verify health:
    - Bot connected to Discord
    - API health endpoint responds
@@ -40,9 +39,9 @@
 
 ## Optional GitHub Actions Deployment
 
-1. Add Render deploy hook URL as repository secret.
-2. On successful CI test workflow, call deploy hook.
-3. Confirm deployment status in Render dashboard.
+1. Add registry credentials and deployment host secrets to GitHub.
+2. On successful CI test workflow, publish images and trigger deployment.
+3. Confirm deployment status from your host and action logs.
 
 ## Run Services (Local, Optional)
 
@@ -55,6 +54,8 @@
    - API health endpoint responds
    - Ingestion run can be triggered and observed
    - Bot container can resolve and call API service over compose network
+4. Run explicit Bot config validation check:
+   - Ensure `DISCORD_BOT_TOKEN`, `BOT_GUILD_ID`, and `BOT_API_BASE_URL` are set
 
 ## Run Tests
 

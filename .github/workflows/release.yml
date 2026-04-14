@@ -72,6 +72,15 @@ jobs:
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:${{ steps.meta.outputs.version }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:sha-${{ steps.meta.outputs.sha_short }}
+      - name: Build and push bot image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.bot
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-bot:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-bot:sha-${{ steps.meta.outputs.sha_short }}
 
   create-release:
     needs: publish-images
@@ -81,16 +90,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-
-  deploy-render:
-    needs: publish-images
-    runs-on: ubuntu-latest
-    if: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL != '' || secrets.RENDER_INGESTION_DEPLOY_HOOK_URL != '' }}
-    environment: production
-    steps:
-      - name: Trigger Render API deploy (optional)
-        if: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL != '' }}
-        run: curl -fsSL -X POST "${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}"
-      - name: Trigger Render ingestion deploy (optional)
-        if: ${{ secrets.RENDER_INGESTION_DEPLOY_HOOK_URL != '' }}
-        run: curl -fsSL -X POST "${{ secrets.RENDER_INGESTION_DEPLOY_HOOK_URL }}"

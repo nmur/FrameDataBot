@@ -43,10 +43,11 @@ description: "Task list for implementing Discord 3s frame data bot"
 ## Core Implementation Runbook
 
 1. Execute `T001-T015` before starting any story work.
-2. Deliver US1 (`T016-T026`) and US2 (`T027-T036`) as MVP backbone.
-3. Deliver refinements in order: US3 -> US4 -> US5 -> US6.
-4. Complete polish tasks (`T065-T070`) after desired story set is done.
-5. At each step, consult the reference list above for requirements and contracts.
+2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`).
+3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
+4. Deliver refinements in order: US3 -> US4 -> US5 -> US6.
+5. Complete polish tasks (`T065-T070`) after desired story set is done.
+6. At each step, consult the reference list above for requirements and contracts.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -110,6 +111,17 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T072 [P] [US1] Remove `game` query parameter and unsupported-game path from move query endpoint and API integration tests in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs` and `tests/integration/FrameData.Api.IntegrationTests/MoveQueryExactTests.cs`
 - [X] T073 [US1] Remove game-discriminator handling from exact lookup service/repository interface and related domain tests in `src/FrameData.Domain/MoveLookup/ExactMoveLookupService.cs`, `src/FrameData.Domain/MoveLookup/IMoveQueryRepository.cs`, `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`, and `tests/unit/FrameData.Domain.Tests/MoveLookup/ExactMoveLookupServiceTests.cs`
 - [X] T074 [US1] Update contract tests and response formatting for single-game behavior in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs` and `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+
+### Runtime Containerization Follow-Up (Bot Service Parity)
+
+- [X] T075 [P] [US1] Add unit tests for bot host bootstrap and required configuration validation in `tests/unit/FrameData.Bot.Tests/Hosting/BotHostBootstrapTests.cs`
+- [X] T076 [P] [US1] Add integration test coverage for bot-to-API client wiring assumptions in `tests/integration/FrameData.Api.IntegrationTests/BotService/BotApiConnectivityConfigTests.cs`
+- [X] T077 [US1] Implement production bot runtime bootstrap in `src/FrameData.Bot/Program.cs`
+- [X] T078 [P] [US1] Add bot container build definition in `Dockerfile.bot`
+- [X] T079 [US1] Add Bot service wiring and environment mapping in `docker-compose.yml` and `.env.example`
+- [X] T080 [US1] Extend image publishing to include Bot image in `.github/workflows/release.yml`
+- [X] T081 [US1] Remove provider-specific bot deployment coupling and keep host-agnostic deployment configuration in `.github/workflows/release.yml` and `specs/001-build-3s-frame-bot/quickstart.md`
+- [X] T082 [US1] Update deployment verification documentation for four-service topology in `specs/001-build-3s-frame-bot/quickstart.md`
 
 **Checkpoint**: US1 fully testable and deployable as MVP.
 
@@ -240,7 +252,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [ ] T065 [P] Add structured logging and correlation IDs in `src/FrameData.Api/Observability/RequestCorrelationMiddleware.cs` and `src/FrameData.Ingestion/Observability/IngestionLogScope.cs`
 - [ ] T066 [P] Add fixed-sample performance validation script for API and bot latency in `scripts/perf/run-benchmarks.sh`
 - [ ] T067 Add mandatory pre-production security gate workflow (dependency, image, secrets, least-privilege checks) in `.github/workflows/security-gate.yml` and `scripts/security/`
-- [ ] T068 Add deployment workflow for Render via GitHub Actions in `.github/workflows/deploy-render.yml`
+- [ ] T068 Add deployment workflow for self-hosted Docker via GitHub Actions in `.github/workflows/deploy-selfhosted.yml`
 - [ ] T069 [P] Update quickstart and operations runbook with security/performance gate execution in `specs/001-build-3s-frame-bot/quickstart.md` and `docs/operations.md`
 - [ ] T070 Execute full test suite and document validation outcomes in `specs/001-build-3s-frame-bot/implementation-validation.md`
 
@@ -254,6 +266,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - Foundational (Phase 2): depends on Setup and blocks all user stories.
 - User Stories:
   - US1 (Phase 3) and US2 (Phase 4) start after Foundational.
+  - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
   - US3 (Phase 5) depends on US1 baseline lookup behavior.
   - US4 (Phase 6) depends on US2 ingestion pipeline.
   - US5 (Phase 7) depends on US4 image-capture data.
@@ -262,7 +275,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ### User Story Completion Order
 
-1. US1 + US2 (MVP data query + ingestion backbone)
+1. US1 + runtime parity follow-up + US2 (MVP data query + bot runtime + ingestion backbone)
 2. US3 (fuzzy/alias usability)
 3. US4 (last active-frame image)
 4. US5 (storage impact decision)
@@ -285,6 +298,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 # Run in parallel:
 T016, T017, T018, T019
 T020, T021
+T075, T076
 ```
 
 ### User Story 2
@@ -334,7 +348,7 @@ T062
 ### MVP First (US1 + US2)
 
 1. Complete Setup and Foundational phases.
-2. Deliver US1 exact lookup path.
+2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
 3. Deliver US2 ingestion + persistence + JSON export.
 4. Validate and demo MVP.
 

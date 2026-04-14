@@ -67,16 +67,17 @@ Recommended database options:
   - SimMetrics.Net: robust but less commonly adopted in current .NET examples.
   - Custom Levenshtein-only logic: too limited for notation/alias diversity.
 
-## Decision 7: Cloud Host Recommendation and Security Baseline
+## Decision 7: Deployment Host Strategy and Security Baseline
 
-- Decision: Use Render as the default initial host; deploy containerized services from
-  GitHub with either Render auto-deploy or GitHub Actions invoking deploy hooks.
-- Rationale: Lowest operational friction, straightforward GitHub integration, and a
-  usable free entry path for early iterations.
+- Decision: Keep deployment host-agnostic and rely on portable container artifacts
+  (Dockerfiles + compose + GHCR image publishing) so the stack can run on self-hosted
+  Docker (NAS) or managed container platforms without platform-specific coupling.
+- Rationale: Minimizes lock-in and keeps deployment paths flexible while preserving a
+  single build/release pipeline.
 - Alternatives considered:
-  - Railway: strong DX but free usage is less predictable for always-on workloads.
-  - Fly.io: capable for containers but free allowance is less favorable for sustained
-    always-on usage.
+  - Provider-specific deployment integration in the release workflow: rejected to avoid
+    coupling CI/CD logic to one host.
+  - Source-only/manual runtime startup: rejected due to weaker reproducibility.
 
 Security baseline controls:
 - Run containers as non-root user where possible.
