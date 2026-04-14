@@ -4,7 +4,7 @@ namespace FrameData.Api.IntegrationTests.Fixtures;
 
 public sealed class PostgresContainerFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder().Build();
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine").Build();
 
     public string ConnectionString => _container.GetConnectionString();
 
