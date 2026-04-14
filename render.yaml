@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: framedata-api
+    runtime: docker
+    plan: starter
+    region: oregon
+    autoDeployTrigger: off
+    dockerfilePath: ./Dockerfile.api
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:10000
+      - key: POSTGRES_CONNECTION_STRING
+        fromDatabase:
+          name: framedata-postgres
+          property: connectionString
+      - key: Ingestion__SourceBaseUrl
+        value: http://ensabahnur.free.fr/BastonNew/index.php
+      - key: Ingestion__ExportPath
+        value: /tmp/exports/characters
+
+  - type: worker
+    name: framedata-ingestion
+    runtime: docker
+    plan: starter
+    region: oregon
+    autoDeployTrigger: off
+    dockerfilePath: ./Dockerfile.ingestion
+    dockerContext: .
+    envVars:
+      - key: POSTGRES_CONNECTION_STRING
+        fromDatabase:
+          name: framedata-postgres
+          property: connectionString
+      - key: Ingestion__SourceBaseUrl
+        value: http://ensabahnur.free.fr/BastonNew/index.php
+      - key: Ingestion__ExportPath
+        value: /tmp/exports/characters
+
+databases:
+  - name: framedata-postgres
+    plan: basic-256mb
+    region: oregon
+    databaseName: framedata
+    user: framedata
+    ipAllowList: []
