@@ -153,3 +153,26 @@ Cons:
 
 Rationale:
 - This balances correctness of HTTP semantics and observability simplicity today while preserving a clean path for future complexity.
+
+## Decision 12: Bot Runtime Containerization Strategy
+
+- Decision: Treat `FrameData.Bot` as a first-class deployable runtime and containerize it
+  explicitly with its own Dockerfile, image tags, and compose service definition.
+- Rationale: The feature already defines Bot as a runtime service and measures bot
+  end-to-end behavior; without a bot container artifact, deployment parity and
+  environment reproducibility remain incomplete.
+- Alternatives considered:
+  - Keep Bot as source-only/non-containerized process: rejected due to inconsistent
+    deployment paths and weaker local/cloud parity.
+  - Merge Bot into API process: rejected because it blurs service boundaries and creates
+    unnecessary coupling between Discord gateway handling and HTTP API concerns.
+
+## Decision 13: Deployment Artifact Parity Across Services
+
+- Decision: Publish Bot, API, and Ingestion images together in release flow and keep
+  docker-compose topology aligned with those same runtime boundaries.
+- Rationale: Unified release metadata and image versioning simplifies rollback,
+  cross-service compatibility tracking, and NAS/cloud deployment automation.
+- Alternatives considered:
+  - Publish only API/Ingestion images: rejected because it leaves Bot deployment outside
+    the same controlled CI/CD release path.

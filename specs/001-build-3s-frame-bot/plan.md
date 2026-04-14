@@ -1,15 +1,15 @@
 # Implementation Plan: Discord 3s Frame Data Bot
 
-**Branch**: `001-build-3s-frame-bot` | **Date**: 2026-04-02 | **Spec**: `/specs/001-build-3s-frame-bot/spec.md`
+**Branch**: `001-build-3s-frame-bot` | **Date**: 2026-04-14 | **Spec**: `/specs/001-build-3s-frame-bot/spec.md`
 **Input**: Feature specification from `/specs/001-build-3s-frame-bot/spec.md`
 
 ## Summary
 
-Deliver the existing 3s frame-data platform scope with an explicit simplification:
-remove `game` parameter support from all public interfaces and backend logic for the
-current implementation cycle. Query behavior remains `/framedata` with required
-`character` and `move` only, while preserving all existing story goals for ingestion,
-fuzzy matching, media enrichment, and operational hardening.
+Deliver the approved 3s bot platform scope while explicitly completing service
+containerization for the Bot runtime. The implementation cycle keeps single-game query
+simplification (`/framedata` with required `character` + `move`) and extends deployment
+artifacts so Bot runs alongside API, Ingestion, and PostgreSQL in Docker-based
+environments (local Compose and cloud image pipelines).
 
 ## Technical Context
 
@@ -17,29 +17,29 @@ fuzzy matching, media enrichment, and operational hardening.
 **Primary Dependencies**: Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql  
 **Storage**: PostgreSQL (JSONB for nested move/frame structures), character JSON exports on disk  
 **Testing**: xUnit + Shouldly + NSubstitute (unit); Testcontainers for .NET (integration); contract tests for API payloads  
-**Target Platform**: Linux Docker containers on cloud host (Render baseline)  
-**Project Type**: Multi-service backend (Bot, API, Ingestion, Scraper + shared libs)  
-**Performance Goals**: SC-001 validation run: >=95% valid exact-name queries complete in <3 seconds, measured with fixed-size representative samples across API query and bot end-to-end latency  
-**Constraints**: .NET-only implementation for this feature iteration; no Moq; no FluentAssertions; secure least-privilege container deployment; remove multi-game request handling from current interfaces and backend logic  
+**Target Platform**: Linux Docker containers (local Compose, Render, and self-hosted NAS)  
+**Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)  
+**Performance Goals**: SC-001 validation run: >=95% valid exact-name queries complete in <3 seconds across API and bot end-to-end latency, fixed representative sampling  
+**Constraints**: .NET-only implementation scope; no Moq/FluentAssertions; secure least-privilege container deployment; Bot must have first-class container/deploy parity with API/Ingestion  
 **Scale/Scope**: Single-game (3s) deployment scope with no caller-provided game selector
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Pre-Phase 0 Gate:
-- [x] Functions are planned as small, single-purpose units.
-- [x] Comment policy is intent-only (why, not what).
-- [x] TDD order is explicit in task sequencing.
-- [x] Comprehensive unit + integration strategy is defined.
-- [x] Integration tests use reliable/reproducible infra (Testcontainers).
-- [x] Scope is constrained to independent user stories and explicit de-scope cleanup.
-- [x] Performance targets and validation are defined.
+Pre-Phase 0 gate:
+- [x] Small, single-purpose functions remain the implementation baseline.
+- [x] Naming/comment policy remains intent-focused (why, not what).
+- [x] TDD order remains explicit in execution sequence.
+- [x] Comprehensive unit + integration testing remains required for all changes.
+- [x] Integration boundary testing remains reproducible via Testcontainers.
+- [x] Scope remains focused: add bot deployment parity, no broad refactors.
+- [x] Performance verification remains defined by existing measurable criteria.
 
-Post-Phase 1 Re-check:
-- [x] Research decisions resolve implementation ambiguity for game-parameter removal.
-- [x] Data model and contracts align with single-game public interface.
-- [x] Quickstart and tasks preserve constitution quality gates.
+Post-Phase 1 re-check:
+- [x] Research resolves deployment/runtime ambiguity for Bot service containerization.
+- [x] Data model and API contracts remain valid without conflicting shape changes.
+- [x] Quickstart and deployment flow include Bot image/build/run parity and security constraints.
 
 ## Core Implementation Sequence
 
@@ -51,39 +51,31 @@ Post-Phase 1 Re-check:
 ### Step 2: MVP Query Path (US1)
 
 - Implement `/framedata` query flow via `GET /v1/moves/query` (`T016-T026`).
-- Apply single-game de-scope updates (`T071-T074`) to remove `game` parameter handling
-  from parser, endpoint contracts, and backend lookup flow.
-- Output: exact behavior with clear handling for unsupported character/move only.
+- Apply single-game de-scope updates (`T071-T074`) removing `game` parameter handling.
+- Output: exact lookup behavior and clear unsupported/missing input handling.
 
 ### Step 3: Ingestion Backbone (US2)
 
 - Implement scraper + ingest + DB persistence + JSON exports (`T027-T036`).
-- Output: refreshable dataset and ingestion status endpoints with explicit partial-failure reporting.
+- Output: refreshable dataset and explicit partial-failure ingestion status reporting.
 
-### Step 4: Usability Refinement (US3)
+### Step 4: Bot Service Runtime Parity (Deployment Amendment)
 
-- Add alias normalization + fuzzy ranking + disambiguation (`T037-T045`).
-- Output: shorthand/numpad/colloquial input support with safe ambiguity handling.
+- Add Bot runtime host bootstrap and production-ready startup wiring in `FrameData.Bot`.
+- Add `Dockerfile.bot` and compose wiring so Bot runs alongside API/Ingestion/Postgres.
+- Extend release/deployment image publishing so Bot image tags are produced with API/Ingestion.
+- Output: four-service runtime topology (bot, api, ingestion, postgres) with repeatable local/cloud deployment behavior.
 
-### Step 5: Visual Data Layer (US4)
+### Step 5: Usability/Media/Metadata Enhancements
 
-- Add last active-frame image scraping/storage/response enrichment (`T046-T053`).
-- Output: optional media references in query responses.
+- Execute existing story slices in order: US3 (`T037-T045`), US4 (`T046-T053`),
+  US5 (`T054-T058`), US6 (`T059-T064`).
+- Output: fuzzy lookup, media enrichment, storage analysis, advanced metadata.
 
-### Step 6: Capacity Governance (US5)
+### Step 6: Cross-Cutting Hardening
 
-- Implement storage assessment workflow (`T054-T058`).
-- Output: report-driven decision gate before full image archival.
-
-### Step 7: Metadata Expansion (US6)
-
-- Add advanced move metadata mapping/serialization (`T059-T064`).
-- Output: enriched responses without regressing baseline fields.
-
-### Step 8: Cross-Cutting Hardening
-
-- Execute polish tasks (`T065-T070`) after selected story completion.
-- Output: observability, deploy pipeline, performance validation, security-gate verification, implementation report.
+- Execute polish tasks (`T065-T070`) with deployment automation updates and security gates.
+- Output: observability, deploy pipeline parity, performance evidence, security checklist evidence.
 
 ## Project Structure
 
@@ -117,10 +109,16 @@ tests/
 ├── unit/
 ├── integration/
 └── contract/
+
+repo root:
+├── Dockerfile.api
+├── Dockerfile.ingestion
+└── Dockerfile.bot   # added in this planning cycle
 ```
 
-**Structure Decision**: Keep the existing layered .NET multi-service structure and apply
-single-game interface simplification without introducing new services or abstractions.
+**Structure Decision**: Keep the existing layered .NET multi-service structure and
+complete deployment/runtime parity for all declared services by adding explicit Bot
+container artifacts and release pipeline coverage.
 
 ## Complexity Tracking
 

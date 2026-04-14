@@ -14,6 +14,7 @@
    - `BOT_GUILD_ID`
    - `API_BIND_URL`
    - `POSTGRES_CONNECTION_STRING`
+   - `BOT_API_BASE_URL` (Bot -> API internal base URL, for example `http://api:8080`)
 2. Configure ingestion schedule and source base URL.
 3. Configure data volume path for JSON exports.
 
@@ -24,6 +25,7 @@
    - `dotnet test tests/unit`
 2. Configure Render services from repository:
    - Create service(s) from repo using Docker runtime
+   - Configure separate Bot service using `Dockerfile.bot`
    - Set required env vars/secrets
    - Provision PostgreSQL service and wire connection string
    - Configure persistent disk for JSON exports where needed
@@ -34,6 +36,7 @@
    - Bot connected to Discord
    - API health endpoint responds
    - Ingestion run can be triggered and observed
+   - Bot can query API successfully in deployed environment
 
 ## Optional GitHub Actions Deployment
 
@@ -51,6 +54,7 @@
    - Bot connected to Discord
    - API health endpoint responds
    - Ingestion run can be triggered and observed
+   - Bot container can resolve and call API service over compose network
 
 ## Run Tests
 
@@ -69,6 +73,7 @@
 3. Confirm expected frame-data fields are returned.
 4. Confirm unknown move/character responses are clear.
 5. Confirm partial-ingestion behavior: successful character updates are committed while failed scopes are marked for retry in run status.
+6. Confirm released image set includes Bot, API, and Ingestion images with matching version tags.
 
 ## Security Baseline
 

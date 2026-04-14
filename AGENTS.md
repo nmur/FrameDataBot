@@ -1,6 +1,6 @@
 # 3sFrameDataBot Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-02
+Auto-generated from all feature plans. Last updated: 2026-04-14
 
 ## Active Technologies
 - .NET 10 (C#) for bot/API/ingestion services; scraper utility + Discord.Net, ASP.NET Core Minimal APIs, AngleSharp, (001-build-3s-frame-bot)
