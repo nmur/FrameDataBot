@@ -63,7 +63,7 @@ jobs:
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-api:${{ steps.meta.outputs.version }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-api:sha-${{ steps.meta.outputs.sha_short }}
-      - name: Build and push ingestion image
+      - name: Build and push Ingestion image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -72,7 +72,7 @@ jobs:
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:${{ steps.meta.outputs.version }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:sha-${{ steps.meta.outputs.sha_short }}
-      - name: Build and push bot image
+      - name: Build and push Bot image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -90,3 +90,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+
