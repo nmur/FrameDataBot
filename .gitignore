@@ -6,6 +6,10 @@
 # Common local noise
 .DS_Store
 Thumbs.db
+.env
+.env.prod
+!.env.example
+!.env.prod.example
 
 # .NET build outputs
 bin/

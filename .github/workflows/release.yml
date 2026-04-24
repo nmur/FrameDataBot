@@ -62,6 +62,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-api:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-api:stable
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-api:sha-${{ steps.meta.outputs.sha_short }}
       - name: Build and push Ingestion image
         uses: docker/build-push-action@v7
@@ -71,6 +72,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:stable
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-ingestion:sha-${{ steps.meta.outputs.sha_short }}
       - name: Build and push Bot image
         uses: docker/build-push-action@v7
@@ -80,6 +82,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-bot:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-bot:stable
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/framedata-bot:sha-${{ steps.meta.outputs.sha_short }}
 
   create-release:

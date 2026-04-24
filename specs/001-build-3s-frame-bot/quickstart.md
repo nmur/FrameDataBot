@@ -24,7 +24,8 @@
    - `docker compose build`
    - `dotnet test tests/unit`
 2. Configure your target Docker host:
-   - Deploy separate Bot service using `Dockerfile.bot`
+   - Use `docker-compose.prod.yml` for registry-based deployment
+   - Copy `.env.prod.example` to the host and fill in deployment values
    - Set required env vars/secrets
    - Provision PostgreSQL and wire connection string
    - Configure persistent disk for JSON exports where needed
