@@ -177,3 +177,59 @@ Rationale:
 - Alternatives considered:
   - Publish only API/Ingestion images: rejected because it leaves Bot deployment outside
     the same controlled CI/CD release path.
+
+## Decision 14: Discord Gateway Runtime Approach
+
+- Decision: Use Discord.Net WebSocket gateway handling in `FrameData.Bot`, with
+  `DiscordSocketClient` for connection lifecycle and interaction events.
+- Rationale: The project already depends on Discord.Net and the bot must receive live
+  slash-command interactions from Discord channels. Keeping gateway handling in
+  `FrameData.Bot` preserves the current Bot/API service boundary and avoids routing
+  Discord events through the API host.
+- Alternatives considered:
+  - Discord outgoing interaction webhooks hosted by the API: rejected for this slice
+    because it would shift Discord ingress to the API service, add public endpoint
+    exposure, and bypass the existing Bot service runtime.
+  - Polling or command simulation: rejected because it does not satisfy actual Discord
+    channel invocation.
+
+## Decision 15: Slash Command Registration Scope
+
+- Decision: Register `/framedata` as a guild-scoped slash command on bot startup using
+  the configured `BOT_GUILD_ID`.
+- Rationale: Guild command registration propagates quickly, is easier to validate during
+  local/self-hosted development, and matches the current single-guild/home-server
+  deployment assumptions.
+- Alternatives considered:
+  - Global slash command registration: rejected for the first gateway slice because
+    propagation is slower and rollout mistakes are harder to correct quickly.
+  - Manual command registration outside the bot runtime: rejected because it leaves the
+    deployed service and command contract vulnerable to drift.
+
+## Decision 16: Interaction Response Strategy
+
+- Decision: Ship primitive public text responses first, then add a rich Discord embed
+  response builder as a planned follow-up.
+- Rationale: Primitive text proves the full Discord gateway -> API -> formatter -> reply
+  path with minimal formatting risk. A later embed builder can improve readability and
+  include optional media while preserving a text fallback.
+- Alternatives considered:
+  - Rich embed response as the first implementation: deferred because it couples gateway
+    readiness to UI formatting and media edge cases.
+  - Ephemeral responses by default: rejected for the first pass because the requested UX
+    is invocation in a Discord channel and shared channel answers are useful for frame
+    data lookup.
+
+## Decision 17: Automated Testing Boundary for Discord
+
+- Decision: Test Discord command definition, interaction mapping, handler orchestration,
+  and host wiring with deterministic adapters/fakes; keep live Discord validation as a
+  manual quickstart smoke test.
+- Rationale: CI cannot safely or reliably depend on live Discord gateway state, tokens,
+  guild permissions, or command propagation timing. Adapter-based tests still verify the
+  owned logic and service wiring while preserving reproducibility.
+- Alternatives considered:
+  - Live Discord integration tests in CI: rejected because they require secrets and
+    external SaaS state, making tests flaky and unsafe.
+  - Unit tests only: rejected because host-level wiring and lifecycle registration still
+    need integration coverage.

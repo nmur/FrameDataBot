@@ -121,3 +121,51 @@
   - `Running -> Failed`
 - `MoveImage.captureStatus`:
   - `NotDerivable`/`Failed` may transition to `Success` on later refresh.
+
+## DiscordCommandInvocation
+
+- Description: Runtime-only representation of a received `/framedata` slash command.
+  This is not persisted.
+- Fields:
+  - `interactionId` (string, required): Discord interaction identifier used for
+    logging/correlation only.
+  - `guildId` (string, required): guild where the command was invoked.
+  - `channelId` (string, required): channel where the command response will be sent.
+  - `userId` (string, required): invoking user identifier for logging/correlation.
+  - `commandName` (string, required): must equal `framedata`.
+  - `character` (string, required): raw slash option value.
+  - `move` (string, required): raw slash option value.
+  - `receivedAt` (datetime, required): gateway receive time.
+- Validation:
+  - `commandName` must match the configured command contract.
+  - `character` and `move` must be non-empty after trimming.
+  - Interaction identifiers are used for logs only and must not be stored as user
+    account data.
+
+## DiscordCommandRegistration
+
+- Description: Runtime command definition registered with Discord for the configured
+  guild. This is not persisted.
+- Fields:
+  - `name` (string, required): `framedata`.
+  - `description` (string, required): short user-facing Discord command description.
+  - `guildId` (string, required): target guild for registration.
+  - `options` (collection, required): required string options `character` and `move`.
+  - `registeredAt` (datetime, optional): last successful startup registration time.
+- Validation:
+  - Command and option names must satisfy Discord slash command naming rules.
+  - Registration must not expose token or secret values in logs.
+
+## DiscordMoveResponse
+
+- Description: Runtime response payload sent back to a Discord interaction.
+- Fields:
+  - `content` (string, required for primitive response): plain text fallback.
+  - `embedTitle` (string, optional): rich response title when embeds are enabled.
+  - `embedFields` (collection, optional): structured frame data fields.
+  - `imageUrl` (string, optional): optional media reference when available.
+  - `isEphemeral` (bool, required): defaults to `false` for channel-visible answers.
+- Validation:
+  - Primitive response must fit Discord message content limits.
+  - Rich response must preserve enough text fallback for clients or failures where
+    embeds cannot be sent.

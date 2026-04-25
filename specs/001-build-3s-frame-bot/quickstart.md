@@ -4,7 +4,8 @@
 
 - Docker and Docker Compose (for local parity builds)
 - .NET 10 SDK (for local non-container development)
-- Discord bot token and guild/application IDs
+- Discord application with bot token, application ID, and target guild ID
+- Bot invited to the target guild with application command permissions
 - Container image registry account (for example GHCR)
 
 ## Configuration
@@ -17,6 +18,16 @@
    - `BOT_API_BASE_URL` (Bot -> API internal base URL, for example `http://api:8080`)
 2. Configure ingestion schedule and source base URL.
 3. Configure data volume path for JSON exports.
+
+## Discord Application Setup
+
+1. In the Discord Developer Portal, create or select the bot application.
+2. Enable the bot user and copy the bot token into `DISCORD_BOT_TOKEN`.
+3. Use the application ID to invite the bot to the target guild with scopes:
+   - `bot`
+   - `applications.commands`
+4. Grant the bot permission to view/send messages in the test channel.
+5. Use the target guild ID as `BOT_GUILD_ID`.
 
 ## Deploy Services (Container Host)
 
@@ -52,6 +63,7 @@
    - `docker compose up -d`
 3. Verify health:
    - Bot connected to Discord
+   - Bot logs show `/framedata` guild command registration succeeded
    - API health endpoint responds
    - Ingestion run can be triggered and observed
    - Bot container can resolve and call API service over compose network
@@ -70,12 +82,23 @@
 ## MVP Validation Flow
 
 1. Trigger ingestion and confirm one JSON export per character.
-2. Query known exact move names via Discord command:
-   - `/framedata makoto 2mk`
-3. Confirm expected frame-data fields are returned.
-4. Confirm unknown move/character responses are clear.
-5. Confirm partial-ingestion behavior: successful character updates are committed while failed scopes are marked for retry in run status.
-6. Confirm released image set includes Bot, API, and Ingestion images with matching version tags.
+2. Start the bot service and confirm it connects to Discord Gateway.
+3. Confirm `/framedata` appears in the configured guild.
+4. Query known exact move names via Discord command:
+   - `/framedata character:makoto move:2mk`
+5. Confirm the bot posts primitive frame-data text in the channel.
+6. Confirm unknown move/character responses are clear.
+7. Confirm partial-ingestion behavior: successful character updates are committed while failed scopes are marked for retry in run status.
+8. Confirm released image set includes Bot, API, and Ingestion images with matching version tags.
+
+## Rich Response Follow-Up Validation
+
+1. Query a move with complete frame data.
+2. Confirm Discord response uses a structured embed with character, move, section, and
+   frame-data fields.
+3. Query a move with optional media once image ingestion exists.
+4. Confirm the embed includes the media reference when available and still sends a text
+   fallback when media is unavailable.
 
 ## Security Baseline
 
@@ -99,5 +122,5 @@ Before production use, complete all checks with zero critical findings:
 1. Use a fixed representative dataset and fixed sample size for each run.
 2. Run and record both:
    - API query latency measurements.
-   - Bot end-to-end latency measurements.
+   - Bot end-to-end latency measurements from slash interaction receipt through Discord response send.
 3. Pass criteria: at least 95% of valid exact-name queries complete in under 3 seconds.

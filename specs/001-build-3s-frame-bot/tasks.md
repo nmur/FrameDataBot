@@ -43,9 +43,9 @@ description: "Task list for implementing Discord 3s frame data bot"
 ## Core Implementation Runbook
 
 1. Execute `T001-T015` before starting any story work.
-2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`).
+2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`) and live Discord gateway/slash-command follow-up (`T083-T095`).
 3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
-4. Deliver refinements in order: US3 -> US4 -> US5 -> US6.
+4. Deliver refinements in order: US3 -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
 5. Complete polish tasks (`T065-T070`) after desired story set is done.
 6. At each step, consult the reference list above for requirements and contracts.
 
@@ -84,9 +84,9 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ## Phase 3: User Story 1 - Exact Move Lookup MVP (Priority: P1) 🎯
 
-**Goal**: Provide exact canonical move-name lookup via `/framedata` command and API response.
+**Goal**: Provide exact canonical move-name lookup via live Discord `/framedata` slash command and API response.
 
-**Independent Test**: Query a supported character + exact canonical move and receive correct frame data; unknown character/move inputs return clear not-found or unsupported responses.
+**Independent Test**: Query a supported character + exact canonical move through the Discord slash command and receive correct frame data; unknown character/move inputs return clear not-found or unsupported responses.
 
 ### Tests for User Story 1 (MANDATORY) ⚠️
 
@@ -123,7 +123,23 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T081 [US1] Remove provider-specific bot deployment coupling and keep host-agnostic deployment configuration in `.github/workflows/release.yml` and `specs/001-build-3s-frame-bot/quickstart.md`
 - [X] T082 [US1] Update deployment verification documentation for four-service topology in `specs/001-build-3s-frame-bot/quickstart.md`
 
-**Checkpoint**: US1 fully testable and deployable as MVP.
+### Discord Gateway Slash-Command Follow-Up
+
+- [ ] T083 [P] [US1] Add unit tests for `/framedata` slash command definition in `tests/unit/FrameData.Bot.Tests/Discord/FramedataSlashCommandDefinitionTests.cs`
+- [ ] T084 [P] [US1] Add unit tests for slash interaction option extraction and validation in `tests/unit/FrameData.Bot.Tests/Discord/SlashCommandInteractionMapperTests.cs`
+- [ ] T085 [P] [US1] Add unit tests for interaction handler success and error responses in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerTests.cs`
+- [ ] T086 [US1] Add deterministic bot integration test project and gateway wiring tests in `tests/integration/FrameData.Bot.IntegrationTests/FrameData.Bot.IntegrationTests.csproj` and `tests/integration/FrameData.Bot.IntegrationTests/DiscordGatewayWiringTests.cs`
+- [ ] T087 [P] [US1] Add contract tests for the Discord slash command schema in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
+- [ ] T088 [P] [US1] Implement slash command definition builder in `src/FrameData.Bot/Discord/FramedataSlashCommandDefinition.cs`
+- [ ] T089 [P] [US1] Implement slash interaction option mapper in `src/FrameData.Bot/Discord/SlashCommandInteractionMapper.cs`
+- [ ] T090 [US1] Implement Discord interaction handler that calls `IMoveQueryApiClient` and `MoveResponseFormatter` in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+- [ ] T091 [US1] Implement guild command registration service in `src/FrameData.Bot/Discord/DiscordCommandRegistrar.cs`
+- [ ] T092 [US1] Replace bot keepalive loop with Discord gateway login/start/stop lifecycle in `src/FrameData.Bot/Hosting/BotRuntimeService.cs`
+- [ ] T093 [US1] Wire Discord.Net socket client, interaction service, registrar, and handler into DI in `src/FrameData.Bot/Program.cs`
+- [ ] T094 [US1] Update bot runtime option validation for Discord gateway configuration in `src/FrameData.Bot/Hosting/BotRuntimeOptions.cs`, `src/FrameData.Bot/Hosting/BotRuntimeOptionsLoader.cs`, and `tests/unit/FrameData.Bot.Tests/Hosting/BotHostBootstrapTests.cs`
+- [ ] T095 [US1] Update Discord gateway smoke-test instructions and environment examples in `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
+
+**Checkpoint**: US1 fully testable and deployable as a live Discord MVP.
 
 ---
 
@@ -241,6 +257,14 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [ ] T063 [US6] Implement metadata ingestion mapper in `src/FrameData.Ingestion/Mapping/MoveMetadataMapper.cs`
 - [ ] T064 [US6] Integrate metadata serialization in API and bot formatters in `src/FrameData.Api/Responses/MoveQueryResponseFactory.cs` and `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
 
+### Rich Discord Response Follow-Up
+
+- [ ] T096 [P] [US6] Add unit tests for rich Discord embed formatting in `tests/unit/FrameData.Bot.Tests/Formatting/RichMoveResponseFormatterTests.cs`
+- [ ] T097 [P] [US6] Add unit tests for rich response fallback behavior in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerRichResponseTests.cs`
+- [ ] T098 [P] [US6] Implement rich Discord response model in `src/FrameData.Bot/Formatting/DiscordMoveResponse.cs`
+- [ ] T099 [US6] Implement rich embed formatter with primitive text fallback in `src/FrameData.Bot/Formatting/RichMoveResponseFormatter.cs`
+- [ ] T100 [US6] Integrate rich response sending into the Discord interaction handler in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+
 **Checkpoint**: US6 delivers advanced detail extension while preserving backward compatibility.
 
 ---
@@ -267,19 +291,20 @@ description: "Task list for implementing Discord 3s frame data bot"
 - User Stories:
   - US1 (Phase 3) and US2 (Phase 4) start after Foundational.
   - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
+  - US1 Discord gateway follow-up (`T083-T095`) completes before US3 response disambiguation work, because US3 changes the live command response path.
   - US3 (Phase 5) depends on US1 baseline lookup behavior.
   - US4 (Phase 6) depends on US2 ingestion pipeline.
   - US5 (Phase 7) depends on US4 image-capture data.
-  - US6 (Phase 8) depends on US2 ingestion and US1 response pipeline.
+  - US6 (Phase 8) depends on US2 ingestion and US1 live Discord response pipeline.
 - Final Phase: depends on all desired stories being complete.
 
 ### User Story Completion Order
 
-1. US1 + runtime parity follow-up + US2 (MVP data query + bot runtime + ingestion backbone)
+1. US1 + runtime parity follow-up + Discord gateway follow-up + US2 (MVP live Discord data query + ingestion backbone)
 2. US3 (fuzzy/alias usability)
 3. US4 (last active-frame image)
 4. US5 (storage impact decision)
-5. US6 (advanced metadata)
+5. US6 (advanced metadata + rich Discord response)
 
 ### Within Each User Story
 
@@ -299,6 +324,8 @@ description: "Task list for implementing Discord 3s frame data bot"
 T016, T017, T018, T019
 T020, T021
 T075, T076
+T083, T084, T085, T087
+T088, T089
 ```
 
 ### User Story 2
@@ -339,6 +366,7 @@ T056
 # Run in parallel:
 T059, T060, T061
 T062
+T096, T097, T098
 ```
 
 ---
@@ -349,15 +377,16 @@ T062
 
 1. Complete Setup and Foundational phases.
 2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
-3. Deliver US2 ingestion + persistence + JSON export.
-4. Validate and demo MVP.
+3. Deliver US1 Discord gateway/slash-command follow-up so `/framedata` works in a real Discord channel.
+4. Deliver US2 ingestion + persistence + JSON export.
+5. Validate and demo MVP.
 
 ### Incremental Delivery
 
 1. Add US3 fuzzy/alias support.
 2. Add US4 last active-frame image support.
 3. Add US5 storage assessment before any full-frame archival.
-4. Add US6 advanced metadata support.
+4. Add US6 advanced metadata support and rich Discord response formatting.
 
 ### Quality Gates
 

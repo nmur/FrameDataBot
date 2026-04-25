@@ -16,6 +16,10 @@
 - Q: What is the scraper implementation scope for this feature? → A: .NET-only scraper scope for this feature, with no Python fallback included.
 - Q: What should the canonical Discord command surface be for the current lean scope? → A: Use `/framedata` with required `character` and `move` parameters only.
 
+### Session 2026-04-25
+
+- Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command for the configured guild, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. The first pass may use primitive text; rich Discord responses are planned as a follow-up.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Exact Move Lookup MVP (Priority: P1)
@@ -39,6 +43,10 @@ receives frame data for the intended move.
    guidance.
 3. **Given** a character that is not supported, **When** the user submits a query,
    **Then** the bot returns a clear unsupported-character response.
+4. **Given** the bot is running with valid Discord configuration and the API is
+   reachable, **When** a Discord user invokes `/framedata` in a channel with
+   `character` and `move`, **Then** the bot acknowledges the interaction and posts the
+   corresponding frame-data response or actionable error.
 
 ---
 
@@ -148,6 +156,9 @@ properties without breaking MVP fields.
    response includes advanced properties in a dedicated section.
 2. **Given** enriched metadata is unavailable, **When** a move is requested, **Then**
    basic frame data still returns successfully.
+3. **Given** response enrichment is enabled, **When** a move response is sent to
+   Discord, **Then** the bot uses a rich structured response while preserving a plain
+   text fallback.
 
 ## Out of Scope *(mandatory)*
 
@@ -213,6 +224,12 @@ properties without breaking MVP fields.
   descriptive names.
 - **FR-018**: Comments in production code MUST explain why decisions were made, not
   restate behavior.
+- **FR-019**: The bot runtime MUST connect to Discord, register the `/framedata` slash
+  command for the configured guild, receive slash-command interactions, and route them
+  through the move query flow.
+- **FR-020**: The bot MUST initially support a primitive text Discord response and MUST
+  plan a rich Discord response format that can include structured fields and optional
+  media without breaking the text fallback.
 
 ### Verification Requirements *(mandatory)*
 
