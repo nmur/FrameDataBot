@@ -12,6 +12,7 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 FrameDataLogging.Configure(builder.Logging, builder.Configuration, "FrameData.Api");
+builder.Services.AddSerilog(Log.Logger, dispose: false);
 
 var postgresConnectionString = builder.Configuration["POSTGRES_CONNECTION_STRING"]
     ?? builder.Configuration.GetConnectionString("Postgres")
