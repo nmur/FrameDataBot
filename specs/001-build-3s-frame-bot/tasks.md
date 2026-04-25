@@ -246,7 +246,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T132 [US2] Add Seq service and `SEQ_*` environment wiring for local and production Compose in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, and `.env.prod.example`
 - [X] T133 [US2] Document Seq access and log-verification workflow in `specs/001-build-3s-frame-bot/quickstart.md` and `docs/prod-compose-deployment.md`
 - [X] T134 [US2] Validate service build and Compose configuration for logging changes with `dotnet build FrameDataBot.sln --no-restore /m:1 /p:UseSharedCompilation=false`, `docker compose config`, and `docker compose -f docker-compose.prod.yml --env-file .env.prod.example config`
-- [ ] T135 [US2] Run unit tests with `dotnet test tests/unit/FrameData.Domain.Tests/FrameData.Domain.Tests.csproj --no-build`, `dotnet test tests/unit/FrameData.Bot.Tests/FrameData.Bot.Tests.csproj --no-build`, and `dotnet test tests/unit/FrameData.Ingestion.Tests/FrameData.Ingestion.Tests.csproj --no-build` when the environment permits the VSTest local socket
+- [X] T135 [US2] Run unit tests with `dotnet test tests/unit/FrameData.Domain.Tests/FrameData.Domain.Tests.csproj --no-build`, `dotnet test tests/unit/FrameData.Bot.Tests/FrameData.Bot.Tests.csproj --no-build`, and `dotnet test tests/unit/FrameData.Ingestion.Tests/FrameData.Ingestion.Tests.csproj --no-build` when the environment permits the VSTest local socket
 
 **Checkpoint**: API, Bot, and Ingestion logs are centralized in Seq for local and production deployments, with enough detail to trace requests and ingestion work end to end.
 
