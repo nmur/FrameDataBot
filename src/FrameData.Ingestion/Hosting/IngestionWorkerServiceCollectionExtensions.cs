@@ -2,6 +2,7 @@ using FrameData.Domain.MoveLookup;
 using FrameData.Infrastructure.Persistence;
 using FrameData.Infrastructure.Persistence.Repositories;
 using FrameData.Infrastructure.Storage;
+using FrameData.Ingestion.Backup;
 using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Services;
 using FrameData.Scraper.Parsing;
@@ -21,6 +22,7 @@ public static class IngestionWorkerServiceCollectionExtensions
         services.AddSingleton<CharacterRepository>();
         services.AddSingleton<MoveRepository>();
         services.AddSingleton<FrameDataDatasetRepository>();
+        services.AddSingleton<FrameDataBackupService>();
         services.AddSingleton<IMoveQueryRepository>(sp => sp.GetRequiredService<MoveRepository>());
         services.AddSingleton<IngestionRunRepository>();
         services.AddSingleton<CharacterJsonExportService>();

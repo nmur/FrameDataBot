@@ -204,6 +204,29 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ---
 
+### JSON Backup and Restore Follow-Up
+
+**Goal**: Export and restore the queryable frame-data dataset using portable JSON files.
+
+**Independent Test**: Seed PostgreSQL with a dataset, export a backup directory containing `manifest.json` and one character file per character, replace the database with different data, restore the backup, and verify `GET /v1/moves/query` can read the restored move.
+
+#### Tests for JSON Backup and Restore (MANDATORY) ⚠️
+
+- [X] T119 [P] [US2] Add unit tests for ingestion worker backup/restore command parsing and required path validation in `tests/unit/FrameData.Ingestion.Tests/Hosting/IngestionWorkerOptionsTests.cs`
+- [X] T120 [P] [US2] Add Testcontainers backup/restore round-trip tests for manifest plus per-character JSON files in `tests/integration/FrameData.Ingestion.IntegrationTests/BackupRestoreTests.cs`
+
+#### Implementation for JSON Backup and Restore
+
+- [X] T121 [US2] Add dataset read and replacement support for backup/restore in `src/FrameData.Infrastructure/Persistence/Repositories/FrameDataDatasetRepository.cs`
+- [X] T122 [US2] Implement JSON backup manifest and per-character file export/import service in `src/FrameData.Ingestion/Backup/FrameDataBackupService.cs`
+- [X] T123 [US2] Add `backup` and `restore` worker command modes in `src/FrameData.Ingestion/Hosting/` and `src/FrameData.Ingestion/Program.cs`
+- [X] T124 [US2] Wire backup service into ingestion DI in `src/FrameData.Ingestion/Hosting/IngestionWorkerServiceCollectionExtensions.cs`
+- [X] T125 [US2] Update compose/env/quickstart documentation for backup and restore commands in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
+
+**Checkpoint**: Operators can export a portable JSON backup and restore it transactionally into PostgreSQL without re-scraping the source site.
+
+---
+
 ## Phase 5: User Story 3 - Notation and Alias Resolution (Priority: P2)
 
 **Goal**: Support shorthand/numpad/colloquial input with fuzzy matching and safe disambiguation.

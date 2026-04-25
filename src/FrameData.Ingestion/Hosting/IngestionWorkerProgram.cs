@@ -8,12 +8,23 @@ public static class IngestionWorkerProgram
 {
     public static async Task<int> RunAsync(string[] args, CancellationToken cancellationToken = default)
     {
+        IngestionWorkerCommand command;
+        try
+        {
+            command = IngestionWorkerCommand.Parse(args);
+        }
+        catch (ArgumentException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return IngestionWorkerExitCodes.ConfigurationError;
+        }
+
         var configuration = new ConfigurationBuilder()
             .AddEnvironmentVariables()
-            .AddCommandLine(args)
+            .AddCommandLine(command.ConfigurationArgs.ToArray())
             .Build();
 
-        var options = IngestionWorkerOptions.FromConfiguration(configuration);
+        var options = IngestionWorkerOptions.FromConfiguration(configuration, command);
         var validationErrors = options.Validate();
         if (validationErrors.Count > 0)
         {

@@ -39,6 +39,109 @@ public sealed class FrameDataDatasetRepository
         await transaction.CommitAsync(cancellationToken);
     }
 
+    public async Task<FrameDataDataset> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = _connectionFactory.CreateOpenConnection();
+        var characters = await GetCharactersAsync(connection, cancellationToken);
+        var moves = await GetMovesAsync(connection, cancellationToken);
+        return new FrameDataDataset(characters, moves);
+    }
+
+    private static async Task<IReadOnlyList<Character>> GetCharactersAsync(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT id, game, name, aliases, source_character_id, display_order, updated_at
+            FROM characters
+            ORDER BY display_order, id;
+            """;
+
+        var characters = new List<Character>();
+        await using var command = new NpgsqlCommand(sql, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var aliasesJson = reader.GetString(reader.GetOrdinal("aliases"));
+            var aliases = JsonSerializer.Deserialize<string[]>(aliasesJson) ?? [];
+            var sourceCharacterIdOrdinal = reader.GetOrdinal("source_character_id");
+            var updatedAtOrdinal = reader.GetOrdinal("updated_at");
+
+            characters.Add(new Character
+            {
+                Id = reader.GetString(reader.GetOrdinal("id")),
+                Game = reader.GetString(reader.GetOrdinal("game")),
+                Name = reader.GetString(reader.GetOrdinal("name")),
+                Aliases = aliases,
+                SourceCharacterId = reader.IsDBNull(sourceCharacterIdOrdinal) ? null : reader.GetInt32(sourceCharacterIdOrdinal),
+                DisplayOrder = reader.GetInt32(reader.GetOrdinal("display_order")),
+                UpdatedAt = reader.IsDBNull(updatedAtOrdinal) ? null : reader.GetFieldValue<DateTimeOffset>(updatedAtOrdinal)
+            });
+        }
+
+        return characters;
+    }
+
+    private static async Task<IReadOnlyList<Move>> GetMovesAsync(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+              m.id,
+              m.character_id,
+              c.game,
+              c.name AS character_name,
+              m.section,
+              m.canonical_name,
+              m.display_order,
+              m.source_move_id,
+              m.startup,
+              m.active,
+              m.recovery,
+              m.on_hit,
+              m.on_block,
+              m.frame_advantage,
+              m.notes
+            FROM moves m
+            JOIN characters c ON c.id = m.character_id
+            ORDER BY c.display_order, m.display_order NULLS LAST, m.section, m.canonical_name;
+            """;
+
+        var moves = new List<Move>();
+        await using var command = new NpgsqlCommand(sql, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var displayOrderOrdinal = reader.GetOrdinal("display_order");
+            var sourceMoveIdOrdinal = reader.GetOrdinal("source_move_id");
+
+            moves.Add(new Move
+            {
+                Id = reader.GetString(reader.GetOrdinal("id")),
+                CharacterId = reader.GetString(reader.GetOrdinal("character_id")),
+                Game = reader.GetString(reader.GetOrdinal("game")),
+                CharacterName = reader.GetString(reader.GetOrdinal("character_name")),
+                Section = reader.GetString(reader.GetOrdinal("section")),
+                CanonicalName = reader.GetString(reader.GetOrdinal("canonical_name")),
+                DisplayOrder = reader.IsDBNull(displayOrderOrdinal) ? null : reader.GetInt32(displayOrderOrdinal),
+                SourceMoveId = reader.IsDBNull(sourceMoveIdOrdinal) ? null : reader.GetString(sourceMoveIdOrdinal),
+                FrameData = new MoveFrameData
+                {
+                    Startup = GetNullableString(reader, "startup"),
+                    Active = GetNullableString(reader, "active"),
+                    Recovery = GetNullableString(reader, "recovery"),
+                    OnHit = GetNullableString(reader, "on_hit"),
+                    OnBlock = GetNullableString(reader, "on_block"),
+                    FrameAdvantage = GetNullableString(reader, "frame_advantage"),
+                    Notes = GetNullableString(reader, "notes")
+                }
+            });
+        }
+
+        return moves;
+    }
+
     private static async Task ExecuteAsync(
         string sql,
         NpgsqlConnection connection,
@@ -132,4 +235,12 @@ public sealed class FrameDataDatasetRepository
         command.Parameters.AddWithValue("notes", (object?)move.FrameData.Notes ?? DBNull.Value);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
+
+    private static string? GetNullableString(NpgsqlDataReader reader, string columnName)
+    {
+        var ordinal = reader.GetOrdinal(columnName);
+        return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+    }
 }
+
+public sealed record FrameDataDataset(IReadOnlyList<Character> Characters, IReadOnlyList<Move> Moves);

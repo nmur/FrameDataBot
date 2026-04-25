@@ -81,6 +81,13 @@ Post-Phase 1 re-check:
 - Document how to verify database rows, JSON exports, ingestion run status, and Discord `/framedata` after ingestion.
 - Keep rich Discord response work (`T096-T100`) deferred.
 
+### Step 8: Add JSON Backup and Restore Utility Mode
+
+- Extend the one-shot ingestion executable with `backup` and `restore` modes so the same image can export/import the current dataset without a separate service.
+- Export a `manifest.json` plus one JSON file per character under `characters/`, making backups inspectable and easy to copy from the mounted data volume.
+- Restore by validating the manifest and character files, bootstrapping the schema, and transactionally replacing the stored `characters` and `moves` dataset with the backup contents.
+- Keep ingestion run history out of the default backup; the portable backup represents the queryable frame-data dataset.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -110,6 +117,7 @@ src/
 ├── FrameData.Api/
 │   └── Endpoints/
 ├── FrameData.Ingestion/
+│   ├── Backup/           # JSON backup/export and restore/import utilities
 │   ├── Catalog/          # supported character/source-id catalog
 │   ├── Hosting/          # worker options/bootstrap
 │   └── Services/

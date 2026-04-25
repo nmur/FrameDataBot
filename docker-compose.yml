@@ -21,6 +21,8 @@ services:
       Ingestion__ExportPath: /app/exports/characters
       Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
       Ingestion__Characters: ${INGESTION_CHARACTER_SCOPE:-}
+      FRAMEDATA_BACKUP_PATH: ${FRAMEDATA_BACKUP_PATH:-/app/exports/backups/latest}
+      FRAMEDATA_RESTORE_PATH: ${FRAMEDATA_RESTORE_PATH:-/app/exports/backups/latest}
     depends_on:
       - postgres
     ports:

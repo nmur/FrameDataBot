@@ -4,17 +4,24 @@ namespace FrameData.Ingestion.Hosting;
 
 public sealed class IngestionWorkerOptions
 {
+    public IngestionWorkerMode Mode { get; init; } = IngestionWorkerMode.Ingest;
     public string PostgresConnectionString { get; init; } = "";
     public string SourceBaseUrl { get; init; } = "http://ensabahnur.free.fr/BastonNew/index.php";
     public string ExportPath { get; init; } = Path.Combine("exports", "characters");
+    public string BackupPath { get; init; } = "";
+    public string RestorePath { get; init; } = "";
     public IReadOnlyList<string> CharacterIds { get; init; } = [];
 
     public static IngestionWorkerOptions FromConfiguration(IConfiguration configuration)
+        => FromConfiguration(configuration, new IngestionWorkerCommand());
+
+    public static IngestionWorkerOptions FromConfiguration(IConfiguration configuration, IngestionWorkerCommand command)
     {
         var characterScope = configuration["characters"] ?? configuration["Ingestion:Characters"];
 
         return new IngestionWorkerOptions
         {
+            Mode = command.Mode,
             PostgresConnectionString = configuration["POSTGRES_CONNECTION_STRING"]
                 ?? configuration.GetConnectionString("Postgres")
                 ?? configuration["Postgres:ConnectionString"]
@@ -25,6 +32,8 @@ public sealed class IngestionWorkerOptions
             ExportPath = configuration["Ingestion:ExportPath"]
                 ?? configuration["FRAMEDATA_EXPORTS_PATH"]
                 ?? Path.Combine("exports", "characters"),
+            BackupPath = command.BackupPath ?? configuration["Backup:Path"] ?? configuration["FRAMEDATA_BACKUP_PATH"] ?? "",
+            RestorePath = command.RestorePath ?? configuration["Restore:Path"] ?? configuration["FRAMEDATA_RESTORE_PATH"] ?? "",
             CharacterIds = ParseCharacterIds(characterScope)
         };
     }
@@ -37,14 +46,24 @@ public sealed class IngestionWorkerOptions
             errors.Add("POSTGRES_CONNECTION_STRING is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(SourceBaseUrl))
+        if (Mode == IngestionWorkerMode.Ingest && string.IsNullOrWhiteSpace(SourceBaseUrl))
         {
             errors.Add("Ingestion source base URL is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(ExportPath))
+        if (Mode == IngestionWorkerMode.Ingest && string.IsNullOrWhiteSpace(ExportPath))
         {
             errors.Add("Frame data export path is required.");
+        }
+
+        if (Mode == IngestionWorkerMode.Backup && string.IsNullOrWhiteSpace(BackupPath))
+        {
+            errors.Add("Backup output path is required.");
+        }
+
+        if (Mode == IngestionWorkerMode.Restore && string.IsNullOrWhiteSpace(RestorePath))
+        {
+            errors.Add("Restore input path is required.");
         }
 
         return errors;

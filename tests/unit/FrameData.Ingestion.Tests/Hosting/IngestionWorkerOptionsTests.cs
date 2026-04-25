@@ -46,6 +46,59 @@ public sealed class IngestionWorkerOptionsTests
         errors.ShouldContain("Frame data export path is required.");
     }
 
+    [Fact]
+    public void Parse_WhenBackupCommandProvided_ReadsOutputPathAndPreservesConfigurationArgs()
+    {
+        var command = IngestionWorkerCommand.Parse(["backup", "--out", "/tmp/backup", "--characters=makoto"]);
+
+        command.Mode.ShouldBe(IngestionWorkerMode.Backup);
+        command.BackupPath.ShouldBe("/tmp/backup");
+        command.ConfigurationArgs.ShouldBe(["--characters=makoto"]);
+    }
+
+    [Fact]
+    public void Parse_WhenRestoreCommandProvided_ReadsInputPath()
+    {
+        var command = IngestionWorkerCommand.Parse(["restore", "--in=/tmp/backup"]);
+
+        command.Mode.ShouldBe(IngestionWorkerMode.Restore);
+        command.RestorePath.ShouldBe("/tmp/backup");
+    }
+
+    [Fact]
+    public void Validate_WhenBackupPathMissing_ReturnsBackupErrorOnlyForBackupMode()
+    {
+        var options = new IngestionWorkerOptions
+        {
+            Mode = IngestionWorkerMode.Backup,
+            PostgresConnectionString = "Host=localhost",
+            BackupPath = ""
+        };
+
+        var errors = options.Validate();
+
+        errors.ShouldContain("Backup output path is required.");
+        errors.ShouldNotContain("Ingestion source base URL is required.");
+        errors.ShouldNotContain("Frame data export path is required.");
+    }
+
+    [Fact]
+    public void Validate_WhenRestorePathMissing_ReturnsRestoreErrorOnlyForRestoreMode()
+    {
+        var options = new IngestionWorkerOptions
+        {
+            Mode = IngestionWorkerMode.Restore,
+            PostgresConnectionString = "Host=localhost",
+            RestorePath = ""
+        };
+
+        var errors = options.Validate();
+
+        errors.ShouldContain("Restore input path is required.");
+        errors.ShouldNotContain("Ingestion source base URL is required.");
+        errors.ShouldNotContain("Frame data export path is required.");
+    }
+
     [Theory]
     [InlineData("Succeeded", IngestionWorkerExitCodes.Success)]
     [InlineData("PartiallySucceeded", IngestionWorkerExitCodes.PartialSuccess)]

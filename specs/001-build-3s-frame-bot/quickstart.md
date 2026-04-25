@@ -78,6 +78,11 @@
 6. Verify generated character JSON exports:
    - Local named volume: `docker compose run --rm api ls /app/exports/characters`
    - Production bind mount: inspect `FRAMEDATA_EXPORTS_PATH` on the host
+7. Export or restore a portable JSON backup when needed:
+   - Backup: `docker compose run --rm ingestion backup --out /app/exports/backups/latest`
+   - Restore: `docker compose run --rm ingestion restore --in /app/exports/backups/latest`
+   - Backup directories contain `manifest.json` plus one file per character under
+     `characters/`
 
 ## Run Tests
 
@@ -118,6 +123,12 @@
     status. If no character scope succeeds, the prior dataset remains intact.
 12. Confirm released image set includes Bot, API, and Ingestion images with matching
     version tags.
+13. Confirm backup and restore:
+    - `docker compose run --rm ingestion backup --out /app/exports/backups/latest`
+    - Inspect `manifest.json` and `characters/makoto.json` in the export volume.
+    - Restore into PostgreSQL with
+      `docker compose run --rm ingestion restore --in /app/exports/backups/latest`
+    - Re-run the API query in step 5.
 
 ## Rich Response Follow-Up Validation
 
