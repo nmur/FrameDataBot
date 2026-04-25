@@ -1,15 +1,25 @@
 using FrameData.Api.Endpoints;
 using FrameData.Domain.MoveLookup;
+using FrameData.Infrastructure.Persistence;
 using FrameData.Infrastructure.Persistence.Repositories;
 using FrameData.Infrastructure.Storage;
+using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Services;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var postgresConnectionString = builder.Configuration["POSTGRES_CONNECTION_STRING"]
+    ?? builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("POSTGRES_CONNECTION_STRING is required.");
+
+builder.Services.AddSingleton(new DbConnectionFactory(postgresConnectionString));
+builder.Services.AddSingleton<SchemaBootstrapper>();
+builder.Services.AddSingleton<ISupportedCharacterCatalog, SupportedCharacterCatalog>();
 builder.Services.AddSingleton<CharacterRepository>();
 builder.Services.AddSingleton<MoveRepository>();
+builder.Services.AddSingleton<FrameDataDatasetRepository>();
 builder.Services.AddSingleton<IMoveQueryRepository>(sp => sp.GetRequiredService<MoveRepository>());
 builder.Services.AddSingleton<ExactMoveLookupService>();
 builder.Services.AddSingleton<IngestionRunRepository>();
@@ -25,9 +35,11 @@ builder.Services.AddHttpClient<ISourceHttpClient, SourceHttpClient>((sp, client)
     var baseUrl = builder.Configuration["Ingestion:SourceBaseUrl"] ?? "http://ensabahnur.free.fr/BastonNew/index.php";
     client.BaseAddress = new Uri(baseUrl);
 });
-builder.Services.AddSingleton<IngestionOrchestrator>();
+builder.Services.AddTransient<IngestionOrchestrator>();
 
 var app = builder.Build();
+
+await app.Services.GetRequiredService<SchemaBootstrapper>().RunAsync();
 
 app.MapGet("/", () => "Hello World!");
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));

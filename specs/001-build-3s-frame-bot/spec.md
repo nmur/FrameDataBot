@@ -12,7 +12,7 @@
 - Q: Which security validation gate should define "secure containerized hosting" readiness? → A: Mandatory pre-production checklist gate: dependency scan + container image scan + secrets scan + manual least-privilege review, all with zero critical findings.
 - Q: How should SC-001 performance be validated? → A: Measure both API query latency and bot end-to-end latency using a fixed representative dataset and fixed sample size per run.
 - Q: What sampling standard should be used for sampled success criteria? → A: Minimum 100 samples per criterion, stratified across characters and move categories, with consistent methodology each run.
-- Q: What should ingestion do when some characters/sections fail? → A: Allow partial success; commit successful updates and mark failed characters/sections with explicit run status indicating retry is needed.
+- Q: What should ingestion do when some characters/sections fail? → A: Allow partial success; replace the stored dataset with successful character scopes from the run and mark failed characters/sections with explicit run status indicating retry is needed.
 - Q: What is the scraper implementation scope for this feature? → A: .NET-only scraper scope for this feature, with no Python fallback included.
 - Q: What should the canonical Discord command surface be for the current lean scope? → A: Use `/framedata` with required `character` and `move` parameters only.
 
@@ -180,7 +180,7 @@ properties without breaking MVP fields.
 - Hitbox display page exists but last active frame cannot be identified.
 - Hitbox display page references missing or broken image assets.
 - Duplicate refresh runs are triggered concurrently.
-- Partial ingestion failures for some characters/sections still preserve successful updates, while failed scopes are explicitly marked for retry.
+- Partial ingestion failures for some characters/sections still store successful updates from that run, while failed scopes are explicitly marked for retry.
 
 ## Requirements *(mandatory)*
 
@@ -202,9 +202,10 @@ properties without breaking MVP fields.
 - **FR-008**: The system MUST store ingested move data in a persistent queryable store
   used by the bot service.
 - **FR-009**: The system MUST provide a repeatable refresh process that updates stored
-  data without manual row-level edits; successful character updates MAY be committed
-  when some characters/sections fail, and failures MUST be recorded with explicit run
-  status indicating retry is needed.
+  data without manual row-level edits; each refresh replaces the stored dataset with
+  successfully ingested character scopes from that run, failures MUST be recorded
+  with explicit run status indicating retry is needed, and a fully failed run MUST
+  leave the previous dataset intact.
 - **FR-010**: After MVP, lookup MUST support shorthand, numpad notation, and colloquial
   aliases with scored best-guess matching.
 - **FR-011**: The system MUST return disambiguation options when no single match exceeds

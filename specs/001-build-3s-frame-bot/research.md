@@ -250,24 +250,27 @@ Rationale:
   - Maintain separate API and ingestion persistence implementations: rejected because it
     creates drift between write and read behavior.
 
-## Decision 19: Shared Migration Bootstrap
+## Decision 19: Shared Schema Bootstrap
 
-- Decision: Add a small idempotent migration bootstrap that applies SQL files from
-  `src/FrameData.Infrastructure/Persistence/Migrations/` before API or ingestion work
-  touches repositories.
+- Decision: Add a small idempotent schema bootstrap that applies the current SQL schema
+  from `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql` before
+  API or ingestion work touches repositories. Do not track migration history for the
+  v1 dataset.
 - Rationale: Both API and ingestion containers need the same schema, and Testcontainers
-  integration tests must create a real database from the same migration path used in
-  production.
+  integration tests must create a real database from the same bootstrap path used in
+  production. The upstream data changes rarely, so replacing the dataset on refresh is
+  simpler than supporting incremental data migrations.
 - Alternatives considered:
   - Manual schema provisioning outside the app: rejected for local/Unraid ergonomics and
     repeatable tests.
-  - Full ORM migration stack: deferred because current SQL schema is small and direct
-    SQL keeps the first persistent slice focused.
+  - Full migration tracking: rejected for this slice because current SQL schema is small
+    and the dataset can be refreshed wholesale.
 
 ## Decision 20: One-Shot Ingestion Worker
 
-- Decision: `FrameData.Ingestion` runs as a one-shot worker: load configuration, apply
-  migrations, run the orchestrator for a requested scope or full catalog, write JSON
+- Decision: `FrameData.Ingestion` runs as a one-shot worker: load configuration,
+  bootstrap the schema, run the orchestrator for a requested scope or full catalog,
+  replace the persisted character/move dataset, write JSON
   exports, log run status, and exit with an explicit success/partial/failure code.
 - Rationale: This fits Unraid/Compose scheduling, avoids an always-on scheduler before
   it is needed, and makes manual refresh/retry behavior easy to observe.

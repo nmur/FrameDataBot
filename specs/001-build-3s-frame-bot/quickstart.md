@@ -72,6 +72,12 @@
    - Bot container can resolve and call API service over compose network
 4. Run explicit Bot config validation check:
    - Ensure `DISCORD_BOT_TOKEN`, numeric `BOT_GUILD_ID`, and `BOT_API_BASE_URL` are set
+5. Run the one-shot ingestion worker after PostgreSQL is healthy:
+   - Full catalog: `docker compose run --rm ingestion`
+   - Scoped retry: `docker compose run --rm ingestion --characters=makoto,chun-li`
+6. Verify generated character JSON exports:
+   - Local named volume: `docker compose run --rm api ls /app/exports/characters`
+   - Production bind mount: inspect `FRAMEDATA_EXPORTS_PATH` on the host
 
 ## Run Tests
 
@@ -84,26 +90,32 @@
 
 ## MVP Validation Flow
 
-1. Apply migrations through API or ingestion startup and confirm PostgreSQL has the
+1. Bootstrap the schema through API or ingestion startup and confirm PostgreSQL has the
    expected `characters`, `moves`, and `ingestion_runs` tables.
 2. Trigger full-catalog ingestion:
    - Local Compose: `docker compose run --rm ingestion`
+   - Scoped retry: `docker compose run --rm ingestion --characters=makoto`
    - API trigger: `POST /v1/ingestion/runs` with no body, then poll
      `GET /v1/ingestion/runs/{runId}`
+   - API scoped retry: `POST /v1/ingestion/runs` with body
+     `{"characterIds":["makoto"]}`
 3. Confirm one JSON export exists per enabled character under the configured export
    volume.
 4. Confirm PostgreSQL contains rows for every enabled character and move rows from
    Normals, Specials, Super Arts, and Misc where source data exists.
 5. Query the API directly for an ingested move:
    - `GET /v1/moves/query?character=makoto&moveInput=2mk`
+   - The response must come from PostgreSQL rows written by ingestion; the runtime no
+     longer uses in-memory seed data.
 6. Start the bot service and confirm it connects to Discord Gateway.
 7. Confirm `/framedata` appears in the configured guild.
 8. Query known exact move names via Discord command:
    - `/framedata character:makoto move:2mk`
 9. Confirm the bot posts primitive frame-data text from the API-backed PostgreSQL row.
 10. Confirm unknown move/character responses are clear.
-11. Confirm partial-ingestion behavior: successful character updates are committed while
-    failed scopes are marked for retry in run status.
+11. Confirm partial-ingestion behavior: the stored dataset is replaced with successful
+    character scopes from the run while failed scopes are marked for retry in run
+    status. If no character scope succeeds, the prior dataset remains intact.
 12. Confirm released image set includes Bot, API, and Ingestion images with matching
     version tags.
 

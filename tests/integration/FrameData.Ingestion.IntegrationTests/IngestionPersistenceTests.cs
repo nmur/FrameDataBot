@@ -1,14 +1,34 @@
 using FrameData.Domain.Ingestion;
+using FrameData.Infrastructure.Persistence;
 using FrameData.Infrastructure.Persistence.Repositories;
 using FrameData.Infrastructure.Storage;
+using FrameData.Ingestion.IntegrationTests.Fixtures;
 using FrameData.Ingestion.Services;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
+using Npgsql;
 
 namespace FrameData.Ingestion.IntegrationTests;
 
-public sealed class IngestionPersistenceTests
+public sealed class IngestionPersistenceTests : IClassFixture<PostgresContainerFixture>, IAsyncLifetime
 {
+    private readonly DbConnectionFactory _connectionFactory;
+
+    public IngestionPersistenceTests(PostgresContainerFixture postgres)
+    {
+        _connectionFactory = new DbConnectionFactory(postgres.ConnectionString);
+    }
+
+    public async Task InitializeAsync()
+    {
+        await new SchemaBootstrapper(_connectionFactory).RunAsync();
+        await using var connection = _connectionFactory.CreateOpenConnection();
+        await using var command = new NpgsqlCommand("TRUNCATE ingestion_run_character_statuses, ingestion_runs, moves, characters RESTART IDENTITY CASCADE;", connection);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     private const string SampleHtml = """
         <html><body>
           <h2>Normals</h2>
@@ -26,15 +46,14 @@ public sealed class IngestionPersistenceTests
         try
         {
             var source = new FakeSourceHttpClient(_ => SampleHtml);
-            var runRepository = new IngestionRunRepository();
-            var moveRepository = new MoveRepository();
-            var characterRepository = new CharacterRepository();
+            var runRepository = new IngestionRunRepository(_connectionFactory);
+            var moveRepository = new MoveRepository(_connectionFactory);
+            var datasetRepository = new FrameDataDatasetRepository(_connectionFactory);
             var workflow = new CharacterExportWorkflow(new CharacterJsonExportService(), tempDirectory);
             var orchestrator = new IngestionOrchestrator(
                 source,
                 new CharacterSectionParser(),
-                characterRepository,
-                moveRepository,
+                datasetRepository,
                 runRepository,
                 workflow);
 
@@ -74,15 +93,14 @@ public sealed class IngestionPersistenceTests
 
                 return SampleHtml;
             });
-            var runRepository = new IngestionRunRepository();
-            var moveRepository = new MoveRepository();
-            var characterRepository = new CharacterRepository();
+            var runRepository = new IngestionRunRepository(_connectionFactory);
+            var moveRepository = new MoveRepository(_connectionFactory);
+            var datasetRepository = new FrameDataDatasetRepository(_connectionFactory);
             var workflow = new CharacterExportWorkflow(new CharacterJsonExportService(), tempDirectory);
             var orchestrator = new IngestionOrchestrator(
                 source,
                 new CharacterSectionParser(),
-                characterRepository,
-                moveRepository,
+                datasetRepository,
                 runRepository,
                 workflow);
 

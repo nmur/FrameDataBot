@@ -23,6 +23,7 @@ services:
       POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=${POSTGRES_DB:-framedata};Username=${POSTGRES_USER:-framedata};Password=${POSTGRES_PASSWORD}
       Ingestion__ExportPath: /app/exports/characters
       Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
+      Ingestion__Characters: ${INGESTION_CHARACTER_SCOPE:-}
     depends_on:
       postgres:
         condition: service_healthy

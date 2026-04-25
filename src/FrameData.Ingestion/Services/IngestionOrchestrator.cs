@@ -2,6 +2,7 @@ using FrameData.Domain.Characters;
 using FrameData.Domain.Ingestion;
 using FrameData.Domain.Moves;
 using FrameData.Infrastructure.Persistence.Repositories;
+using FrameData.Ingestion.Catalog;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
 
@@ -13,28 +14,44 @@ public sealed class IngestionOrchestrator
 
     private readonly ISourceHttpClient _sourceClient;
     private readonly CharacterSectionParser _sectionParser;
-    private readonly CharacterRepository _characterRepository;
-    private readonly MoveRepository _moveRepository;
+    private readonly FrameDataDatasetRepository _datasetRepository;
     private readonly IngestionRunRepository _runRepository;
     private readonly CharacterExportWorkflow _exportWorkflow;
+    private readonly ISupportedCharacterCatalog? _catalog;
 
     public IngestionOrchestrator(
         ISourceHttpClient sourceClient,
         CharacterSectionParser sectionParser,
-        CharacterRepository characterRepository,
-        MoveRepository moveRepository,
+        FrameDataDatasetRepository datasetRepository,
         IngestionRunRepository runRepository,
-        CharacterExportWorkflow exportWorkflow)
+        CharacterExportWorkflow exportWorkflow,
+        ISupportedCharacterCatalog? catalog = null)
     {
         _sourceClient = sourceClient;
         _sectionParser = sectionParser;
-        _characterRepository = characterRepository;
-        _moveRepository = moveRepository;
+        _datasetRepository = datasetRepository;
         _runRepository = runRepository;
         _exportWorkflow = exportWorkflow;
+        _catalog = catalog;
+    }
+
+    public Task<IngestionRun> RunAsync(CancellationToken cancellationToken = default)
+    {
+        if (_catalog is null)
+        {
+            throw new InvalidOperationException("Default ingestion requires a supported character catalog.");
+        }
+
+        return RunAsync(_catalog.ResolveScope([]), cancellationToken);
     }
 
     public async Task<IngestionRun> RunAsync(IReadOnlyCollection<IngestionCharacterScope> scope, CancellationToken cancellationToken = default)
+    {
+        var run = await CreateRunAsync(cancellationToken);
+        return await ExecuteRunAsync(run, scope, cancellationToken);
+    }
+
+    public async Task<IngestionRun> CreateRunAsync(CancellationToken cancellationToken = default)
     {
         var run = new IngestionRun
         {
@@ -44,7 +61,7 @@ public sealed class IngestionOrchestrator
         };
 
         await _runRepository.SaveAsync(run, cancellationToken);
-        return await ExecuteRunAsync(run, scope, cancellationToken);
+        return run;
     }
 
     public async Task<IngestionRun> ExecuteRunAsync(
@@ -57,6 +74,9 @@ public sealed class IngestionOrchestrator
             throw new ArgumentException("Ingestion scope must include at least one character.", nameof(scope));
         }
 
+        var replacementCharacters = new List<Character>();
+        var replacementMoves = new List<Move>();
+
         foreach (var characterScope in scope)
         {
             try
@@ -64,7 +84,7 @@ public sealed class IngestionOrchestrator
                 var html = await _sourceClient.GetCharacterPageAsync(characterScope.SourceCharacterId, cancellationToken);
                 var parsedMoves = _sectionParser.Parse(html);
                 var domainMoves = parsedMoves
-                    .Select(parsed => MapMove(characterScope, parsed))
+                    .Select((parsed, index) => MapMove(characterScope, parsed, index + 1))
                     .ToList();
 
                 var character = new Character
@@ -72,20 +92,44 @@ public sealed class IngestionOrchestrator
                     Id = characterScope.CharacterId,
                     Game = CurrentGame,
                     Name = characterScope.CharacterName,
+                    SourceCharacterId = characterScope.SourceCharacterId,
+                    DisplayOrder = characterScope.DisplayOrder,
+                    UpdatedAt = DateTimeOffset.UtcNow,
                     Aliases = characterScope.Aliases
                 };
 
-                await _characterRepository.UpsertAsync(character, cancellationToken);
-                await _moveRepository.UpsertMovesAsync(character.Id, domainMoves, cancellationToken);
                 await _exportWorkflow.ExportCharacterAsync(character, domainMoves, cancellationToken);
+                replacementCharacters.Add(character);
+                replacementMoves.AddRange(domainMoves);
 
                 run.CharactersProcessed += 1;
                 run.MovesProcessed += domainMoves.Count;
+                run.CharacterStatuses.Add(new IngestionRunCharacterStatus
+                {
+                    CharacterId = characterScope.CharacterId,
+                    SourceCharacterId = characterScope.SourceCharacterId,
+                    Status = "Succeeded",
+                    MovesProcessed = domainMoves.Count
+                });
             }
             catch (Exception ex)
             {
-                run.Errors.Add($"{characterScope.CharacterId}: {ex.Message}");
+                var error = ex.Message;
+                run.Errors.Add($"{characterScope.CharacterId}: {error}");
+                run.CharacterStatuses.Add(new IngestionRunCharacterStatus
+                {
+                    CharacterId = characterScope.CharacterId,
+                    SourceCharacterId = characterScope.SourceCharacterId,
+                    Status = "Failed",
+                    MovesProcessed = 0,
+                    Error = error
+                });
             }
+        }
+
+        if (run.CharactersProcessed > 0)
+        {
+            await _datasetRepository.ReplaceAsync(replacementCharacters, replacementMoves, cancellationToken);
         }
 
         run.CompletedAt = DateTimeOffset.UtcNow;
@@ -94,10 +138,11 @@ public sealed class IngestionOrchestrator
         return run;
     }
 
-    private static Move MapMove(IngestionCharacterScope scope, ParsedMoveEntry parsed)
+    private static Move MapMove(IngestionCharacterScope scope, ParsedMoveEntry parsed, int displayOrder)
     {
-        var normalizedSection = parsed.Section.Replace(" ", "-", StringComparison.Ordinal);
-        var normalizedName = parsed.CanonicalName.Replace(" ", "-", StringComparison.Ordinal);
+        var section = NormalizeSection(parsed.Section);
+        var normalizedSection = NormalizeIdPart(section);
+        var normalizedName = NormalizeIdPart(parsed.CanonicalName);
 
         return new Move
         {
@@ -105,8 +150,9 @@ public sealed class IngestionOrchestrator
             CharacterId = scope.CharacterId,
             Game = CurrentGame,
             CharacterName = scope.CharacterName,
-            Section = parsed.Section,
+            Section = section,
             CanonicalName = parsed.CanonicalName,
+            DisplayOrder = displayOrder,
             FrameData = new MoveFrameData
             {
                 Startup = parsed.Startup,
@@ -118,6 +164,15 @@ public sealed class IngestionOrchestrator
             }
         };
     }
+
+    private static string NormalizeSection(string section)
+        => string.Equals(section, "Super Arts", StringComparison.OrdinalIgnoreCase) ? "SuperArts" : section;
+
+    private static string NormalizeIdPart(string value)
+        => new(value
+            .Trim()
+            .Select(ch => char.IsLetterOrDigit(ch) ? char.ToLowerInvariant(ch) : '-')
+            .ToArray());
 
     private static string GetFinalStatus(IngestionRun run)
     {

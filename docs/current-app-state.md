@@ -50,9 +50,9 @@ flowchart LR
 | Ingestion Service | Coordinates scraping, transforms, persistence, and export. | Process scaffold (`Program.cs`) and project wiring. | Orchestrator, run-status lifecycle, partial-success handling, export workflow. |
 | Scraper Library | Retrieves and parses source data pages. | Library scaffold only. | HTTP loader, section parsers, hitbox parser. |
 | Domain Library | Core entities and business rules shared by services. | Library scaffold only. | Character/move models, lookup logic, alias/fuzzy matching, metadata/media models. |
-| Infrastructure Library | DB/storage adapters and persistence implementations. | Library scaffold only. | DB connection + migrations, repositories, JSON/image storage services. |
+| Infrastructure Library | DB/storage adapters and persistence implementations. | Library scaffold only. | DB connection + schema bootstrap, repositories, JSON/image storage services. |
 | Shared Library | Shared contracts/primitives reused across services. | Library scaffold only. | Shared DTO/contracts, result/error primitives. |
-| PostgreSQL | Persistent store for queryable move/ingestion data. | Not integrated yet. | Schema, migrations, repositories, runtime connectivity from API/Ingestion. |
+| PostgreSQL | Persistent store for queryable move/ingestion data. | Not integrated yet. | Schema bootstrap, repositories, runtime connectivity from API/Ingestion. |
 
 ## Notes on Mermaid Line Breaks
 

@@ -12,11 +12,11 @@ Close the remaining US2 gap between the planned ingestion story and the current 
 - **Language/Version**: .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries
 - **Primary Dependencies**: Discord.Net WebSocket/Interactions, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
 - **Storage**: PostgreSQL is the source of truth for `characters`, `moves`, and `ingestion_runs`; JSON exports remain a generated disk artifact mounted from container storage
-- **Testing**: xUnit + Shouldly + NSubstitute for unit tests; Testcontainers PostgreSQL integration tests for repositories, ingestion worker, API query reads, and migration bootstrap; deterministic Discord boundary tests stay separate from live Discord
+- **Testing**: xUnit + Shouldly + NSubstitute for unit tests; Testcontainers PostgreSQL integration tests for repositories, ingestion worker, API query reads, and schema bootstrap; deterministic Discord boundary tests stay separate from live Discord
 - **Target Platform**: Linux Docker containers on local Compose and Unraid/self-hosted Docker; ingestion runs as an explicit one-shot container or API-triggered background run
 - **Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)
 - **Performance Goals**: SC-001 remains: >=95% valid exact-name queries complete in <3 seconds across API latency and bot end-to-end latency on a fixed representative sample
-- **Constraints**: .NET-only scraper scope; no Moq/FluentAssertions; no live Discord in CI; ingestion must support partial success while committing successful character scopes; API and ingestion must use the same Postgres schema/repository implementations
+- **Constraints**: .NET-only scraper scope; no Moq/FluentAssertions; no live Discord in CI; ingestion must support partial success while replacing the stored dataset with successfully ingested character scopes; API and ingestion must use the same Postgres schema/repository implementations
 - **Scale/Scope**: Single-game Street Fighter III: 3rd Strike scope; full supported-roster source catalog; Normals/Specials/Super Arts/Misc ingestion only for this slice; no hitbox media, metadata enrichment, fuzzy lookup, or rich Discord embed work in this slice
 
 ## Constitution Check
@@ -24,7 +24,7 @@ Close the remaining US2 gap between the planned ingestion story and the current 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 Pre-Phase 0 gate:
-- [x] Small, single-purpose functions: persistence, catalog, migration bootstrap, worker host, scraper/orchestrator, and API trigger concerns are planned as separate services/classes.
+- [x] Small, single-purpose functions: persistence, catalog, schema bootstrap, worker host, scraper/orchestrator, and API trigger concerns are planned as separate services/classes.
 - [x] Descriptive naming/intent comments: new names must describe Postgres repository behavior, ingestion worker options, and catalog entries directly; comments are only for external source/schema constraints.
 - [x] TDD order: the new task block adds unit/contract/integration tests before implementation tasks.
 - [x] Comprehensive automated testing: Testcontainers is required to prove actual rows are inserted/read from PostgreSQL; in-memory repository tests are not sufficient for this slice.
@@ -32,7 +32,7 @@ Pre-Phase 0 gate:
 - [x] Focused scope/performance: the slice only makes US2 persistence/worker behavior real and preserves the existing Discord/API command surface.
 
 Post-Phase 1 re-check:
-- [x] Research resolves the repository, migration, worker execution, catalog, and API trigger strategy.
+- [x] Research resolves the repository, schema bootstrap, worker execution, catalog, and API trigger strategy.
 - [x] Data model identifies the full character source catalog and per-character ingestion status needed for retry visibility.
 - [x] API contract documents optional ingestion run scoping while keeping full-catalog ingestion as the default.
 - [x] Quickstart documents real worker invocation, Postgres verification, JSON export verification, and API/bot query validation from persisted rows.
@@ -45,11 +45,11 @@ Post-Phase 1 re-check:
 - Add API integration coverage where a move inserted through the real repository is queryable through `GET /v1/moves/query`.
 - Add worker host coverage that verifies the ingestion executable wires configuration, catalog, repositories, source client, and export path instead of printing `Hello, World!`.
 
-### Step 2: Centralize Migration Bootstrap
+### Step 2: Centralize Schema Bootstrap
 
-- Add a small migration/bootstrap service that applies SQL files from `src/FrameData.Infrastructure/Persistence/Migrations/` to a configured PostgreSQL database.
+- Add a small schema bootstrap service that applies the current SQL schema from `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql` to a configured PostgreSQL database.
 - Use the same bootstrap path in API startup, ingestion worker startup, and integration test setup.
-- Keep migrations deterministic and idempotent; add additive migrations instead of relying on in-memory seed data.
+- Keep the schema bootstrap deterministic and idempotent; the dataset itself is replaced wholesale by ingestion runs instead of being evolved incrementally.
 
 ### Step 3: Replace In-Memory Repositories
 
@@ -65,8 +65,8 @@ Post-Phase 1 re-check:
 
 ### Step 5: Wire the Ingestion Worker Host
 
-- Replace the console template program with a .NET host that loads configuration, validates `POSTGRES_CONNECTION_STRING`, configures `Ingestion:SourceBaseUrl` and `Ingestion:ExportPath`, applies migrations, runs the orchestrator for the requested scope, logs the run result, and exits with an explicit status code.
-- Preserve partial-success semantics: successful character scopes are committed and failed scopes are visible in run status for retry.
+- Replace the console template program with a .NET host that loads configuration, validates `POSTGRES_CONNECTION_STRING`, configures `Ingestion:SourceBaseUrl` and `Ingestion:ExportPath`, bootstraps the schema, runs the orchestrator for the requested scope, logs the run result, and exits with an explicit status code.
+- Preserve partial-success visibility: successful character scopes become the replacement dataset and failed scopes are visible in run status for retry.
 - Keep scheduling outside the worker for this slice; Unraid/Compose/GitHub Actions can invoke the one-shot container.
 
 ### Step 6: Wire API to the Same Persistent Store
@@ -137,7 +137,7 @@ tests/
     └── FrameData.Contracts.Tests/
 ```
 
-**Structure Decision**: Keep the existing layered .NET multi-service structure. Add ingestion catalog/hosting code under `FrameData.Ingestion`, shared migration/bootstrap and Npgsql repositories under `FrameData.Infrastructure`, and reuse API/Bot boundaries so the bot continues to access data only through the API.
+**Structure Decision**: Keep the existing layered .NET multi-service structure. Add ingestion catalog/hosting code under `FrameData.Ingestion`, shared schema bootstrap and Npgsql repositories under `FrameData.Infrastructure`, and reuse API/Bot boundaries so the bot continues to access data only through the API.
 
 ## Complexity Tracking
 

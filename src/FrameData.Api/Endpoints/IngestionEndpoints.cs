@@ -1,5 +1,6 @@
 using FrameData.Domain.Ingestion;
 using FrameData.Infrastructure.Persistence.Repositories;
+using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Services;
 using FrameData.Shared.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -13,32 +14,33 @@ public static class IngestionEndpoints
         app.MapPost("/v1/ingestion/runs", async (
             IngestionRunRepository runRepository,
             IngestionOrchestrator orchestrator,
+            ISupportedCharacterCatalog catalog,
+            HttpRequest httpRequest,
             CancellationToken cancellationToken) =>
         {
-            var run = new IngestionRun
+            var request = await ReadRequestAsync(httpRequest, cancellationToken);
+            var requestedCharacters = request?.CharacterIds ?? [];
+            IReadOnlyList<IngestionCharacterScope> scope;
+            try
             {
-                Id = Guid.NewGuid().ToString("N"),
-                StartedAt = DateTimeOffset.UtcNow,
-                Status = "Running"
-            };
-
-            await runRepository.SaveAsync(run, cancellationToken);
-
-            var defaultScope = new[]
+                scope = catalog.ResolveScope(requestedCharacters);
+            }
+            catch (ArgumentException ex)
             {
-                new IngestionCharacterScope
+                return Results.BadRequest(new ErrorResponse
                 {
-                    CharacterId = "makoto",
-                    CharacterName = "makoto",
-                    SourceCharacterId = 1
-                }
-            };
+                    Code = "unsupported_ingestion_scope",
+                    Message = ex.Message
+                });
+            }
+
+            var run = await orchestrator.CreateRunAsync(cancellationToken);
 
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await orchestrator.ExecuteRunAsync(run, defaultScope, CancellationToken.None);
+                    await orchestrator.ExecuteRunAsync(run, scope, CancellationToken.None);
                 }
                 catch (Exception ex)
                 {
@@ -52,7 +54,9 @@ public static class IngestionEndpoints
             return Results.Accepted($"/v1/ingestion/runs/{run.Id}", new IngestionAcceptedResponse
             {
                 RunId = run.Id,
-                Status = "Running"
+                Status = "Running",
+                Scope = requestedCharacters.Count == 0 ? "FullCatalog" : "Scoped",
+                CharactersQueued = scope.Count
             });
         });
 
@@ -79,8 +83,26 @@ public static class IngestionEndpoints
                 CompletedAt = run.CompletedAt,
                 CharactersProcessed = run.CharactersProcessed,
                 MovesProcessed = run.MovesProcessed,
-                Errors = run.Errors
+                Errors = run.Errors,
+                CharacterStatuses = run.CharacterStatuses.Select(status => new IngestionRunCharacterStatusContract
+                {
+                    CharacterId = status.CharacterId,
+                    SourceCharacterId = status.SourceCharacterId,
+                    Status = status.Status,
+                    MovesProcessed = status.MovesProcessed,
+                    Error = status.Error
+                }).ToArray()
             });
         });
+    }
+
+    private static async Task<IngestionRunRequest?> ReadRequestAsync(HttpRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ContentLength is null or 0)
+        {
+            return null;
+        }
+
+        return await request.ReadFromJsonAsync<IngestionRunRequest>(cancellationToken: cancellationToken);
     }
 }

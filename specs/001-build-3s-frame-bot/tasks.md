@@ -70,7 +70,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 **⚠️ CRITICAL**: No user story work starts before this phase is complete.
 
-- [X] T008 Create PostgreSQL schema bootstrap and migration baseline in `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql`
+- [X] T008 Create PostgreSQL schema bootstrap baseline in `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql`
 - [X] T009 [P] Implement database connectivity and unit-of-work abstractions in `src/FrameData.Infrastructure/Persistence/DbConnectionFactory.cs` and `src/FrameData.Infrastructure/Persistence/UnitOfWork.cs`
 - [X] T010 [P] Implement JSON export storage service in `src/FrameData.Infrastructure/Storage/CharacterJsonExportService.cs`
 - [X] T011 [P] Implement shared domain primitives and result/error model in `src/FrameData.Domain/Common/` and `src/FrameData.Shared/Contracts/`
@@ -148,7 +148,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 **Goal**: Ingest source sections (Normals/Specials/Super Arts/Misc), persist to PostgreSQL, and export one JSON file per character.
 
-**Independent Test**: Run ingestion and verify database updates + one JSON export per character; partial failures preserve successful updates and report retry-required scopes.
+**Independent Test**: Run ingestion and verify database updates + one JSON export per character; each run replaces the stored dataset with successful character scopes and reports retry-required failures.
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
@@ -178,27 +178,27 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 #### Tests for Real Ingestion Persistence (MANDATORY) ⚠️
 
-- [ ] T101 [P] [US2] Add unit tests for full supported character catalog entries and uniqueness in `tests/unit/FrameData.Ingestion.Tests/Catalog/SupportedCharacterCatalogTests.cs`
-- [ ] T102 [P] [US2] Add unit tests for ingestion worker configuration validation and exit-code mapping in `tests/unit/FrameData.Ingestion.Tests/Hosting/IngestionWorkerOptionsTests.cs`
-- [ ] T103 [P] [US2] Add contract tests for optional ingestion run scope and per-character status payloads in `tests/contract/FrameData.Contracts.Tests/IngestionRunContractTests.cs`
-- [ ] T104 [P] [US2] Add Testcontainers repository persistence tests proving character, move, and ingestion run rows are inserted/upserted in `tests/integration/FrameData.Ingestion.IntegrationTests/PostgresRepositoryPersistenceTests.cs`
-- [ ] T105 [P] [US2] Add Testcontainers orchestrator tests proving fixture HTML ingestion writes Postgres rows and JSON exports for success and partial-success cases in `tests/integration/FrameData.Ingestion.IntegrationTests/PostgresIngestionOrchestratorTests.cs`
-- [ ] T106 [P] [US2] Add API integration tests proving `GET /v1/moves/query` reads persisted Postgres rows inserted by ingestion/repositories in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryPostgresPersistenceTests.cs`
-- [ ] T107 [P] [US2] Add ingestion worker host integration tests proving the executable wires catalog, repositories, migrations, source client, and export path instead of the console template in `tests/integration/FrameData.Ingestion.IntegrationTests/IngestionWorkerHostTests.cs`
+- [X] T101 [P] [US2] Add unit tests for full supported character catalog entries and uniqueness in `tests/unit/FrameData.Ingestion.Tests/Catalog/SupportedCharacterCatalogTests.cs`
+- [X] T102 [P] [US2] Add unit tests for ingestion worker configuration validation and exit-code mapping in `tests/unit/FrameData.Ingestion.Tests/Hosting/IngestionWorkerOptionsTests.cs`
+- [X] T103 [P] [US2] Add contract tests for optional ingestion run scope and per-character status payloads in `tests/contract/FrameData.Contracts.Tests/IngestionRunContractTests.cs`
+- [X] T104 [P] [US2] Add Testcontainers repository persistence tests proving character, move, and ingestion run rows are inserted/upserted in `tests/integration/FrameData.Ingestion.IntegrationTests/PostgresRepositoryPersistenceTests.cs`
+- [X] T105 [P] [US2] Add Testcontainers orchestrator tests proving fixture HTML ingestion writes Postgres rows and JSON exports for success and partial-success cases in `tests/integration/FrameData.Ingestion.IntegrationTests/PostgresIngestionOrchestratorTests.cs`
+- [X] T106 [P] [US2] Add API integration tests proving `GET /v1/moves/query` reads persisted Postgres rows inserted by ingestion/repositories in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryPostgresPersistenceTests.cs`
+- [X] T107 [P] [US2] Add ingestion worker host integration tests proving the executable wires catalog, repositories, schema bootstrap, source client, and export path instead of the console template in `tests/integration/FrameData.Ingestion.IntegrationTests/IngestionWorkerHostTests.cs`
 
 #### Implementation for Real Ingestion Persistence
 
-- [ ] T108 [US2] Implement shared migration bootstrap service for SQL files in `src/FrameData.Infrastructure/Persistence/Migrations/` and `src/FrameData.Infrastructure/Persistence/MigrationRunner.cs`
-- [ ] T109 [US2] Add/adjust PostgreSQL migration SQL for source character IDs and per-character ingestion status persistence in `src/FrameData.Infrastructure/Persistence/Migrations/0002_RealIngestionPersistence.sql`
-- [ ] T110 [US2] Replace in-memory `CharacterRepository` with Npgsql-backed upsert/query implementation in `src/FrameData.Infrastructure/Persistence/Repositories/CharacterRepository.cs`
-- [ ] T111 [US2] Replace in-memory `MoveRepository` and hardcoded Makoto seed data with Npgsql-backed exact query and character move upsert implementation in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
-- [ ] T112 [US2] Replace in-memory `IngestionRunRepository` with Npgsql-backed run/status persistence in `src/FrameData.Infrastructure/Persistence/Repositories/IngestionRunRepository.cs`
-- [ ] T113 [US2] Implement full supported 3s character/source-id catalog in `src/FrameData.Ingestion/Catalog/SupportedCharacterCatalog.cs`
-- [ ] T114 [US2] Update `IngestionOrchestrator` to use catalog scopes, persist per-character statuses, and preserve successful character commits on partial failure in `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
-- [ ] T115 [US2] Replace `Hello, World!` ingestion console template with a hosted one-shot worker in `src/FrameData.Ingestion/Program.cs` and `src/FrameData.Ingestion/Hosting/`
-- [ ] T116 [US2] Wire API startup to migration bootstrap and Postgres-backed repositories so API queries and ingestion endpoints use the shared store in `src/FrameData.Api/Program.cs`
-- [ ] T117 [US2] Update ingestion trigger/status endpoints to default to full catalog, accept optional scoped retries, and return per-character status details in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
-- [ ] T118 [US2] Update compose/env/quickstart documentation for one-shot ingestion execution, export volume verification, and Postgres-backed API/bot validation in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
+- [X] T108 [US2] Implement shared schema bootstrap service for the current SQL schema in `src/FrameData.Infrastructure/Persistence/Migrations/` and `src/FrameData.Infrastructure/Persistence/SchemaBootstrapper.cs`
+- [X] T109 [US2] Adjust PostgreSQL bootstrap SQL for source character IDs and per-character ingestion status persistence in `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql`
+- [X] T110 [US2] Replace in-memory `CharacterRepository` with Npgsql-backed upsert/query implementation in `src/FrameData.Infrastructure/Persistence/Repositories/CharacterRepository.cs`
+- [X] T111 [US2] Replace in-memory `MoveRepository` and hardcoded Makoto seed data with Npgsql-backed exact query and character move upsert implementation in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
+- [X] T112 [US2] Replace in-memory `IngestionRunRepository` with Npgsql-backed run/status persistence in `src/FrameData.Infrastructure/Persistence/Repositories/IngestionRunRepository.cs`
+- [X] T113 [US2] Implement full supported 3s character/source-id catalog in `src/FrameData.Ingestion/Catalog/SupportedCharacterCatalog.cs`
+- [X] T114 [US2] Update `IngestionOrchestrator` to use catalog scopes, persist per-character statuses, and replace the stored dataset with successful character scopes in `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
+- [X] T115 [US2] Replace `Hello, World!` ingestion console template with a hosted one-shot worker in `src/FrameData.Ingestion/Program.cs` and `src/FrameData.Ingestion/Hosting/`
+- [X] T116 [US2] Wire API startup to schema bootstrap and Postgres-backed repositories so API queries and ingestion endpoints use the shared store in `src/FrameData.Api/Program.cs`
+- [X] T117 [US2] Update ingestion trigger/status endpoints to default to full catalog, accept optional scoped retries, and return per-character status details in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
+- [X] T118 [US2] Update compose/env/quickstart documentation for one-shot ingestion execution, export volume verification, and Postgres-backed API/bot validation in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
 
 **Checkpoint**: US2 is real in production terms: ingestion worker scrapes configured source pages, writes PostgreSQL rows, exports JSON files, records retryable failures, and API/bot lookup reads the persisted store.
 
