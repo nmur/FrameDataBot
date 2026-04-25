@@ -42,17 +42,33 @@ public sealed class FramedataInteractionHandler
         var mapped = _mapper.Map(commandName, options);
         if (!mapped.IsValid)
         {
+            _logger.LogInformation(
+                "Rejected Discord command {CommandName}: {ValidationError}.",
+                commandName,
+                mapped.Error);
+
             await responder.RespondAsync(mapped.Error ?? "Invalid command.");
             return;
         }
 
         var invocation = mapped.Invocation!;
+        _logger.LogInformation(
+            "Handling Discord /framedata interaction for character {Character} and move input {MoveInput}.",
+            invocation.Character,
+            invocation.Move);
+
         await responder.DeferAsync();
 
         try
         {
             var result = await _apiClient.QueryMoveAsync(invocation.Character, invocation.Move, cancellationToken);
             var content = FormatQueryResult(result.Response, result.Error);
+            _logger.LogInformation(
+                "Discord /framedata interaction completed for character {Character} and move input {MoveInput} with result {ResultCode}.",
+                invocation.Character,
+                invocation.Move,
+                result.Response is not null ? "ok" : result.Error?.Code ?? "error");
+
             await responder.FollowupAsync(content);
         }
         catch (Exception exception)

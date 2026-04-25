@@ -45,10 +45,12 @@ description: "Task list for implementing Discord 3s frame data bot"
 1. Execute `T001-T015` before starting any story work.
 2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`) and live Discord gateway/slash-command follow-up (`T083-T095`).
 3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
-4. Deliver US2 real persistence/worker follow-up (`T101-T118`) before starting US3; this is the next implementation slice.
-5. Deliver refinements in order: US3 -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
-6. Complete polish tasks (`T065-T070`) after desired story set is done.
-6. At each step, consult the reference list above for requirements and contracts.
+4. Deliver US2 real persistence/worker follow-up (`T101-T118`) before starting US3.
+5. Deliver US2 backup/restore follow-up (`T119-T125`).
+6. Deliver Seq centralized logging follow-up (`T126-T135`) before starting US3 so production diagnostics are available.
+7. Deliver refinements in order: US3 -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
+8. Complete polish tasks (`T065-T070`) after desired story set is done.
+9. At each step, consult the reference list above for requirements and contracts.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -224,6 +226,29 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T125 [US2] Update compose/env/quickstart documentation for backup and restore commands in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
 
 **Checkpoint**: Operators can export a portable JSON backup and restore it transactionally into PostgreSQL without re-scraping the source site.
+
+---
+
+### Seq Centralized Logging Follow-Up
+
+**Goal**: Run Seq as the central structured log store for local and production deployments and emit richer diagnostics from the Bot, API, and Ingestion services.
+
+**Independent Test**: Start the Compose stack, browse Seq on the configured host port, run a Bot/API query and a one-shot ingestion, then verify Seq contains searchable events with `ServiceName`, request/interaction details, ingestion run IDs, character IDs, section counts, and per-move Debug entries.
+
+#### Implementation for Seq Centralized Logging
+
+- [X] T126 [P] [US2] Add shared Serilog/Seq logging bootstrap and Seq package dependency in `src/FrameData.Shared/Logging/FrameDataLogging.cs` and `src/FrameData.Shared/FrameData.Shared.csproj`
+- [X] T127 [US2] Wire API startup to shared logging, Seq, and HTTP request logging in `src/FrameData.Api/Program.cs` and `src/FrameData.Api/appsettings.json`
+- [X] T128 [US2] Wire Bot startup and Bot API client/Discord interaction diagnostics to shared logging in `src/FrameData.Bot/Program.cs`, `src/FrameData.Bot/Api/MoveQueryApiClient.cs`, and `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+- [X] T129 [US2] Wire Ingestion worker startup to shared logging in `src/FrameData.Ingestion/Hosting/IngestionWorkerProgram.cs`
+- [X] T130 [US2] Add detailed ingestion progress logs for per-character source fetches, section counts, parsed move data, exports, dataset replacement, and failures in `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
+- [X] T131 [US2] Add detailed API ingestion and move-query logs in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs` and `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
+- [X] T132 [US2] Add Seq service and `SEQ_*` environment wiring for local and production Compose in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, and `.env.prod.example`
+- [X] T133 [US2] Document Seq access and log-verification workflow in `specs/001-build-3s-frame-bot/quickstart.md` and `docs/prod-compose-deployment.md`
+- [X] T134 [US2] Validate service build and Compose configuration for logging changes with `dotnet build FrameDataBot.sln --no-restore /m:1 /p:UseSharedCompilation=false`, `docker compose config`, and `docker compose -f docker-compose.prod.yml --env-file .env.prod.example config`
+- [ ] T135 [US2] Run unit tests with `dotnet test tests/unit/FrameData.Domain.Tests/FrameData.Domain.Tests.csproj --no-build`, `dotnet test tests/unit/FrameData.Bot.Tests/FrameData.Bot.Tests.csproj --no-build`, and `dotnet test tests/unit/FrameData.Ingestion.Tests/FrameData.Ingestion.Tests.csproj --no-build` when the environment permits the VSTest local socket
+
+**Checkpoint**: API, Bot, and Ingestion logs are centralized in Seq for local and production deployments, with enough detail to trace requests and ingestion work end to end.
 
 ---
 

@@ -7,6 +7,7 @@
 - Discord application with bot token, application ID, and target guild ID
 - Bot invited to the target guild with application command permissions
 - Container image registry account (for example GHCR)
+- Seq is included in Compose for centralized structured logs
 
 ## Configuration
 
@@ -18,9 +19,13 @@
    - `BOT_API_BASE_URL` (Bot -> API internal base URL, for example `http://api:8080`)
    - `INGESTION_SOURCE_BASE_URL` (defaults to `http://ensabahnur.free.fr/BastonNew/index.php`)
    - `FRAMEDATA_EXPORTS_PATH` for persisted JSON exports.
+   - `SEQ_SERVER_URL` for service log shipping (defaults to `http://seq` in Compose)
+   - `SEQ_ADMIN_PASSWORD` for first-run Seq administrator setup
+   - `SEQ_PORT` for host access to the Seq UI/API (defaults to `5341`)
+   - `SEQ_MINIMUM_LEVEL` to control application log verbosity (defaults to `Debug`)
 2. Configure ingestion execution on the host. The ingestion image is a one-shot worker;
    schedule it with Unraid/cron/Compose when a refresh is desired.
-3. Configure data volume paths for PostgreSQL and JSON exports.
+3. Configure data volume paths for PostgreSQL, Seq data, and JSON exports.
 
 ## Discord Application Setup
 
@@ -47,6 +52,7 @@
    - Pull tagged images from registry and restart services, or
    - Trigger host deployment through GitHub Actions + self-hosted runner
 4. Verify health:
+   - Seq UI opens at `http://<host>:${SEQ_PORT:-5341}`
    - Bot connected to Discord
    - API health endpoint responds
    - Ingestion run can be triggered and observed
@@ -65,6 +71,7 @@
 2. Start stack:
    - `docker compose up -d`
 3. Verify health:
+   - Seq UI opens at `http://localhost:5341`
    - Bot connected to Discord
    - Bot logs show `Registered Discord slash command /framedata` for the configured guild
    - API health endpoint responds
@@ -75,6 +82,7 @@
 5. Run the one-shot ingestion worker after PostgreSQL is healthy:
    - Full catalog: `docker compose run --rm ingestion`
    - Scoped retry: `docker compose run --rm ingestion --characters=makoto,chun-li`
+   - In Seq, filter `ServiceName = 'FrameData.Ingestion'` to inspect the run.
 6. Verify generated character JSON exports:
    - Local named volume: `docker compose run --rm api ls /app/exports/characters`
    - Production bind mount: inspect `FRAMEDATA_EXPORTS_PATH` on the host
@@ -121,9 +129,15 @@
 11. Confirm partial-ingestion behavior: the stored dataset is replaced with successful
     character scopes from the run while failed scopes are marked for retry in run
     status. If no character scope succeeds, the prior dataset remains intact.
-12. Confirm released image set includes Bot, API, and Ingestion images with matching
+12. Confirm Seq contains correlated operational detail:
+    - `ServiceName = 'FrameData.Bot'` shows Discord interaction and Bot-to-API calls.
+    - `ServiceName = 'FrameData.Api'` shows HTTP request completion, move query inputs,
+      ingestion triggers, and ingestion status polling.
+    - `ServiceName = 'FrameData.Ingestion'` shows run IDs, character IDs, section
+      counts, exports, dataset replacement, and per-move Debug entries.
+13. Confirm released image set includes Bot, API, and Ingestion images with matching
     version tags.
-13. Confirm backup and restore:
+14. Confirm backup and restore:
     - `docker compose run --rm ingestion backup --out /app/exports/backups/latest`
     - Inspect `manifest.json` and `characters/makoto.json` in the export volume.
     - Restore into PostgreSQL with

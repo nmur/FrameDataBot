@@ -5,15 +5,15 @@
 
 ## Summary
 
-Close the remaining US2 gap between the planned ingestion story and the current scaffold. The next implementation slice turns `FrameData.Ingestion` into a real one-shot worker, adds a full supported-character/source-id catalog, replaces in-memory repositories with Npgsql/PostgreSQL implementations, proves persistence with Testcontainers, and verifies the API/bot query path reads the same persisted data produced by ingestion. Existing live Discord slash-command handling remains unchanged and continues to call the API; rich Discord embeds remain a later US6 follow-up.
+Close the remaining US2 gap between the planned ingestion story and the current scaffold. The next implementation slice turns `FrameData.Ingestion` into a real one-shot worker, adds a full supported-character/source-id catalog, replaces in-memory repositories with Npgsql/PostgreSQL implementations, proves persistence with Testcontainers, and verifies the API/bot query path reads the same persisted data produced by ingestion. The production stack also includes a Seq container for centralized structured logs from the Bot, API, and Ingestion services so operators can follow Discord requests, API queries, ingestion runs, and per-character scrape details end to end. Existing live Discord slash-command handling remains unchanged and continues to call the API; rich Discord embeds remain a later US6 follow-up.
 
 ## Technical Context
 
 - **Language/Version**: .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries
-- **Primary Dependencies**: Discord.Net WebSocket/Interactions, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
+- **Primary Dependencies**: Discord.Net WebSocket/Interactions, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, Serilog.Sinks.Seq, Seq Docker container, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
 - **Storage**: PostgreSQL is the source of truth for `characters`, `moves`, and `ingestion_runs`; JSON exports remain a generated disk artifact mounted from container storage
 - **Testing**: xUnit + Shouldly + NSubstitute for unit tests; Testcontainers PostgreSQL integration tests for repositories, ingestion worker, API query reads, and schema bootstrap; deterministic Discord boundary tests stay separate from live Discord
-- **Target Platform**: Linux Docker containers on local Compose and Unraid/self-hosted Docker; ingestion runs as an explicit one-shot container or API-triggered background run
+- **Target Platform**: Linux Docker containers on local Compose and Unraid/self-hosted Docker; ingestion runs as an explicit one-shot container or API-triggered background run; Seq runs as a persistent central logging container in both local and production Compose topologies
 - **Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)
 - **Performance Goals**: SC-001 remains: >=95% valid exact-name queries complete in <3 seconds across API latency and bot end-to-end latency on a fixed representative sample
 - **Constraints**: .NET-only scraper scope; no Moq/FluentAssertions; no live Discord in CI; ingestion must support partial success while replacing the stored dataset with successfully ingested character scopes; API and ingestion must use the same Postgres schema/repository implementations
@@ -87,6 +87,14 @@ Post-Phase 1 re-check:
 - Export a `manifest.json` plus one JSON file per character under `characters/`, making backups inspectable and easy to copy from the mounted data volume.
 - Restore by validating the manifest and character files, bootstrapping the schema, and transactionally replacing the stored `characters` and `moves` dataset with the backup contents.
 - Keep ingestion run history out of the default backup; the portable backup represents the queryable frame-data dataset.
+
+### Step 9: Centralize Structured Logs with Seq
+
+- Add a persistent Seq container to local and production Compose so API, Bot, and Ingestion logs are searchable from one UI.
+- Configure all three .NET services with shared Serilog bootstrap logic that always writes console logs and writes to Seq when `SEQ_SERVER_URL` is configured.
+- Default application categories to Debug-level logging while keeping noisy framework categories at safer levels, with `SEQ_MINIMUM_LEVEL` available for operational overrides.
+- Add request and interaction logging for Discord command handling, Bot-to-API calls, API move queries, API-triggered ingestion runs, and ingestion status lookups.
+- Add detailed ingestion run logs for source page fetches, per-character parse/export status, per-section move counts, per-move frame data at Debug level, dataset replacement, and failures.
 
 ## Project Structure
 

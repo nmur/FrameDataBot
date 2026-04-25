@@ -7,6 +7,8 @@ Use `docker-compose.prod.yml` for registry-based deployments on a Docker host. T
 
 - `docker-compose.prod.yml`: pulls published images from a registry.
 - `.env.prod.example`: copy into the deployment environment and fill in secrets.
+- Seq runs from `datalust/seq` in the production Compose file and stores data under
+  `FRAMEDATA_SEQ_DATA`.
 
 ## Registry Authentication
 
@@ -49,6 +51,16 @@ For an immutable release rollback:
 FRAMEDATA_IMAGE_TAG=v0.1.0
 ```
 
+Set the Seq values before first start:
+
+```env
+SEQ_ADMIN_PASSWORD=replace-with-a-strong-password
+SEQ_PORT=5341
+SEQ_SERVER_URL=http://seq
+SEQ_MINIMUM_LEVEL=Debug
+FRAMEDATA_SEQ_DATA=/srv/framedatabot/seq
+```
+
 ## Deploy Or Update
 
 Run from the directory containing `docker-compose.prod.yml` and `.env.prod`:
@@ -62,11 +74,26 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --remove-or
 already-running containers by itself, so schedule the commands above on the Docker host if you
 want unattended updates.
 
+## Logging
+
+Open Seq at `http://<docker-host>:${SEQ_PORT:-5341}`. The API, Bot, and Ingestion services all
+write structured logs to Seq when `SEQ_SERVER_URL` is set. Useful starting filters:
+
+```text
+ServiceName = 'FrameData.Api'
+ServiceName = 'FrameData.Bot'
+ServiceName = 'FrameData.Ingestion'
+```
+
+Use `SEQ_MINIMUM_LEVEL=Information` to reduce application log volume after the deployment is
+stable. Leave it at `Debug` while validating ingestion because per-character and per-move details
+are emitted at Debug level.
+
 ## Notes
 
 - Postgres is not exposed outside the Compose network in the production file.
 - API is exposed on `${API_PORT:-8080}` for host access.
-- Persistent paths are controlled by `FRAMEDATA_POSTGRES_DATA` and `FRAMEDATA_EXPORTS_PATH`.
-- The current ingestion executable and PostgreSQL-backed persistence are still implementation
-  work items. The deployment shape is ready for published images, but production data behavior
-  should be validated before relying on the stack for real users.
+- Seq is exposed on `${SEQ_PORT:-5341}` for host access; keep it behind your trusted network or
+  reverse proxy.
+- Persistent paths are controlled by `FRAMEDATA_POSTGRES_DATA`, `FRAMEDATA_SEQ_DATA`, and
+  `FRAMEDATA_EXPORTS_PATH`.

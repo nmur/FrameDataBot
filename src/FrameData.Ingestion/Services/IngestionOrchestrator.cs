@@ -5,6 +5,8 @@ using FrameData.Infrastructure.Persistence.Repositories;
 using FrameData.Ingestion.Catalog;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FrameData.Ingestion.Services;
 
@@ -18,6 +20,7 @@ public sealed class IngestionOrchestrator
     private readonly IngestionRunRepository _runRepository;
     private readonly CharacterExportWorkflow _exportWorkflow;
     private readonly ISupportedCharacterCatalog? _catalog;
+    private readonly ILogger<IngestionOrchestrator> _logger;
 
     public IngestionOrchestrator(
         ISourceHttpClient sourceClient,
@@ -25,7 +28,8 @@ public sealed class IngestionOrchestrator
         FrameDataDatasetRepository datasetRepository,
         IngestionRunRepository runRepository,
         CharacterExportWorkflow exportWorkflow,
-        ISupportedCharacterCatalog? catalog = null)
+        ISupportedCharacterCatalog? catalog = null,
+        ILogger<IngestionOrchestrator>? logger = null)
     {
         _sourceClient = sourceClient;
         _sectionParser = sectionParser;
@@ -33,6 +37,7 @@ public sealed class IngestionOrchestrator
         _runRepository = runRepository;
         _exportWorkflow = exportWorkflow;
         _catalog = catalog;
+        _logger = logger ?? NullLogger<IngestionOrchestrator>.Instance;
     }
 
     public Task<IngestionRun> RunAsync(CancellationToken cancellationToken = default)
@@ -61,6 +66,7 @@ public sealed class IngestionOrchestrator
         };
 
         await _runRepository.SaveAsync(run, cancellationToken);
+        _logger.LogInformation("Created ingestion run {RunId}.", run.Id);
         return run;
     }
 
@@ -74,6 +80,12 @@ public sealed class IngestionOrchestrator
             throw new ArgumentException("Ingestion scope must include at least one character.", nameof(scope));
         }
 
+        _logger.LogInformation(
+            "Executing ingestion run {RunId} for {CharacterCount} character(s): {CharacterIds}.",
+            run.Id,
+            scope.Count,
+            scope.Select(character => character.CharacterId).ToArray());
+
         var replacementCharacters = new List<Character>();
         var replacementMoves = new List<Move>();
 
@@ -81,11 +93,52 @@ public sealed class IngestionOrchestrator
         {
             try
             {
+                _logger.LogInformation(
+                    "Ingestion run {RunId}: fetching source page for {CharacterId} ({CharacterName}) with source id {SourceCharacterId}.",
+                    run.Id,
+                    characterScope.CharacterId,
+                    characterScope.CharacterName,
+                    characterScope.SourceCharacterId);
+
                 var html = await _sourceClient.GetCharacterPageAsync(characterScope.SourceCharacterId, cancellationToken);
+                _logger.LogDebug(
+                    "Ingestion run {RunId}: fetched {ByteCount} bytes for {CharacterId}.",
+                    run.Id,
+                    html.Length,
+                    characterScope.CharacterId);
+
                 var parsedMoves = _sectionParser.Parse(html);
+                var sectionCounts = parsedMoves
+                    .GroupBy(move => NormalizeSection(move.Section))
+                    .OrderBy(group => group.Key)
+                    .ToDictionary(group => group.Key, group => group.Count());
+
+                _logger.LogInformation(
+                    "Ingestion run {RunId}: parsed {MoveCount} move(s) for {CharacterId} across sections {@SectionCounts}.",
+                    run.Id,
+                    parsedMoves.Count,
+                    characterScope.CharacterId,
+                    sectionCounts);
+
                 var domainMoves = parsedMoves
                     .Select((parsed, index) => MapMove(characterScope, parsed, index + 1))
                     .ToList();
+
+                foreach (var move in domainMoves)
+                {
+                    _logger.LogDebug(
+                        "Ingestion run {RunId}: parsed move {CharacterId}/{MoveId} {MoveName} ({Section}) startup={Startup} active={Active} recovery={Recovery} onHit={OnHit} onBlock={OnBlock}.",
+                        run.Id,
+                        characterScope.CharacterId,
+                        move.Id,
+                        move.CanonicalName,
+                        move.Section,
+                        move.FrameData.Startup,
+                        move.FrameData.Active,
+                        move.FrameData.Recovery,
+                        move.FrameData.OnHit,
+                        move.FrameData.OnBlock);
+                }
 
                 var character = new Character
                 {
@@ -99,6 +152,12 @@ public sealed class IngestionOrchestrator
                 };
 
                 await _exportWorkflow.ExportCharacterAsync(character, domainMoves, cancellationToken);
+                _logger.LogInformation(
+                    "Ingestion run {RunId}: exported and staged {MoveCount} move(s) for {CharacterId}.",
+                    run.Id,
+                    domainMoves.Count,
+                    characterScope.CharacterId);
+
                 replacementCharacters.Add(character);
                 replacementMoves.AddRange(domainMoves);
 
@@ -115,6 +174,13 @@ public sealed class IngestionOrchestrator
             catch (Exception ex)
             {
                 var error = ex.Message;
+                _logger.LogError(
+                    ex,
+                    "Ingestion run {RunId}: failed to ingest {CharacterId} from source id {SourceCharacterId}.",
+                    run.Id,
+                    characterScope.CharacterId,
+                    characterScope.SourceCharacterId);
+
                 run.Errors.Add($"{characterScope.CharacterId}: {error}");
                 run.CharacterStatuses.Add(new IngestionRunCharacterStatus
                 {
@@ -129,12 +195,32 @@ public sealed class IngestionOrchestrator
 
         if (run.CharactersProcessed > 0)
         {
+            _logger.LogInformation(
+                "Ingestion run {RunId}: replacing stored dataset with {CharacterCount} successful character scope(s) and {MoveCount} move(s).",
+                run.Id,
+                replacementCharacters.Count,
+                replacementMoves.Count);
+
             await _datasetRepository.ReplaceAsync(replacementCharacters, replacementMoves, cancellationToken);
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Ingestion run {RunId}: no character scope succeeded, leaving the existing dataset unchanged.",
+                run.Id);
         }
 
         run.CompletedAt = DateTimeOffset.UtcNow;
         run.Status = GetFinalStatus(run);
         await _runRepository.SaveAsync(run, cancellationToken);
+        _logger.LogInformation(
+            "Ingestion run {RunId} persisted with final status {Status}. Characters: {CharactersProcessed}; moves: {MovesProcessed}; errors: {ErrorCount}.",
+            run.Id,
+            run.Status,
+            run.CharactersProcessed,
+            run.MovesProcessed,
+            run.Errors.Count);
+
         return run;
     }
 

@@ -1,6 +1,6 @@
+using FrameData.Shared.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace FrameData.Ingestion.Hosting;
 
@@ -37,12 +37,12 @@ public static class IngestionWorkerProgram
         }
 
         var services = new ServiceCollection();
-        services.AddLogging(builder => builder.AddSimpleConsole());
+        services.AddLogging(builder => FrameDataLogging.Configure(builder, configuration, "FrameData.Ingestion"));
         services.AddFrameDataIngestionWorker(options);
 
-        await using var provider = services.BuildServiceProvider();
         try
         {
+            await using var provider = services.BuildServiceProvider();
             return await provider.GetRequiredService<IngestionWorker>().ExecuteAsync(cancellationToken);
         }
         catch (ArgumentException ex)
@@ -54,6 +54,10 @@ public static class IngestionWorkerProgram
         {
             Console.Error.WriteLine(ex.Message);
             return IngestionWorkerExitCodes.Failure;
+        }
+        finally
+        {
+            FrameDataLogging.CloseAndFlush();
         }
     }
 }

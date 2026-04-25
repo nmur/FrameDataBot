@@ -7,8 +7,11 @@ using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Services;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
+using FrameData.Shared.Logging;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+FrameDataLogging.Configure(builder.Logging, builder.Configuration, "FrameData.Api");
 
 var postgresConnectionString = builder.Configuration["POSTGRES_CONNECTION_STRING"]
     ?? builder.Configuration.GetConnectionString("Postgres")
@@ -37,15 +40,27 @@ builder.Services.AddHttpClient<ISourceHttpClient, SourceHttpClient>((sp, client)
 });
 builder.Services.AddTransient<IngestionOrchestrator>();
 
-var app = builder.Build();
+try
+{
+    var app = builder.Build();
 
-await app.Services.GetRequiredService<SchemaBootstrapper>().RunAsync();
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    });
 
-app.MapGet("/", () => "Hello World!");
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-app.MapMoveQueryEndpoint();
-app.MapIngestionEndpoints();
+    await app.Services.GetRequiredService<SchemaBootstrapper>().RunAsync();
 
-app.Run();
+    app.MapGet("/", () => "Hello World!");
+    app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+    app.MapMoveQueryEndpoint();
+    app.MapIngestionEndpoints();
+
+    await app.RunAsync();
+}
+finally
+{
+    FrameDataLogging.CloseAndFlush();
+}
 
 public partial class Program;

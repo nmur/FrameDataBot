@@ -1,5 +1,14 @@
-version: "3.9"
 services:
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:-framedata-dev}
+    ports:
+      - "${SEQ_PORT:-5341}:80"
+    volumes:
+      - seq_data:/data
+
   postgres:
     image: postgres:17-alpine
     environment:
@@ -23,8 +32,12 @@ services:
       Ingestion__Characters: ${INGESTION_CHARACTER_SCOPE:-}
       FRAMEDATA_BACKUP_PATH: ${FRAMEDATA_BACKUP_PATH:-/app/exports/backups/latest}
       FRAMEDATA_RESTORE_PATH: ${FRAMEDATA_RESTORE_PATH:-/app/exports/backups/latest}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
     depends_on:
       - postgres
+      - seq
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
@@ -38,8 +51,12 @@ services:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       BOT_GUILD_ID: ${BOT_GUILD_ID}
       BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
     depends_on:
       - api
+      - seq
 
   ingestion:
     build:
@@ -49,11 +66,16 @@ services:
       POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata;GSS Encryption Mode=Disable
       Ingestion__ExportPath: /app/exports/characters
       Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
     depends_on:
       - postgres
+      - seq
     volumes:
       - framedata_exports:/app/exports
 
 volumes:
+  seq_data:
   postgres_data:
   framedata_exports:
