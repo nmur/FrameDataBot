@@ -1,4 +1,5 @@
-using FrameData.Bot.Api;
+using Discord.WebSocket;
+using FrameData.Bot.Discord;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -8,16 +9,22 @@ public sealed class BotRuntimeService : BackgroundService
 {
     private readonly ILogger<BotRuntimeService> _logger;
     private readonly BotRuntimeOptions _options;
-    private readonly IMoveQueryApiClient _apiClient;
+    private readonly IDiscordGatewayClient _gatewayClient;
+    private readonly DiscordCommandRegistrar _commandRegistrar;
+    private readonly FramedataInteractionHandler _interactionHandler;
 
     public BotRuntimeService(
         ILogger<BotRuntimeService> logger,
         BotRuntimeOptions options,
-        IMoveQueryApiClient apiClient)
+        IDiscordGatewayClient gatewayClient,
+        DiscordCommandRegistrar commandRegistrar,
+        FramedataInteractionHandler interactionHandler)
     {
         _logger = logger;
         _options = options;
-        _apiClient = apiClient;
+        _gatewayClient = gatewayClient;
+        _commandRegistrar = commandRegistrar;
+        _interactionHandler = interactionHandler;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,12 +34,40 @@ public sealed class BotRuntimeService : BackgroundService
             _options.BotApiBaseUrl,
             _options.BotGuildId);
 
-        // This keeps the bot service process alive in containerized deployments.
-        // Discord gateway command handling will be integrated in subsequent tasks.
-        while (!stoppingToken.IsCancellationRequested)
+        _gatewayClient.Ready += RegisterCommandsAsync;
+        _gatewayClient.InteractionCreated += HandleInteractionAsync;
+
+        try
         {
-            _ = _apiClient;
-            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            await _gatewayClient.LoginAsync(_options.DiscordBotToken);
+            await _gatewayClient.StartAsync();
+            await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
         }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Bot runtime stopping.");
+        }
+        finally
+        {
+            _gatewayClient.Ready -= RegisterCommandsAsync;
+            _gatewayClient.InteractionCreated -= HandleInteractionAsync;
+            await _gatewayClient.StopAsync();
+            await _gatewayClient.LogoutAsync();
+        }
+    }
+
+    private Task RegisterCommandsAsync()
+    {
+        return _commandRegistrar.RegisterFramedataCommandAsync(_options.DiscordGuildId);
+    }
+
+    private Task HandleInteractionAsync(SocketInteraction interaction)
+    {
+        if (interaction is SocketSlashCommand slashCommand)
+        {
+            return _interactionHandler.HandleSocketSlashCommandAsync(slashCommand);
+        }
+
+        return Task.CompletedTask;
     }
 }

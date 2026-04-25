@@ -27,7 +27,7 @@
    - `bot`
    - `applications.commands`
 4. Grant the bot permission to view/send messages in the test channel.
-5. Use the target guild ID as `BOT_GUILD_ID`.
+5. Use the numeric target guild ID as `BOT_GUILD_ID`.
 
 ## Deploy Services (Container Host)
 
@@ -63,12 +63,12 @@
    - `docker compose up -d`
 3. Verify health:
    - Bot connected to Discord
-   - Bot logs show `/framedata` guild command registration succeeded
+   - Bot logs show `Registered Discord slash command /framedata` for the configured guild
    - API health endpoint responds
    - Ingestion run can be triggered and observed
    - Bot container can resolve and call API service over compose network
 4. Run explicit Bot config validation check:
-   - Ensure `DISCORD_BOT_TOKEN`, `BOT_GUILD_ID`, and `BOT_API_BASE_URL` are set
+   - Ensure `DISCORD_BOT_TOKEN`, numeric `BOT_GUILD_ID`, and `BOT_API_BASE_URL` are set
 
 ## Run Tests
 

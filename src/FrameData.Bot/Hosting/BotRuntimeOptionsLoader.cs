@@ -18,6 +18,11 @@ public static class BotRuntimeOptionsLoader
             throw new InvalidOperationException("BOT_GUILD_ID is required.");
         }
 
+        if (!ulong.TryParse(guildId, out var discordGuildId))
+        {
+            throw new InvalidOperationException("BOT_GUILD_ID must be a numeric Discord guild ID.");
+        }
+
         var apiBaseUrlRaw = configuration["BOT_API_BASE_URL"] ?? configuration["Bot:ApiBaseUrl"];
         if (string.IsNullOrWhiteSpace(apiBaseUrlRaw))
         {
@@ -34,6 +39,7 @@ public static class BotRuntimeOptionsLoader
         {
             DiscordBotToken = token,
             BotGuildId = guildId,
+            DiscordGuildId = discordGuildId,
             BotApiBaseUrl = apiBaseUrl
         };
     }

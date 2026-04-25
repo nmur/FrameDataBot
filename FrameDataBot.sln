@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrameData.Ingestion.Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrameData.Api.IntegrationTests", "tests\integration\FrameData.Api.IntegrationTests\FrameData.Api.IntegrationTests.csproj", "{120F7768-D40B-4747-9432-18EEEAD7B1DE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrameData.Bot.IntegrationTests", "tests\integration\FrameData.Bot.IntegrationTests\FrameData.Bot.IntegrationTests.csproj", "{3F9558B7-7C9A-4233-BCC8-7530C931C640}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,6 +102,10 @@ Global
 		{120F7768-D40B-4747-9432-18EEEAD7B1DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{120F7768-D40B-4747-9432-18EEEAD7B1DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{120F7768-D40B-4747-9432-18EEEAD7B1DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F9558B7-7C9A-4233-BCC8-7530C931C640}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F9558B7-7C9A-4233-BCC8-7530C931C640}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F9558B7-7C9A-4233-BCC8-7530C931C640}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F9558B7-7C9A-4233-BCC8-7530C931C640}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4F44BEC0-2C0E-40EA-8186-BCF27C19A327} = {9BC45C92-B5EB-43E5-8197-63F41A880FC4}
@@ -118,5 +124,6 @@ Global
 		{83797327-458A-4498-8F0B-36BF7334C953} = {2794220A-6832-4F6B-81B8-EE52B8ECEF59}
 		{C4666865-2F77-47A0-BC3D-F70AF5AB762E} = {83797327-458A-4498-8F0B-36BF7334C953}
 		{120F7768-D40B-4747-9432-18EEEAD7B1DE} = {83797327-458A-4498-8F0B-36BF7334C953}
+		{3F9558B7-7C9A-4233-BCC8-7530C931C640} = {83797327-458A-4498-8F0B-36BF7334C953}
 	EndGlobalSection
 EndGlobal

@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\src\FrameData.Bot\FrameData.Bot.csproj" />
     <ProjectReference Include="..\..\..\src\FrameData.Shared\FrameData.Shared.csproj" />
   </ItemGroup>
 

@@ -22,6 +22,7 @@ public sealed class BotHostBootstrapTests
 
         options.DiscordBotToken.ShouldBe("token-value");
         options.BotGuildId.ShouldBe("123456789");
+        options.DiscordGuildId.ShouldBe(123456789UL);
         options.BotApiBaseUrl.ShouldBe(new Uri("http://api:8080"));
     }
 
@@ -54,5 +55,21 @@ public sealed class BotHostBootstrapTests
 
         var exception = Should.Throw<InvalidOperationException>(() => BotRuntimeOptionsLoader.Load(configuration));
         exception.Message.ShouldBe("BOT_API_BASE_URL must be an absolute URL.");
+    }
+
+    [Fact]
+    public void Load_WhenGuildIdIsNotNumeric_Throws()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["DISCORD_BOT_TOKEN"] = "token-value",
+                ["BOT_GUILD_ID"] = "not-a-snowflake",
+                ["BOT_API_BASE_URL"] = "http://api:8080"
+            })
+            .Build();
+
+        var exception = Should.Throw<InvalidOperationException>(() => BotRuntimeOptionsLoader.Load(configuration));
+        exception.Message.ShouldBe("BOT_GUILD_ID must be a numeric Discord guild ID.");
     }
 }

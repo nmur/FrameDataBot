@@ -125,19 +125,19 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ### Discord Gateway Slash-Command Follow-Up
 
-- [ ] T083 [P] [US1] Add unit tests for `/framedata` slash command definition in `tests/unit/FrameData.Bot.Tests/Discord/FramedataSlashCommandDefinitionTests.cs`
-- [ ] T084 [P] [US1] Add unit tests for slash interaction option extraction and validation in `tests/unit/FrameData.Bot.Tests/Discord/SlashCommandInteractionMapperTests.cs`
-- [ ] T085 [P] [US1] Add unit tests for interaction handler success and error responses in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerTests.cs`
-- [ ] T086 [US1] Add deterministic bot integration test project and gateway wiring tests in `tests/integration/FrameData.Bot.IntegrationTests/FrameData.Bot.IntegrationTests.csproj` and `tests/integration/FrameData.Bot.IntegrationTests/DiscordGatewayWiringTests.cs`
-- [ ] T087 [P] [US1] Add contract tests for the Discord slash command schema in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
-- [ ] T088 [P] [US1] Implement slash command definition builder in `src/FrameData.Bot/Discord/FramedataSlashCommandDefinition.cs`
-- [ ] T089 [P] [US1] Implement slash interaction option mapper in `src/FrameData.Bot/Discord/SlashCommandInteractionMapper.cs`
-- [ ] T090 [US1] Implement Discord interaction handler that calls `IMoveQueryApiClient` and `MoveResponseFormatter` in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
-- [ ] T091 [US1] Implement guild command registration service in `src/FrameData.Bot/Discord/DiscordCommandRegistrar.cs`
-- [ ] T092 [US1] Replace bot keepalive loop with Discord gateway login/start/stop lifecycle in `src/FrameData.Bot/Hosting/BotRuntimeService.cs`
-- [ ] T093 [US1] Wire Discord.Net socket client, interaction service, registrar, and handler into DI in `src/FrameData.Bot/Program.cs`
-- [ ] T094 [US1] Update bot runtime option validation for Discord gateway configuration in `src/FrameData.Bot/Hosting/BotRuntimeOptions.cs`, `src/FrameData.Bot/Hosting/BotRuntimeOptionsLoader.cs`, and `tests/unit/FrameData.Bot.Tests/Hosting/BotHostBootstrapTests.cs`
-- [ ] T095 [US1] Update Discord gateway smoke-test instructions and environment examples in `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
+- [X] T083 [P] [US1] Add unit tests for `/framedata` slash command definition in `tests/unit/FrameData.Bot.Tests/Discord/FramedataSlashCommandDefinitionTests.cs`
+- [X] T084 [P] [US1] Add unit tests for slash interaction option extraction and validation in `tests/unit/FrameData.Bot.Tests/Discord/SlashCommandInteractionMapperTests.cs`
+- [X] T085 [P] [US1] Add unit tests for interaction handler success and error responses in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerTests.cs`
+- [X] T086 [US1] Add deterministic bot integration test project and gateway wiring tests in `tests/integration/FrameData.Bot.IntegrationTests/FrameData.Bot.IntegrationTests.csproj` and `tests/integration/FrameData.Bot.IntegrationTests/DiscordGatewayWiringTests.cs`
+- [X] T087 [P] [US1] Add contract tests for the Discord slash command schema in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
+- [X] T088 [P] [US1] Implement slash command definition builder in `src/FrameData.Bot/Discord/FramedataSlashCommandDefinition.cs`
+- [X] T089 [P] [US1] Implement slash interaction option mapper in `src/FrameData.Bot/Discord/SlashCommandInteractionMapper.cs`
+- [X] T090 [US1] Implement Discord interaction handler that calls `IMoveQueryApiClient` and `MoveResponseFormatter` in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+- [X] T091 [US1] Implement guild command registration service in `src/FrameData.Bot/Discord/DiscordCommandRegistrar.cs`
+- [X] T092 [US1] Replace bot keepalive loop with Discord gateway login/start/stop lifecycle in `src/FrameData.Bot/Hosting/BotRuntimeService.cs`
+- [X] T093 [US1] Wire Discord.Net socket client, interaction service, registrar, and handler into DI in `src/FrameData.Bot/Program.cs`
+- [X] T094 [US1] Update bot runtime option validation for Discord gateway configuration in `src/FrameData.Bot/Hosting/BotRuntimeOptions.cs`, `src/FrameData.Bot/Hosting/BotRuntimeOptionsLoader.cs`, and `tests/unit/FrameData.Bot.Tests/Hosting/BotHostBootstrapTests.cs`
+- [X] T095 [US1] Update Discord gateway smoke-test instructions and environment examples in `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
 
 **Checkpoint**: US1 fully testable and deployable as a live Discord MVP.
 
