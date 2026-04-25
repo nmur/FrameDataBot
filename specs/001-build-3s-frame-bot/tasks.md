@@ -45,8 +45,9 @@ description: "Task list for implementing Discord 3s frame data bot"
 1. Execute `T001-T015` before starting any story work.
 2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`) and live Discord gateway/slash-command follow-up (`T083-T095`).
 3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
-4. Deliver refinements in order: US3 -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
-5. Complete polish tasks (`T065-T070`) after desired story set is done.
+4. Deliver US2 real persistence/worker follow-up (`T101-T118`) before starting US3; this is the next implementation slice.
+5. Deliver refinements in order: US3 -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
+6. Complete polish tasks (`T065-T070`) after desired story set is done.
 6. At each step, consult the reference list above for requirements and contracts.
 
 ## Phase 1: Setup (Shared Infrastructure)
@@ -165,7 +166,41 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T035 [US2] Implement character JSON export workflow in `src/FrameData.Ingestion/Services/CharacterExportWorkflow.cs`
 - [X] T036 [US2] Implement ingestion trigger/status endpoints with explicit retry-required failure reporting in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
 
-**Checkpoint**: US1+US2 operational with refreshable data pipeline.
+**Checkpoint**: US1 live lookup plus US2 ingestion scaffold complete; real production persistence follows in `T101-T118`.
+
+---
+
+### Real Ingestion Persistence Follow-Up
+
+**Goal**: Replace the ingestion scaffold with a real one-shot worker and Postgres-backed read/write path shared by API and bot.
+
+**Independent Test**: Run the ingestion worker against fixture source HTML and Testcontainers PostgreSQL, then verify database rows, JSON exports, ingestion run status, and `GET /v1/moves/query` reads the persisted move through the API.
+
+#### Tests for Real Ingestion Persistence (MANDATORY) ⚠️
+
+- [ ] T101 [P] [US2] Add unit tests for full supported character catalog entries and uniqueness in `tests/unit/FrameData.Ingestion.Tests/Catalog/SupportedCharacterCatalogTests.cs`
+- [ ] T102 [P] [US2] Add unit tests for ingestion worker configuration validation and exit-code mapping in `tests/unit/FrameData.Ingestion.Tests/Hosting/IngestionWorkerOptionsTests.cs`
+- [ ] T103 [P] [US2] Add contract tests for optional ingestion run scope and per-character status payloads in `tests/contract/FrameData.Contracts.Tests/IngestionRunContractTests.cs`
+- [ ] T104 [P] [US2] Add Testcontainers repository persistence tests proving character, move, and ingestion run rows are inserted/upserted in `tests/integration/FrameData.Ingestion.IntegrationTests/PostgresRepositoryPersistenceTests.cs`
+- [ ] T105 [P] [US2] Add Testcontainers orchestrator tests proving fixture HTML ingestion writes Postgres rows and JSON exports for success and partial-success cases in `tests/integration/FrameData.Ingestion.IntegrationTests/PostgresIngestionOrchestratorTests.cs`
+- [ ] T106 [P] [US2] Add API integration tests proving `GET /v1/moves/query` reads persisted Postgres rows inserted by ingestion/repositories in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryPostgresPersistenceTests.cs`
+- [ ] T107 [P] [US2] Add ingestion worker host integration tests proving the executable wires catalog, repositories, migrations, source client, and export path instead of the console template in `tests/integration/FrameData.Ingestion.IntegrationTests/IngestionWorkerHostTests.cs`
+
+#### Implementation for Real Ingestion Persistence
+
+- [ ] T108 [US2] Implement shared migration bootstrap service for SQL files in `src/FrameData.Infrastructure/Persistence/Migrations/` and `src/FrameData.Infrastructure/Persistence/MigrationRunner.cs`
+- [ ] T109 [US2] Add/adjust PostgreSQL migration SQL for source character IDs and per-character ingestion status persistence in `src/FrameData.Infrastructure/Persistence/Migrations/0002_RealIngestionPersistence.sql`
+- [ ] T110 [US2] Replace in-memory `CharacterRepository` with Npgsql-backed upsert/query implementation in `src/FrameData.Infrastructure/Persistence/Repositories/CharacterRepository.cs`
+- [ ] T111 [US2] Replace in-memory `MoveRepository` and hardcoded Makoto seed data with Npgsql-backed exact query and character move upsert implementation in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
+- [ ] T112 [US2] Replace in-memory `IngestionRunRepository` with Npgsql-backed run/status persistence in `src/FrameData.Infrastructure/Persistence/Repositories/IngestionRunRepository.cs`
+- [ ] T113 [US2] Implement full supported 3s character/source-id catalog in `src/FrameData.Ingestion/Catalog/SupportedCharacterCatalog.cs`
+- [ ] T114 [US2] Update `IngestionOrchestrator` to use catalog scopes, persist per-character statuses, and preserve successful character commits on partial failure in `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
+- [ ] T115 [US2] Replace `Hello, World!` ingestion console template with a hosted one-shot worker in `src/FrameData.Ingestion/Program.cs` and `src/FrameData.Ingestion/Hosting/`
+- [ ] T116 [US2] Wire API startup to migration bootstrap and Postgres-backed repositories so API queries and ingestion endpoints use the shared store in `src/FrameData.Api/Program.cs`
+- [ ] T117 [US2] Update ingestion trigger/status endpoints to default to full catalog, accept optional scoped retries, and return per-character status details in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
+- [ ] T118 [US2] Update compose/env/quickstart documentation for one-shot ingestion execution, export volume verification, and Postgres-backed API/bot validation in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
+
+**Checkpoint**: US2 is real in production terms: ingestion worker scrapes configured source pages, writes PostgreSQL rows, exports JSON files, records retryable failures, and API/bot lookup reads the persisted store.
 
 ---
 
@@ -292,19 +327,21 @@ description: "Task list for implementing Discord 3s frame data bot"
   - US1 (Phase 3) and US2 (Phase 4) start after Foundational.
   - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
   - US1 Discord gateway follow-up (`T083-T095`) completes before US3 response disambiguation work, because US3 changes the live command response path.
-  - US3 (Phase 5) depends on US1 baseline lookup behavior.
-  - US4 (Phase 6) depends on US2 ingestion pipeline.
+  - US2 real persistence follow-up (`T101-T118`) is the next slice and must complete before US3, US4, US6, or final MVP validation, because those stories depend on real persisted data rather than in-memory seed data.
+  - US3 (Phase 5) depends on US1 baseline lookup behavior and US2 real persistence.
+  - US4 (Phase 6) depends on US2 real persistence pipeline.
   - US5 (Phase 7) depends on US4 image-capture data.
-  - US6 (Phase 8) depends on US2 ingestion and US1 live Discord response pipeline.
+  - US6 (Phase 8) depends on US2 real persistence and US1 live Discord response pipeline.
 - Final Phase: depends on all desired stories being complete.
 
 ### User Story Completion Order
 
-1. US1 + runtime parity follow-up + Discord gateway follow-up + US2 (MVP live Discord data query + ingestion backbone)
-2. US3 (fuzzy/alias usability)
-3. US4 (last active-frame image)
-4. US5 (storage impact decision)
-5. US6 (advanced metadata + rich Discord response)
+1. US1 + runtime parity follow-up + Discord gateway follow-up + US2 scaffold
+2. US2 real persistence/worker follow-up (`T101-T118`)
+3. US3 (fuzzy/alias usability)
+4. US4 (last active-frame image)
+5. US5 (storage impact decision)
+6. US6 (advanced metadata + rich Discord response)
 
 ### Within Each User Story
 
@@ -334,6 +371,8 @@ T088, T089
 # Run in parallel:
 T027, T028, T029, T030
 T031, T032
+T101, T102, T103, T104, T105, T106, T107
+T110, T111, T112, T113
 ```
 
 ### User Story 3
@@ -378,8 +417,9 @@ T096, T097, T098
 1. Complete Setup and Foundational phases.
 2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
 3. Deliver US1 Discord gateway/slash-command follow-up so `/framedata` works in a real Discord channel.
-4. Deliver US2 ingestion + persistence + JSON export.
-5. Validate and demo MVP.
+4. Deliver US2 real ingestion persistence follow-up so the worker writes PostgreSQL and JSON exports.
+5. Validate API and bot queries against persisted ingestion rows.
+6. Validate and demo MVP.
 
 ### Incremental Delivery
 

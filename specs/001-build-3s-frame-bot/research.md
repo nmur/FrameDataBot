@@ -233,3 +233,75 @@ Rationale:
     external SaaS state, making tests flaky and unsafe.
   - Unit tests only: rejected because host-level wiring and lifecycle registration still
     need integration coverage.
+
+## Decision 18: Postgres-Backed Repositories Are the Runtime Default
+
+- Decision: Replace in-memory `CharacterRepository`, `MoveRepository`, and
+  `IngestionRunRepository` runtime behavior with Npgsql/PostgreSQL implementations.
+  Tests may still use fakes where useful, but production API and ingestion hosts must
+  resolve the Postgres-backed services.
+- Rationale: FR-008 requires a persistent queryable store used by the bot service. The
+  current in-memory repository scaffold proves service contracts but does not survive
+  process restarts, does not share data between API and ingestion containers, and cannot
+  satisfy production ingestion.
+- Alternatives considered:
+  - Keep in-memory repositories with JSON exports as the source of truth: rejected
+    because API/bot reads would not use PostgreSQL.
+  - Maintain separate API and ingestion persistence implementations: rejected because it
+    creates drift between write and read behavior.
+
+## Decision 19: Shared Migration Bootstrap
+
+- Decision: Add a small idempotent migration bootstrap that applies SQL files from
+  `src/FrameData.Infrastructure/Persistence/Migrations/` before API or ingestion work
+  touches repositories.
+- Rationale: Both API and ingestion containers need the same schema, and Testcontainers
+  integration tests must create a real database from the same migration path used in
+  production.
+- Alternatives considered:
+  - Manual schema provisioning outside the app: rejected for local/Unraid ergonomics and
+    repeatable tests.
+  - Full ORM migration stack: deferred because current SQL schema is small and direct
+    SQL keeps the first persistent slice focused.
+
+## Decision 20: One-Shot Ingestion Worker
+
+- Decision: `FrameData.Ingestion` runs as a one-shot worker: load configuration, apply
+  migrations, run the orchestrator for a requested scope or full catalog, write JSON
+  exports, log run status, and exit with an explicit success/partial/failure code.
+- Rationale: This fits Unraid/Compose scheduling, avoids an always-on scheduler before
+  it is needed, and makes manual refresh/retry behavior easy to observe.
+- Alternatives considered:
+  - Always-on background scheduler: rejected for this slice because scheduling policy is
+    host-specific and can be handled by Unraid/cron/Compose initially.
+  - API-only ingestion trigger: rejected as the only path because the separate ingestion
+    container already exists and should be deployable as a controlled refresh job.
+
+## Decision 21: Full Character Catalog as Runtime Data
+
+- Decision: Define a single supported-character catalog containing internal id,
+  display name, source character id, aliases, enabled flag, and display order. Full
+  catalog ingestion is the default; scoped ingestion is available for tests and manual
+  retries.
+- Rationale: Hardcoding only Makoto in API endpoints does not satisfy US2. A catalog
+  makes source scope explicit, testable, and reusable by both worker and API-triggered
+  ingestion.
+- Alternatives considered:
+  - Inline default scopes in API/worker code: rejected because it duplicates source-id
+    knowledge and makes full-roster validation harder.
+  - Store the catalog only in PostgreSQL before ingestion: rejected for the first slice
+    because bootstrap would need seed management before the ingestion path can run.
+
+## Decision 22: Persistent Integration Tests Must Assert Database Rows
+
+- Decision: Add Testcontainers tests that query PostgreSQL directly after repository,
+  orchestrator, worker-host, and API operations. In-memory assertions alone are not
+  sufficient to close US2.
+- Rationale: The current tests pass while the worker still prints `Hello, World!` and
+  repositories are in-memory. Direct row assertions prove the production persistence
+  boundary.
+- Alternatives considered:
+  - Keep current fake-source/in-memory tests: retained as unit-level coverage only, but
+    rejected as completion evidence for real ingestion.
+  - Live source-site integration tests in CI: rejected because external network/content
+    availability would make CI nondeterministic.

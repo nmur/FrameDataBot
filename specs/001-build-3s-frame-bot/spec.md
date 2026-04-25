@@ -19,6 +19,7 @@
 ### Session 2026-04-25
 
 - Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command for the configured guild, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. The first pass may use primitive text; rich Discord responses are planned as a follow-up.
+- Q: Does US2 completion require a real ingestion worker and persistent PostgreSQL read/write path, not only parser/orchestrator scaffolding? → A: Yes. The ingestion service must run as a deployable worker, ingest the full supported character/source-id catalog by default, insert/update character, move, and ingestion run records in PostgreSQL, export one JSON file per character, and API/bot move lookup must read from that same persistent store.
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -11,9 +11,30 @@
   - `updatedAt` (datetime, required): last successful ingest update timestamp.
 - Relationships:
   - One-to-many with `Move`.
+  - Created/updated from one `SourceCharacterCatalogEntry`.
 - Validation:
-  - `name` unique per character.
+  - `name` unique per game.
   - `sourceCharacterId` unique.
+
+## SourceCharacterCatalogEntry
+
+- Description: Runtime catalog entry defining a supported 3s character and its source
+  page mapping. This is required input to ingestion and may be stored as character
+  metadata after a successful upsert.
+- Fields:
+  - `id` (string, required): stable internal character id used by queries and exports.
+  - `sourceCharacterId` (int, required): source-site `id` query parameter.
+  - `displayName` (string, required): canonical display name.
+  - `aliases` (string[], optional): alternate character inputs.
+  - `enabled` (bool, required): whether this character participates in default
+    full-catalog ingestion.
+  - `displayOrder` (int, required): stable ordering for exports and reports.
+- Relationships:
+  - One-to-one bootstrap source for a persisted `Character`.
+- Validation:
+  - `id` unique, non-empty, lowercase kebab/snake-safe identifier.
+  - `sourceCharacterId` unique across enabled entries.
+  - `displayOrder` unique across enabled entries.
 
 ## Move
 
@@ -110,8 +131,26 @@
   - `charactersProcessed` (int, required)
   - `movesProcessed` (int, required)
   - `errors` (string[], optional)
+  - `characterStatuses` (IngestionRunCharacterStatus[], optional): per-character
+    result details used to identify retry-required scopes.
 - Validation:
   - `completedAt` required for terminal statuses.
+  - `characterStatuses` required for any run that attempted at least one character.
+
+## IngestionRunCharacterStatus
+
+- Description: Per-character result captured during an ingestion run.
+- Fields:
+  - `characterId` (string, required)
+  - `sourceCharacterId` (int, required)
+  - `status` (enum, required): `Succeeded | Failed`
+  - `movesProcessed` (int, required)
+  - `error` (string, optional): sanitized failure reason for retry diagnostics.
+- Relationships:
+  - Belongs to one `IngestionRun`.
+- Validation:
+  - Failed statuses must include `error`.
+  - Succeeded statuses must have `movesProcessed >= 0`.
 
 ## State Transitions
 

@@ -1,83 +1,85 @@
 # Implementation Plan: Discord 3s Frame Data Bot
 
 **Branch**: `001-build-3s-frame-bot` | **Date**: 2026-04-25 | **Spec**: `/specs/001-build-3s-frame-bot/spec.md`
-**Input**: Feature specification from `/specs/001-build-3s-frame-bot/spec.md`, plus 2026-04-25 planning refinement: actual Discord gateway/slash-command handling is the next implementation slice.
+**Input**: Feature specification from `/specs/001-build-3s-frame-bot/spec.md`, plus 2026-04-25 planning refinement: make ingestion real by replacing in-memory ingestion/query storage with a Postgres-backed worker/API path.
 
 ## Summary
 
-Complete the live Discord-facing `/framedata` path that is implied by US1 but not yet implemented in the bot runtime. Existing exact lookup, API client, and primitive formatter work stays in place. This plan adds Discord.Net gateway startup, guild-scoped slash command registration, slash interaction option mapping, API-backed command execution, and a primitive channel response for the first pass. Rich Discord embed/media response work is planned as a later response-format enhancement so the first slice can prove the end-to-end Discord invocation path.
+Close the remaining US2 gap between the planned ingestion story and the current scaffold. The next implementation slice turns `FrameData.Ingestion` into a real one-shot worker, adds a full supported-character/source-id catalog, replaces in-memory repositories with Npgsql/PostgreSQL implementations, proves persistence with Testcontainers, and verifies the API/bot query path reads the same persisted data produced by ingestion. Existing live Discord slash-command handling remains unchanged and continues to call the API; rich Discord embeds remain a later US6 follow-up.
 
 ## Technical Context
 
 - **Language/Version**: .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries
 - **Primary Dependencies**: Discord.Net WebSocket/Interactions, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, NSubstitute, Shouldly, xUnit, Testcontainers for .NET, Npgsql
-- **Storage**: No new storage for gateway handling; bot reads through API, API uses PostgreSQL JSONB and character JSON exports remain unchanged
-- **Testing**: xUnit + Shouldly + NSubstitute for unit tests; bot integration tests use deterministic Discord client/interaction adapters rather than live Discord; existing API/Ingestion integration tests continue using Testcontainers
-- **Target Platform**: Linux Docker containers on local Compose and self-hosted/managed container hosts; Discord Gateway over outbound WebSocket
+- **Storage**: PostgreSQL is the source of truth for `characters`, `moves`, and `ingestion_runs`; JSON exports remain a generated disk artifact mounted from container storage
+- **Testing**: xUnit + Shouldly + NSubstitute for unit tests; Testcontainers PostgreSQL integration tests for repositories, ingestion worker, API query reads, and migration bootstrap; deterministic Discord boundary tests stay separate from live Discord
+- **Target Platform**: Linux Docker containers on local Compose and Unraid/self-hosted Docker; ingestion runs as an explicit one-shot container or API-triggered background run
 - **Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)
 - **Performance Goals**: SC-001 remains: >=95% valid exact-name queries complete in <3 seconds across API latency and bot end-to-end latency on a fixed representative sample
-- **Constraints**: .NET-only scope; no Moq/FluentAssertions; live Discord is excluded from automated CI for determinism and token safety; slash command registration is guild-scoped for fast iteration; bot response must preserve public channel command UX unless later product requirements choose ephemeral responses
-- **Scale/Scope**: Single-game Street Fighter III: 3rd Strike scope; one `/framedata` command with required `character` and `move` string options; no game selector; no global command registration in the first gateway slice
+- **Constraints**: .NET-only scraper scope; no Moq/FluentAssertions; no live Discord in CI; ingestion must support partial success while committing successful character scopes; API and ingestion must use the same Postgres schema/repository implementations
+- **Scale/Scope**: Single-game Street Fighter III: 3rd Strike scope; full supported-roster source catalog; Normals/Specials/Super Arts/Misc ingestion only for this slice; no hitbox media, metadata enrichment, fuzzy lookup, or rich Discord embed work in this slice
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 Pre-Phase 0 gate:
-- [x] Small, single-purpose functions: gateway work is split into command definition, interaction mapping, handler orchestration, runtime lifecycle, and formatting.
-- [x] Descriptive naming/intent comments: new Discord classes must name platform concepts directly and comments are limited to external Discord constraints.
-- [x] TDD order: tasks add unit/contract/integration tests before implementation tasks.
-- [x] Comprehensive automated testing: unit tests cover command schema, option extraction, handler behavior, and formatter behavior; integration tests cover bot host wiring without live Discord.
-- [x] Reproducible integration testing: live Discord is not used in CI because it requires external SaaS state and secrets; deterministic adapters cover our boundary, and quickstart includes a manual smoke test for the real gateway.
-- [x] Focused scope/performance: this slice only closes the `/framedata` gateway gap, with rich embeds deferred to a separate response-format task group.
+- [x] Small, single-purpose functions: persistence, catalog, migration bootstrap, worker host, scraper/orchestrator, and API trigger concerns are planned as separate services/classes.
+- [x] Descriptive naming/intent comments: new names must describe Postgres repository behavior, ingestion worker options, and catalog entries directly; comments are only for external source/schema constraints.
+- [x] TDD order: the new task block adds unit/contract/integration tests before implementation tasks.
+- [x] Comprehensive automated testing: Testcontainers is required to prove actual rows are inserted/read from PostgreSQL; in-memory repository tests are not sufficient for this slice.
+- [x] Reproducible integration testing: source HTML is supplied by deterministic fixtures/fake HTTP handlers in automated tests; live source scraping is covered by manual smoke validation.
+- [x] Focused scope/performance: the slice only makes US2 persistence/worker behavior real and preserves the existing Discord/API command surface.
 
 Post-Phase 1 re-check:
-- [x] Research resolves Discord.Net gateway and command-registration approach.
-- [x] Data model adds only runtime interaction/response payload concepts; persistent domain entities remain unchanged.
-- [x] Discord command contract now distinguishes primitive first-pass text responses from planned rich embed responses.
-- [x] Quickstart contains local/deployed slash-command validation and the manual live Discord smoke path.
+- [x] Research resolves the repository, migration, worker execution, catalog, and API trigger strategy.
+- [x] Data model identifies the full character source catalog and per-character ingestion status needed for retry visibility.
+- [x] API contract documents optional ingestion run scoping while keeping full-catalog ingestion as the default.
+- [x] Quickstart documents real worker invocation, Postgres verification, JSON export verification, and API/bot query validation from persisted rows.
 
 ## Core Implementation Sequence
 
-### Step 1: Freeze the Discord Command Boundary
+### Step 1: Prove the Current Gap With Tests
 
-- Keep `/framedata` as the only command.
-- Keep required string options: `character` and `move`.
-- Register commands to the configured guild on startup for fast propagation and low rollout risk.
+- Add Testcontainers coverage that fails against the current in-memory repositories by asserting `characters`, `moves`, and `ingestion_runs` rows exist in PostgreSQL after repository/orchestrator calls.
+- Add API integration coverage where a move inserted through the real repository is queryable through `GET /v1/moves/query`.
+- Add worker host coverage that verifies the ingestion executable wires configuration, catalog, repositories, source client, and export path instead of printing `Hello, World!`.
 
-### Step 2: Add Testable Discord Boundary Adapters
+### Step 2: Centralize Migration Bootstrap
 
-- Introduce small adapters around Discord.Net interaction data and response calls so command parsing and handler behavior can be tested without a live gateway.
-- Unit test slash command definition, option extraction, invalid/missing option handling, API success mapping, and API error mapping.
+- Add a small migration/bootstrap service that applies SQL files from `src/FrameData.Infrastructure/Persistence/Migrations/` to a configured PostgreSQL database.
+- Use the same bootstrap path in API startup, ingestion worker startup, and integration test setup.
+- Keep migrations deterministic and idempotent; add additive migrations instead of relying on in-memory seed data.
 
-### Step 3: Register the Slash Command
+### Step 3: Replace In-Memory Repositories
 
-- Build the command definition from the contract in `contracts/discord-command.md`.
-- Register the command when the Discord socket client reaches `Ready`.
-- Log command registration success/failure without exposing token values.
+- Implement `CharacterRepository`, `MoveRepository`, and `IngestionRunRepository` with Npgsql-backed SQL operations.
+- `MoveRepository` must satisfy both ingestion upsert needs and `IMoveQueryRepository` exact lookup needs.
+- Remove hardcoded Makoto seed data from runtime repositories; tests must seed required data explicitly or run ingestion.
 
-### Step 4: Handle Slash Interactions
+### Step 4: Add Full Supported Character Catalog
 
-- Listen for Discord interaction creation events.
-- Accept only `/framedata` slash command interactions for this handler.
-- Extract `character` and `move`, call the existing `IMoveQueryApiClient`, and return the existing primitive formatter output.
-- Use an interaction acknowledgement/defer path when API latency may exceed Discord's initial response window.
+- Introduce a single catalog of enabled 3s characters with internal character id, display name, source character id, aliases, and stable display order.
+- Use the catalog as the default scope for the worker and API-triggered ingestion runs.
+- Allow explicit scoped ingestion by character id for tests/manual retries without changing the default full-catalog behavior.
 
-### Step 5: Replace the Keepalive Bot Loop
+### Step 5: Wire the Ingestion Worker Host
 
-- Update `BotRuntimeService` to login, start the Discord socket client, register commands, keep the host alive through the client lifecycle, and stop/logout gracefully on cancellation.
-- Preserve existing container/environment behavior.
+- Replace the console template program with a .NET host that loads configuration, validates `POSTGRES_CONNECTION_STRING`, configures `Ingestion:SourceBaseUrl` and `Ingestion:ExportPath`, applies migrations, runs the orchestrator for the requested scope, logs the run result, and exits with an explicit status code.
+- Preserve partial-success semantics: successful character scopes are committed and failed scopes are visible in run status for retry.
+- Keep scheduling outside the worker for this slice; Unraid/Compose/GitHub Actions can invoke the one-shot container.
 
-### Step 6: Validate Primitive End-to-End Discord UX
+### Step 6: Wire API to the Same Persistent Store
 
-- Confirm a user can invoke `/framedata character move` in a Discord channel and receive basic frame-data text or a clear error response.
-- Keep response text intentionally simple for the first pass.
+- Update API DI so query endpoints, ingestion endpoints, and repository implementations all use the same Postgres-backed services.
+- Update `POST /v1/ingestion/runs` so omitted scope means full catalog and optional scope means targeted retry.
+- Verify the bot path indirectly by keeping the bot API client unchanged and proving API queries return rows from PostgreSQL.
 
-### Step 7: Plan Rich Response Follow-Up
+### Step 7: Update Operational Validation
 
-- Add a Discord embed response builder after the primitive path works.
-- Rich response should present character, matched move, section, startup/active/recovery/on-hit/on-block, optional advanced metadata, and optional image/media reference when available.
-- Preserve text fallback for clients or failures where embeds/media cannot be sent.
+- Document `docker compose run --rm ingestion` or equivalent Unraid one-shot execution.
+- Document how to verify database rows, JSON exports, ingestion run status, and Discord `/framedata` after ingestion.
+- Keep rich Discord response work (`T096-T100`) deferred.
 
 ## Project Structure
 
@@ -102,29 +104,40 @@ src/
 ├── FrameData.Bot/
 │   ├── Api/
 │   ├── Commands/
-│   ├── Discord/          # new gateway/interaction boundary classes
+│   ├── Discord/
 │   ├── Formatting/
 │   └── Hosting/
 ├── FrameData.Api/
+│   └── Endpoints/
 ├── FrameData.Ingestion/
+│   ├── Catalog/          # supported character/source-id catalog
+│   ├── Hosting/          # worker options/bootstrap
+│   └── Services/
 ├── FrameData.Scraper/
+│   ├── Parsing/
+│   └── Source/
 ├── FrameData.Domain/
 ├── FrameData.Infrastructure/
+│   ├── Persistence/
+│   │   ├── Migrations/
+│   │   └── Repositories/ # Npgsql-backed repositories
+│   └── Storage/
 └── FrameData.Shared/
 
 tests/
 ├── unit/
 │   ├── FrameData.Bot.Tests/
-│   └── FrameData.Domain.Tests/
+│   ├── FrameData.Domain.Tests/
+│   └── FrameData.Ingestion.Tests/
 ├── integration/
 │   ├── FrameData.Api.IntegrationTests/
-│   ├── FrameData.Bot.IntegrationTests/       # new deterministic runtime wiring tests
+│   ├── FrameData.Bot.IntegrationTests/
 │   └── FrameData.Ingestion.IntegrationTests/
 └── contract/
     └── FrameData.Contracts.Tests/
 ```
 
-**Structure Decision**: Keep the existing layered .NET multi-service structure. Add a narrow `FrameData.Bot/Discord` namespace for Discord.Net-specific gateway/interaction code, leaving API lookup and response formatting reusable. Add a bot integration test project only for host wiring and deterministic Discord boundary tests.
+**Structure Decision**: Keep the existing layered .NET multi-service structure. Add ingestion catalog/hosting code under `FrameData.Ingestion`, shared migration/bootstrap and Npgsql repositories under `FrameData.Infrastructure`, and reuse API/Bot boundaries so the bot continues to access data only through the API.
 
 ## Complexity Tracking
 

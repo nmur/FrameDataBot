@@ -16,8 +16,11 @@
    - `API_BIND_URL`
    - `POSTGRES_CONNECTION_STRING`
    - `BOT_API_BASE_URL` (Bot -> API internal base URL, for example `http://api:8080`)
-2. Configure ingestion schedule and source base URL.
-3. Configure data volume path for JSON exports.
+   - `INGESTION_SOURCE_BASE_URL` (defaults to `http://ensabahnur.free.fr/BastonNew/index.php`)
+   - `FRAMEDATA_EXPORTS_PATH` for persisted JSON exports.
+2. Configure ingestion execution on the host. The ingestion image is a one-shot worker;
+   schedule it with Unraid/cron/Compose when a refresh is desired.
+3. Configure data volume paths for PostgreSQL and JSON exports.
 
 ## Discord Application Setup
 
@@ -81,15 +84,28 @@
 
 ## MVP Validation Flow
 
-1. Trigger ingestion and confirm one JSON export per character.
-2. Start the bot service and confirm it connects to Discord Gateway.
-3. Confirm `/framedata` appears in the configured guild.
-4. Query known exact move names via Discord command:
+1. Apply migrations through API or ingestion startup and confirm PostgreSQL has the
+   expected `characters`, `moves`, and `ingestion_runs` tables.
+2. Trigger full-catalog ingestion:
+   - Local Compose: `docker compose run --rm ingestion`
+   - API trigger: `POST /v1/ingestion/runs` with no body, then poll
+     `GET /v1/ingestion/runs/{runId}`
+3. Confirm one JSON export exists per enabled character under the configured export
+   volume.
+4. Confirm PostgreSQL contains rows for every enabled character and move rows from
+   Normals, Specials, Super Arts, and Misc where source data exists.
+5. Query the API directly for an ingested move:
+   - `GET /v1/moves/query?character=makoto&moveInput=2mk`
+6. Start the bot service and confirm it connects to Discord Gateway.
+7. Confirm `/framedata` appears in the configured guild.
+8. Query known exact move names via Discord command:
    - `/framedata character:makoto move:2mk`
-5. Confirm the bot posts primitive frame-data text in the channel.
-6. Confirm unknown move/character responses are clear.
-7. Confirm partial-ingestion behavior: successful character updates are committed while failed scopes are marked for retry in run status.
-8. Confirm released image set includes Bot, API, and Ingestion images with matching version tags.
+9. Confirm the bot posts primitive frame-data text from the API-backed PostgreSQL row.
+10. Confirm unknown move/character responses are clear.
+11. Confirm partial-ingestion behavior: successful character updates are committed while
+    failed scopes are marked for retry in run status.
+12. Confirm released image set includes Bot, API, and Ingestion images with matching
+    version tags.
 
 ## Rich Response Follow-Up Validation
 

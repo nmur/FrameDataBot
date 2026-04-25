@@ -44,6 +44,13 @@ paths:
     post:
       summary: Trigger ingestion run
       operationId: triggerIngestion
+      description: Omit the request body or provide an empty characterIds list to ingest the full enabled character catalog.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionRunRequest'
       responses:
         '202':
           description: Ingestion accepted
@@ -134,15 +141,28 @@ components:
       properties:
         lastActiveFrameImageUrl:
           type: string
+    IngestionRunRequest:
+      type: object
+      properties:
+        characterIds:
+          type: array
+          description: Optional scoped retry list. Missing or empty means full enabled catalog.
+          items:
+            type: string
     IngestionAcceptedResponse:
       type: object
-      required: [runId, status]
+      required: [runId, status, scope, charactersQueued]
       properties:
         runId:
           type: string
         status:
           type: string
           enum: [Running]
+        scope:
+          type: string
+          enum: [FullCatalog, Scoped]
+        charactersQueued:
+          type: integer
     IngestionRunResponse:
       type: object
       required: [runId, status, startedAt]
@@ -166,6 +186,25 @@ components:
           type: array
           items:
             type: string
+        characterStatuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestionRunCharacterStatus'
+    IngestionRunCharacterStatus:
+      type: object
+      required: [characterId, sourceCharacterId, status, movesProcessed]
+      properties:
+        characterId:
+          type: string
+        sourceCharacterId:
+          type: integer
+        status:
+          type: string
+          enum: [Succeeded, Failed]
+        movesProcessed:
+          type: integer
+        error:
+          type: string
     ErrorResponse:
       type: object
       required: [code, message]
