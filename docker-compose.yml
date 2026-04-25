@@ -17,7 +17,7 @@ services:
       dockerfile: Dockerfile.api
     environment:
       ASPNETCORE_URLS: http://+:8080
-      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata
+      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata;GSS Encryption Mode=Disable
       Ingestion__ExportPath: /app/exports/characters
       Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
       Ingestion__Characters: ${INGESTION_CHARACTER_SCOPE:-}
@@ -46,7 +46,7 @@ services:
       context: .
       dockerfile: Dockerfile.ingestion
     environment:
-      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata
+      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=framedata;Username=framedata;Password=framedata;GSS Encryption Mode=Disable
       Ingestion__ExportPath: /app/exports/characters
       Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
     depends_on:

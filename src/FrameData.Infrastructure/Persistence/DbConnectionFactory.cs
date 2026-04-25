@@ -8,7 +8,7 @@ public sealed class DbConnectionFactory
 
     public DbConnectionFactory(string connectionString)
     {
-        _connectionString = connectionString;
+        _connectionString = NormalizeConnectionString(connectionString);
     }
 
     public NpgsqlConnection CreateOpenConnection()
@@ -16,5 +16,16 @@ public sealed class DbConnectionFactory
         var connection = new NpgsqlConnection(_connectionString);
         connection.Open();
         return connection;
+    }
+
+    private static string NormalizeConnectionString(string connectionString)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+        if (!connectionString.Contains("GSS Encryption Mode", StringComparison.OrdinalIgnoreCase))
+        {
+            builder["GSS Encryption Mode"] = "Disable";
+        }
+
+        return builder.ConnectionString;
     }
 }

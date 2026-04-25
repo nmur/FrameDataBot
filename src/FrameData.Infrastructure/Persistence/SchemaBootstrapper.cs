@@ -4,6 +4,8 @@ namespace FrameData.Infrastructure.Persistence;
 
 public sealed class SchemaBootstrapper
 {
+    private const long BootstrapLockKey = 337033733032587224;
+
     private readonly DbConnectionFactory _connectionFactory;
     private readonly string? _schemaPath;
 
@@ -19,7 +21,29 @@ public sealed class SchemaBootstrapper
         var sql = await File.ReadAllTextAsync(schemaPath, cancellationToken);
 
         await using var connection = _connectionFactory.CreateOpenConnection();
-        await using var command = new NpgsqlCommand(sql, connection);
+        await AcquireBootstrapLockAsync(connection, cancellationToken);
+        try
+        {
+            await using var command = new NpgsqlCommand(sql, connection);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        finally
+        {
+            await ReleaseBootstrapLockAsync(connection, CancellationToken.None);
+        }
+    }
+
+    private static async Task AcquireBootstrapLockAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand("SELECT pg_advisory_lock(@lock_key);", connection);
+        command.Parameters.AddWithValue("lock_key", BootstrapLockKey);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task ReleaseBootstrapLockAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand("SELECT pg_advisory_unlock(@lock_key);", connection);
+        command.Parameters.AddWithValue("lock_key", BootstrapLockKey);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
