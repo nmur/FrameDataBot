@@ -1,6 +1,8 @@
 using System.Text.Json;
 using FrameData.Domain.Characters;
 using FrameData.Domain.Moves;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -9,10 +11,14 @@ namespace FrameData.Infrastructure.Persistence.Repositories;
 public sealed class FrameDataDatasetRepository
 {
     private readonly DbConnectionFactory _connectionFactory;
+    private readonly ILogger<FrameDataDatasetRepository> _logger;
 
-    public FrameDataDatasetRepository(DbConnectionFactory connectionFactory)
+    public FrameDataDatasetRepository(
+        DbConnectionFactory connectionFactory,
+        ILogger<FrameDataDatasetRepository>? logger = null)
     {
         _connectionFactory = connectionFactory;
+        _logger = logger ?? NullLogger<FrameDataDatasetRepository>.Instance;
     }
 
     public async Task ReplaceAsync(
@@ -20,23 +26,41 @@ public sealed class FrameDataDatasetRepository
         IReadOnlyCollection<Move> moves,
         CancellationToken cancellationToken = default)
     {
-        await using var connection = _connectionFactory.CreateOpenConnection();
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
-
-        await ExecuteAsync("DELETE FROM moves;", connection, transaction, cancellationToken);
-        await ExecuteAsync("DELETE FROM characters;", connection, transaction, cancellationToken);
-
-        foreach (var character in characters)
+        try
         {
-            await InsertCharacterAsync(character, connection, transaction, cancellationToken);
-        }
+            await using var connection = _connectionFactory.CreateOpenConnection();
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
-        foreach (var move in moves)
+            await ExecuteAsync("DELETE FROM moves;", connection, transaction, cancellationToken);
+            await ExecuteAsync("DELETE FROM characters;", connection, transaction, cancellationToken);
+
+            foreach (var character in characters)
+            {
+                await InsertCharacterAsync(character, connection, transaction, cancellationToken);
+            }
+
+            foreach (var move in moves)
+            {
+                await InsertMoveAsync(move, connection, transaction, cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Committed frame data dataset replacement with {CharacterCount} character(s) and {MoveCount} move(s).",
+                characters.Count,
+                moves.Count);
+        }
+        catch (Exception ex)
         {
-            await InsertMoveAsync(move, connection, transaction, cancellationToken);
+            _logger.LogError(
+                ex,
+                "Failed to replace frame data dataset with {CharacterCount} character(s) and {MoveCount} move(s). First move: {FirstMoveId}.",
+                characters.Count,
+                moves.Count,
+                moves.FirstOrDefault()?.Id ?? "<none>");
+            throw;
         }
-
-        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task<FrameDataDataset> GetAllAsync(CancellationToken cancellationToken = default)
