@@ -54,4 +54,36 @@ public sealed class CharacterSectionParserTests
 
         parsed.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Parse_WhenSourceFrameTableIsLoadedIntoContentChar_ParsesRealSourceHeaders()
+    {
+        const string html = """
+            <html><body>
+              <h2>Normals</h2>
+              <div id="content_char">
+                <table id="fd_table">
+                  <thead>
+                    <tr><th></th><th>Name</th><th>Startup</th><th>Hit</th><th>Recovery</th><th>Blk. Adv.</th><th>Hit Adv.</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td></td><td>Jab</td><td>4</td><td>2</td><td>9</td><td>1</td><td>1</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </body></html>
+            """;
+
+        var parsed = _parser.Parse(html);
+
+        parsed.Count.ShouldBe(1);
+        parsed[0].Section.ShouldBe("Normals");
+        parsed[0].CanonicalName.ShouldBe("Jab");
+        parsed[0].Startup.ShouldBe("4");
+        parsed[0].Active.ShouldBe("2");
+        parsed[0].Recovery.ShouldBe("9");
+        parsed[0].OnBlock.ShouldBe("1");
+        parsed[0].OnHit.ShouldBe("1");
+        parsed[0].FrameAdvantage.ShouldBe("1");
+    }
 }

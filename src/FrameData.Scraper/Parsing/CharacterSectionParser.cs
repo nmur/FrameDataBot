@@ -51,18 +51,22 @@ public sealed class CharacterSectionParser
             .Select(c => NormalizeHeader(c.TextContent))
             .ToArray();
 
-        var moveIndex = FindHeaderIndex(headers, "move");
+        var moveIndex = FindFirstHeaderIndex(headers, "move", "name");
         if (moveIndex < 0)
         {
             yield break;
         }
 
         var startupIndex = FindHeaderIndex(headers, "startup");
-        var activeIndex = FindHeaderIndex(headers, "active");
+        var activeIndex = FindFirstHeaderIndex(headers, "active", "hit");
         var recoveryIndex = FindHeaderIndex(headers, "recovery");
-        var onHitIndex = FindHeaderIndex(headers, "onhit");
-        var onBlockIndex = FindHeaderIndex(headers, "onblock");
+        var onHitIndex = FindFirstHeaderIndex(headers, "onhit", "hitadv");
+        var onBlockIndex = FindFirstHeaderIndex(headers, "onblock", "blockadv", "blkadv");
         var frameAdvantageIndex = FindHeaderIndex(headers, "frameadvantage");
+        if (frameAdvantageIndex < 0)
+        {
+            frameAdvantageIndex = onBlockIndex;
+        }
 
         foreach (var row in rows.Skip(1))
         {
@@ -105,8 +109,22 @@ public sealed class CharacterSectionParser
         return -1;
     }
 
+    private static int FindFirstHeaderIndex(IReadOnlyList<string> headers, params string[] normalizedTargets)
+    {
+        foreach (var target in normalizedTargets)
+        {
+            var index = FindHeaderIndex(headers, target);
+            if (index >= 0)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
     private static string NormalizeHeader(string value)
-        => new string(value.Where(ch => !char.IsWhiteSpace(ch) && ch != '-' && ch != '_').ToArray())
+        => new string(value.Where(char.IsLetterOrDigit).ToArray())
             .ToLowerInvariant();
 
     private static string? GetCellValue(AngleSharp.Dom.IHtmlCollection<AngleSharp.Dom.IElement> cells, int index)
@@ -128,6 +146,12 @@ public sealed class CharacterSectionParser
             if (string.Equals(current.TagName, "TABLE", StringComparison.OrdinalIgnoreCase))
             {
                 return current;
+            }
+
+            var nestedTable = current.QuerySelector("table");
+            if (nestedTable is not null)
+            {
+                return nestedTable;
             }
 
             current = current.NextElementSibling;
