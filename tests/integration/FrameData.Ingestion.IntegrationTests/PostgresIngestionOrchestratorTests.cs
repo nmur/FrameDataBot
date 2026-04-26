@@ -41,6 +41,51 @@ public sealed class PostgresIngestionOrchestratorTests : IClassFixture<PostgresC
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task RunAsync_WhenMoveIsParsed_PersistsMoveForExactLookup()
+    {
+        const string urienHtml = """
+            <html><body>
+              <h2>Normals</h2>
+              <table>
+                <tr><th>Move</th><th>Startup</th><th>Active</th><th>Recovery</th><th>On Hit</th><th>On Block</th><th>Frame Advantage</th></tr>
+                <tr><td>Jab</td><td>4</td><td>2</td><td>6</td><td>3</td><td>3</td><td>3</td></tr>
+              </table>
+            </body></html>
+            """;
+
+        var exportDirectory = CreateTempDirectory();
+        try
+        {
+            var orchestrator = CreateOrchestrator(new FakeSourceHttpClient(_ => urienHtml), exportDirectory);
+
+            var run = await orchestrator.RunAsync(
+            [
+                new IngestionCharacterScope
+                {
+                    CharacterId = "urien",
+                    CharacterName = "Urien",
+                    SourceCharacterId = 13,
+                    DisplayOrder = 13
+                }
+            ]);
+
+            var moveRepository = new MoveRepository(_connectionFactory);
+            var persistedMove = await moveRepository.FindExactMoveAsync("urien", "Jab");
+
+            Assert.Equal("Succeeded", run.Status);
+            Assert.NotNull(persistedMove);
+            Assert.Equal("urien-normals-jab", persistedMove.Id);
+            Assert.Equal("Jab", persistedMove.CanonicalName);
+            Assert.Equal("4", persistedMove.FrameData.Startup);
+            Assert.Equal("3", persistedMove.FrameData.OnBlock);
+        }
+        finally
+        {
+            DeleteTempDirectory(exportDirectory);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_WhenAllCharactersSucceed_WritesPostgresRowsJsonExportsAndCharacterStatuses()
     {
         var exportDirectory = CreateTempDirectory();

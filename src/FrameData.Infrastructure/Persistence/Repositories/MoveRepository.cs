@@ -1,5 +1,7 @@
 using FrameData.Domain.MoveLookup;
 using FrameData.Domain.Moves;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 
 namespace FrameData.Infrastructure.Persistence.Repositories;
@@ -7,10 +9,12 @@ namespace FrameData.Infrastructure.Persistence.Repositories;
 public sealed class MoveRepository : IMoveQueryRepository
 {
     private readonly DbConnectionFactory _connectionFactory;
+    private readonly ILogger<MoveRepository> _logger;
 
-    public MoveRepository(DbConnectionFactory connectionFactory)
+    public MoveRepository(DbConnectionFactory connectionFactory, ILogger<MoveRepository>? logger = null)
     {
         _connectionFactory = connectionFactory;
+        _logger = logger ?? NullLogger<MoveRepository>.Instance;
     }
 
     public async Task<bool> SupportsCharacterAsync(string character, CancellationToken cancellationToken = default)
@@ -32,7 +36,13 @@ public sealed class MoveRepository : IMoveQueryRepository
         await using var connection = _connectionFactory.CreateOpenConnection();
         await using var command = new NpgsqlCommand(sql, connection);
         command.Parameters.AddWithValue("character", character);
-        return (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+        var isSupported = (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+        _logger.LogDebug(
+            "Character support lookup for input {Character} returned {IsSupported}.",
+            character,
+            isSupported);
+
+        return isSupported;
     }
 
     public async Task<Move?> FindExactMoveAsync(string character, string move, CancellationToken cancellationToken = default)
@@ -78,6 +88,7 @@ public sealed class MoveRepository : IMoveQueryRepository
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
         {
+            await LogMoveMissDiagnosticsAsync(character, move, cancellationToken);
             return null;
         }
 
@@ -238,4 +249,131 @@ public sealed class MoveRepository : IMoveQueryRepository
         var ordinal = reader.GetOrdinal(columnName);
         return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
     }
+
+    private async Task LogMoveMissDiagnosticsAsync(string character, string move, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var connection = _connectionFactory.CreateOpenConnection();
+            var summary = await GetCharacterMoveSummaryAsync(connection, character, cancellationToken);
+            if (summary is null)
+            {
+                _logger.LogWarning(
+                    "Move lookup missed for {Character} {MoveInput}; no matching character row was visible during miss diagnostics.",
+                    character,
+                    move);
+                return;
+            }
+
+            var trimMatch = await HasTrimmedMoveMatchAsync(connection, summary.CharacterId, move, cancellationToken);
+            var samples = await GetMoveNameSamplesAsync(connection, summary.CharacterId, cancellationToken);
+            var sampleText = samples.Count == 0 ? "<none>" : string.Join(", ", samples);
+
+            _logger.LogWarning(
+                "Move lookup missed for {Character} {MoveInput}; matched character {CharacterId} ({CharacterName}) has {MoveCount} stored move(s). Trimmed-name match: {HasTrimmedMatch}. Sample stored moves: {StoredMoveSamples}.",
+                character,
+                move,
+                summary.CharacterId,
+                summary.CharacterName,
+                summary.MoveCount,
+                trimMatch,
+                sampleText);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Move lookup miss diagnostics failed for character {Character} and move input {MoveInput}.",
+                character,
+                move);
+        }
+    }
+
+    private static async Task<CharacterMoveSummary?> GetCharacterMoveSummaryAsync(
+        NpgsqlConnection connection,
+        string character,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+              c.id,
+              c.name,
+              COUNT(m.id) AS move_count
+            FROM characters c
+            LEFT JOIN moves m ON m.character_id = c.id
+            WHERE lower(c.id) = lower(@character)
+               OR lower(c.name) = lower(@character)
+               OR EXISTS (
+                 SELECT 1
+                 FROM jsonb_array_elements_text(c.aliases) alias
+                 WHERE lower(alias) = lower(@character)
+               )
+            GROUP BY c.id, c.name, c.display_order
+            ORDER BY c.display_order, c.id
+            LIMIT 1;
+            """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("character", character);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return new CharacterMoveSummary(
+            reader.GetString(reader.GetOrdinal("id")),
+            reader.GetString(reader.GetOrdinal("name")),
+            reader.GetInt64(reader.GetOrdinal("move_count")));
+    }
+
+    private static async Task<bool> HasTrimmedMoveMatchAsync(
+        NpgsqlConnection connection,
+        string characterId,
+        string move,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT EXISTS (
+              SELECT 1
+              FROM moves
+              WHERE character_id = @character_id
+                AND lower(trim(canonical_name)) = lower(trim(@move))
+            );
+            """;
+
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("character_id", characterId);
+        command.Parameters.AddWithValue("move", move);
+        return (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+    }
+
+    private static async Task<IReadOnlyList<string>> GetMoveNameSamplesAsync(
+        NpgsqlConnection connection,
+        string characterId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT section, canonical_name
+            FROM moves
+            WHERE character_id = @character_id
+            ORDER BY display_order NULLS LAST, section, canonical_name
+            LIMIT 20;
+            """;
+
+        var samples = new List<string>();
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("character_id", characterId);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            samples.Add($"{reader.GetString(reader.GetOrdinal("section"))}/{reader.GetString(reader.GetOrdinal("canonical_name"))}");
+        }
+
+        return samples;
+    }
+
+    private sealed record CharacterMoveSummary(string CharacterId, string CharacterName, long MoveCount);
 }
