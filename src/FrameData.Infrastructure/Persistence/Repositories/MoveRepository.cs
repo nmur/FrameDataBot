@@ -139,9 +139,11 @@ public sealed class MoveRepository : IMoveQueryRepository
                   @frame_advantage,
                   @notes
                 )
-                ON CONFLICT (character_id, section, canonical_name) DO UPDATE SET
-                  id = EXCLUDED.id,
+                ON CONFLICT (id) DO UPDATE SET
                   display_order = EXCLUDED.display_order,
+                  character_id = EXCLUDED.character_id,
+                  section = EXCLUDED.section,
+                  canonical_name = EXCLUDED.canonical_name,
                   source_move_id = EXCLUDED.source_move_id,
                   startup = EXCLUDED.startup,
                   active = EXCLUDED.active,

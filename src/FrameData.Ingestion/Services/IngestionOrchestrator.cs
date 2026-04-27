@@ -120,9 +120,7 @@ public sealed class IngestionOrchestrator
                     characterScope.CharacterId,
                     sectionCounts);
 
-                var domainMoves = parsedMoves
-                    .Select((parsed, index) => MapMove(characterScope, parsed, index + 1))
-                    .ToList();
+                var domainMoves = MapMoves(characterScope, parsedMoves);
 
                 foreach (var move in domainMoves)
                 {
@@ -224,15 +222,45 @@ public sealed class IngestionOrchestrator
         return run;
     }
 
-    private static Move MapMove(IngestionCharacterScope scope, ParsedMoveEntry parsed, int displayOrder)
+    private List<Move> MapMoves(IngestionCharacterScope scope, IReadOnlyList<ParsedMoveEntry> parsedMoves)
     {
-        var section = NormalizeSection(parsed.Section);
-        var normalizedSection = NormalizeIdPart(section);
-        var normalizedName = NormalizeIdPart(parsed.CanonicalName);
+        var usedMoveIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var moves = new List<Move>(parsedMoves.Count);
 
+        for (var index = 0; index < parsedMoves.Count; index++)
+        {
+            var parsed = parsedMoves[index];
+            var displayOrder = index + 1;
+            var section = NormalizeSection(parsed.Section);
+            var baseMoveId = BuildMoveId(scope.CharacterId, section, parsed.CanonicalName);
+            var moveId = EnsureUniqueMoveId(baseMoveId, usedMoveIds);
+
+            if (!string.Equals(moveId, baseMoveId, StringComparison.Ordinal))
+            {
+                _logger.LogWarning(
+                    "Generated duplicate normalized move id {BaseMoveId} for {CharacterId} move {MoveName}; assigned unique id {MoveId}.",
+                    baseMoveId,
+                    scope.CharacterId,
+                    parsed.CanonicalName,
+                    moveId);
+            }
+
+            moves.Add(MapMove(scope, parsed, displayOrder, section, moveId));
+        }
+
+        return moves;
+    }
+
+    private static Move MapMove(
+        IngestionCharacterScope scope,
+        ParsedMoveEntry parsed,
+        int displayOrder,
+        string section,
+        string moveId)
+    {
         return new Move
         {
-            Id = $"{scope.CharacterId}-{normalizedSection}-{normalizedName}".ToLowerInvariant(),
+            Id = moveId,
             CharacterId = scope.CharacterId,
             Game = CurrentGame,
             CharacterName = scope.CharacterName,
@@ -249,6 +277,33 @@ public sealed class IngestionOrchestrator
                 FrameAdvantage = parsed.FrameAdvantage
             }
         };
+    }
+
+    private static string BuildMoveId(string characterId, string section, string moveName)
+    {
+        var normalizedSection = NormalizeIdPart(section);
+        var normalizedName = NormalizeIdPart(moveName);
+        return $"{characterId}-{normalizedSection}-{normalizedName}".ToLowerInvariant();
+    }
+
+    private static string EnsureUniqueMoveId(string baseMoveId, ISet<string> usedMoveIds)
+    {
+        if (usedMoveIds.Add(baseMoveId))
+        {
+            return baseMoveId;
+        }
+
+        var suffix = 2;
+        while (true)
+        {
+            var candidate = $"{baseMoveId}-{suffix}";
+            if (usedMoveIds.Add(candidate))
+            {
+                return candidate;
+            }
+
+            suffix++;
+        }
     }
 
     private static string NormalizeSection(string section)

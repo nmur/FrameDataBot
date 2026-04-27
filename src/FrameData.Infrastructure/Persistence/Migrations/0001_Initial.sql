@@ -52,6 +52,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_characters_source_character_id
   ON characters(source_character_id)
   WHERE source_character_id IS NOT NULL;
 
+ALTER TABLE moves
+  DROP CONSTRAINT IF EXISTS moves_character_id_section_canonical_name_key;
+
 CREATE TABLE IF NOT EXISTS ingestion_run_character_statuses (
   run_id TEXT NOT NULL REFERENCES ingestion_runs(id) ON DELETE CASCADE,
   character_id TEXT NOT NULL,

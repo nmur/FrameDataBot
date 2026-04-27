@@ -41,6 +41,50 @@ public sealed class PostgresIngestionOrchestratorTests : IClassFixture<PostgresC
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task RunAsync_WhenNormalizedMoveIdsCollide_PersistsBothMoves()
+    {
+        const string collisionHtml = """
+            <html><body>
+              <h2>Normals</h2>
+              <table>
+                <tr><th>Move</th><th>Startup</th><th>Active</th><th>Recovery</th><th>On Hit</th><th>On Block</th><th>Frame Advantage</th></tr>
+                <tr><td>Palm+Strike</td><td>4</td><td>2</td><td>6</td><td>3</td><td>3</td><td>3</td></tr>
+                <tr><td>Palm Strike</td><td>5</td><td>2</td><td>8</td><td>1</td><td>-1</td><td>-1</td></tr>
+              </table>
+            </body></html>
+            """;
+
+        var exportDirectory = CreateTempDirectory();
+        try
+        {
+            var orchestrator = CreateOrchestrator(new FakeSourceHttpClient(_ => collisionHtml), exportDirectory);
+
+            var run = await orchestrator.RunAsync(
+            [
+                new IngestionCharacterScope
+                {
+                    CharacterId = "alex",
+                    CharacterName = "Alex",
+                    SourceCharacterId = 1,
+                    DisplayOrder = 1
+                }
+            ]);
+
+            var moveRepository = new MoveRepository(_connectionFactory);
+            var persistedMoves = await moveRepository.GetByCharacterIdAsync("alex");
+
+            Assert.Equal("Succeeded", run.Status);
+            Assert.Equal(2, persistedMoves.Count);
+            Assert.Contains(persistedMoves, move => move.Id == "alex-normals-palm-strike" && move.CanonicalName == "Palm+Strike");
+            Assert.Contains(persistedMoves, move => move.Id == "alex-normals-palm-strike-2" && move.CanonicalName == "Palm Strike");
+        }
+        finally
+        {
+            DeleteTempDirectory(exportDirectory);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_WhenMoveIsParsed_PersistsMoveForExactLookup()
     {
         const string urienHtml = """
