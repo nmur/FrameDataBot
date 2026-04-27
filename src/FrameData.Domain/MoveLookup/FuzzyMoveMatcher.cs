@@ -7,6 +7,9 @@ public sealed class FuzzyMoveMatcher
 {
     public const decimal MinimumScore = 80;
     public const decimal AmbiguityScoreDelta = 5;
+    private const int PrefixPartialScore = 96;
+    private const int MinimumPrefixPartialLength = 4;
+    private const int PartialSubstringScoreCap = 92;
 
     private readonly AliasNormalizer _normalizer;
 
@@ -75,9 +78,7 @@ public sealed class FuzzyMoveMatcher
 
     private static MatchCandidate CreateCandidate(string normalizedQuery, Move move, MoveAlias alias)
     {
-        var score = normalizedQuery == alias.NormalizedAlias
-            ? 100
-            : Math.Max(Fuzz.Ratio(normalizedQuery, alias.NormalizedAlias), Fuzz.PartialRatio(normalizedQuery, alias.NormalizedAlias));
+        var score = CalculateScore(normalizedQuery, alias.NormalizedAlias);
 
         return new MatchCandidate
         {
@@ -91,5 +92,33 @@ public sealed class FuzzyMoveMatcher
             ThresholdPassed = score >= MinimumScore,
             Move = move
         };
+    }
+
+    private static int CalculateScore(string normalizedQuery, string normalizedAlias)
+    {
+        if (normalizedQuery == normalizedAlias)
+        {
+            return 100;
+        }
+
+        if (normalizedQuery.Length >= MinimumPrefixPartialLength
+            && normalizedAlias.StartsWith(normalizedQuery, StringComparison.Ordinal))
+        {
+            return PrefixPartialScore;
+        }
+
+        var ratio = Fuzz.Ratio(normalizedQuery, normalizedAlias);
+        var partialRatio = Fuzz.PartialRatio(normalizedQuery, normalizedAlias);
+        var score = Math.Max(ratio, partialRatio);
+
+        if (partialRatio == score
+            && normalizedQuery.Length != normalizedAlias.Length
+            && (normalizedAlias.Contains(normalizedQuery, StringComparison.Ordinal)
+                || normalizedQuery.Contains(normalizedAlias, StringComparison.Ordinal)))
+        {
+            return Math.Min(score, PartialSubstringScoreCap);
+        }
+
+        return score;
     }
 }

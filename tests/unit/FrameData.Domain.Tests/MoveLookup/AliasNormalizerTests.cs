@@ -13,6 +13,11 @@ public sealed class AliasNormalizerTests
     [InlineData("2HK", "2hk")]
     [InlineData("low forward", "2mk")]
     [InlineData("Standing LP", "5lp")]
+    [InlineData("jumping Heavy Punch", "jhp")]
+    [InlineData("air Heavy Punch", "jhp")]
+    [InlineData("jp.HP", "jhp")]
+    [InlineData("jp tatsu", "jtatsu")]
+    [InlineData("j.HK", "jhk")]
     public void Normalize_ConvertsCommonNotationToStableLookupForm(string input, string expected)
     {
         var normalized = _normalizer.Normalize(input);
