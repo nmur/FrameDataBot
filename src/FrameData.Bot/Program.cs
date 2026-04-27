@@ -3,8 +3,7 @@ using FrameData.Shared.Logging;
 using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
-using var logger = FrameDataLogging.CreateLogger(builder.Configuration, "FrameData.Bot");
-FrameDataLogging.Configure(builder.Logging, logger);
+FrameDataLogging.Configure(builder.Logging, builder.Configuration, "FrameData.Bot");
 
 var options = BotRuntimeOptionsLoader.Load(builder.Configuration);
 
@@ -17,5 +16,5 @@ try
 }
 finally
 {
-    logger.Dispose();
+    FrameDataLogging.CloseAndFlush();
 }

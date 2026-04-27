@@ -7,9 +7,8 @@ using FrameData.Shared.Logging;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-using var logger = FrameDataLogging.CreateLogger(builder.Configuration, "FrameData.Api");
-FrameDataLogging.Configure(builder.Logging, logger);
-builder.Services.AddSerilog(logger, dispose: false);
+FrameDataLogging.Configure(builder.Logging, builder.Configuration, "FrameData.Api");
+builder.Services.AddSerilog(Log.Logger, dispose: false);
 
 builder.Services.AddSingleton<StaticFrameDataDatasetLoader>();
 builder.Services.AddSingleton(sp =>
@@ -48,7 +47,7 @@ try
 }
 finally
 {
-    logger.Dispose();
+    FrameDataLogging.CloseAndFlush();
 }
 
 public partial class Program;
