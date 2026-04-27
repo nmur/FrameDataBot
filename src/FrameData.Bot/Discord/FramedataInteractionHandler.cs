@@ -62,12 +62,12 @@ public sealed class FramedataInteractionHandler
         try
         {
             var result = await _apiClient.QueryMoveAsync(invocation.Character, invocation.Move, cancellationToken);
-            var content = FormatQueryResult(result.Response, result.Error);
+            var content = FormatQueryResult(result.Response, result.Ambiguous, result.Error);
             _logger.LogInformation(
                 "Discord /framedata interaction completed for character {Character} and move input {MoveInput} with result {ResultCode}.",
                 invocation.Character,
                 invocation.Move,
-                result.Response is not null ? "ok" : result.Error?.Code ?? "error");
+                result.Response is not null ? "ok" : result.Ambiguous is not null ? "ambiguous" : result.Error?.Code ?? "error");
 
             await responder.FollowupAsync(content);
         }
@@ -78,11 +78,16 @@ public sealed class FramedataInteractionHandler
         }
     }
 
-    private string FormatQueryResult(MoveQueryResponse? response, ErrorResponse? error)
+    private string FormatQueryResult(MoveQueryResponse? response, MoveAmbiguousResponse? ambiguous, ErrorResponse? error)
     {
         if (response is not null)
         {
             return _formatter.FormatSuccess(response);
+        }
+
+        if (ambiguous is not null)
+        {
+            return _formatter.FormatAmbiguous(ambiguous);
         }
 
         return _formatter.FormatError(error ?? new ErrorResponse

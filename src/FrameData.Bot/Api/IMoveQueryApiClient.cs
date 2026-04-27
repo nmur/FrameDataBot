@@ -4,7 +4,7 @@ namespace FrameData.Bot.Api;
 
 public interface IMoveQueryApiClient
 {
-    Task<(MoveQueryResponse? Response, ErrorResponse? Error)> QueryMoveAsync(
+    Task<(MoveQueryResponse? Response, MoveAmbiguousResponse? Ambiguous, ErrorResponse? Error)> QueryMoveAsync(
         string character,
         string moveInput,
         CancellationToken cancellationToken = default);

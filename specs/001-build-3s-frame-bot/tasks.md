@@ -260,18 +260,18 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ### Tests for User Story 3 (MANDATORY) ⚠️
 
-- [ ] T037 [P] [US3] Add unit tests for alias normalization rules in `tests/unit/FrameData.Domain.Tests/MoveLookup/AliasNormalizerTests.cs`
-- [ ] T038 [P] [US3] Add unit tests for fuzzy ranking and threshold behavior in `tests/unit/FrameData.Domain.Tests/MoveLookup/FuzzyMatcherTests.cs`
-- [ ] T039 [P] [US3] Add API integration tests for ambiguous and no-match responses in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryFuzzyTests.cs`
-- [ ] T040 [P] [US3] Add contract tests for ambiguous response payload in `tests/contract/FrameData.Contracts.Tests/MoveQueryAmbiguousContractTests.cs`
+- [X] T037 [P] [US3] Add unit tests for alias normalization rules in `tests/unit/FrameData.Domain.Tests/MoveLookup/AliasNormalizerTests.cs`
+- [X] T038 [P] [US3] Add unit tests for fuzzy ranking and threshold behavior in `tests/unit/FrameData.Domain.Tests/MoveLookup/FuzzyMatcherTests.cs`
+- [X] T039 [P] [US3] Add API integration tests for ambiguous and no-match responses in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryFuzzyTests.cs`
+- [X] T040 [P] [US3] Add contract tests for ambiguous response payload in `tests/contract/FrameData.Contracts.Tests/MoveQueryAmbiguousContractTests.cs`
 
 ### Implementation for User Story 3
 
-- [ ] T041 [P] [US3] Implement MoveAlias and MatchCandidate domain models in `src/FrameData.Domain/MoveLookup/MoveAlias.cs` and `src/FrameData.Domain/MoveLookup/MatchCandidate.cs`
-- [ ] T042 [P] [US3] Implement alias normalization service in `src/FrameData.Domain/MoveLookup/AliasNormalizer.cs`
-- [ ] T043 [US3] Implement fuzzy matcher service using FuzzySharp in `src/FrameData.Domain/MoveLookup/FuzzyMoveMatcher.cs`
-- [ ] T044 [US3] Implement disambiguation response builder in `src/FrameData.Api/Responses/MoveDisambiguationResponseFactory.cs`
-- [ ] T045 [US3] Update Discord response flow for candidate selection prompts in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [X] T041 [P] [US3] Implement MoveAlias and MatchCandidate domain models in `src/FrameData.Domain/MoveLookup/MoveAlias.cs` and `src/FrameData.Domain/MoveLookup/MatchCandidate.cs`
+- [X] T042 [P] [US3] Implement alias normalization service in `src/FrameData.Domain/MoveLookup/AliasNormalizer.cs`
+- [X] T043 [US3] Implement fuzzy matcher service using FuzzySharp in `src/FrameData.Domain/MoveLookup/FuzzyMoveMatcher.cs`
+- [X] T044 [US3] Implement disambiguation response builder in `src/FrameData.Api/Responses/MoveDisambiguationResponseFactory.cs`
+- [X] T045 [US3] Update Discord response flow for candidate selection prompts in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
 
 **Checkpoint**: US3 adds robust user-friendly lookup behavior without breaking US1.
 

@@ -17,7 +17,7 @@ public sealed class MoveQueryApiClient : IMoveQueryApiClient
         _logger = logger ?? NullLogger<MoveQueryApiClient>.Instance;
     }
 
-    public async Task<(MoveQueryResponse? Response, ErrorResponse? Error)> QueryMoveAsync(
+    public async Task<(MoveQueryResponse? Response, MoveAmbiguousResponse? Ambiguous, ErrorResponse? Error)> QueryMoveAsync(
         string character,
         string moveInput,
         CancellationToken cancellationToken = default)
@@ -44,7 +44,17 @@ public sealed class MoveQueryApiClient : IMoveQueryApiClient
                 payload?.MatchedMove,
                 payload?.MatchedBy);
 
-            return (payload, null);
+            return (payload, null, null);
+        }
+
+        if (response.StatusCode == HttpStatusCode.MultipleChoices)
+        {
+            var payload = await response.Content.ReadFromJsonAsync<MoveAmbiguousResponse>(cancellationToken);
+            _logger.LogDebug(
+                "Frame data API returned {CandidateCount} ambiguous candidate(s).",
+                payload?.Candidates.Count ?? 0);
+
+            return (null, payload, null);
         }
 
         var error = await response.Content.ReadFromJsonAsync<ErrorResponse>(cancellationToken);
@@ -53,6 +63,6 @@ public sealed class MoveQueryApiClient : IMoveQueryApiClient
             error?.Code,
             error?.Message);
 
-        return (null, error);
+        return (null, null, error);
     }
 }

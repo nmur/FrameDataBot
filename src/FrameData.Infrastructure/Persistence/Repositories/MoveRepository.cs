@@ -201,6 +201,51 @@ public sealed class MoveRepository : IMoveQueryRepository
         return moves;
     }
 
+    public async Task<IReadOnlyList<Move>> GetMovesForCharacterAsync(string character, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT
+              m.id,
+              m.character_id,
+              c.game,
+              c.name AS character_name,
+              m.section,
+              m.canonical_name,
+              m.display_order,
+              m.source_move_id,
+              m.startup,
+              m.active,
+              m.recovery,
+              m.on_hit,
+              m.on_block,
+              m.frame_advantage,
+              m.notes
+            FROM moves m
+            JOIN characters c ON c.id = m.character_id
+            WHERE lower(c.id) = lower(@character)
+               OR lower(c.name) = lower(@character)
+               OR EXISTS (
+                 SELECT 1
+                 FROM jsonb_array_elements_text(c.aliases) alias
+                 WHERE lower(alias) = lower(@character)
+               )
+            ORDER BY m.display_order NULLS LAST, m.section, m.canonical_name;
+            """;
+
+        await using var connection = _connectionFactory.CreateOpenConnection();
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("character", character);
+
+        var moves = new List<Move>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            moves.Add(MapMove(reader));
+        }
+
+        return moves;
+    }
+
     private static void AddMoveParameters(NpgsqlCommand command, Move move)
     {
         command.Parameters.AddWithValue("id", move.Id);

@@ -1,4 +1,5 @@
 using FrameData.Domain.MoveLookup;
+using FrameData.Api.Responses;
 using FrameData.Shared.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ public static class MoveQueryEndpoint
             [FromQuery] string character,
             [FromQuery] string moveInput,
             ExactMoveLookupService lookupService,
+            MoveDisambiguationResponseFactory disambiguationResponseFactory,
             ILoggerFactory loggerFactory,
             CancellationToken cancellationToken) =>
         {
@@ -23,6 +25,19 @@ public static class MoveQueryEndpoint
                 moveInput);
 
             var result = await lookupService.LookupAsync(character, moveInput, cancellationToken);
+            if (result.IsAmbiguous)
+            {
+                logger.LogInformation(
+                    "Move query for character {Character} and move input {MoveInput} returned {CandidateCount} ambiguous candidate(s).",
+                    character,
+                    moveInput,
+                    result.Candidates.Count);
+
+                return Results.Json(
+                    disambiguationResponseFactory.Create(result.Candidates),
+                    statusCode: StatusCodes.Status300MultipleChoices);
+            }
+
             if (!result.IsFound || result.Move is null)
             {
                 logger.LogInformation(
@@ -51,7 +66,7 @@ public static class MoveQueryEndpoint
                 Character = result.Move.CharacterName,
                 MatchedMove = result.Move.CanonicalName,
                 Section = result.Move.Section,
-                MatchedBy = "Exact",
+                MatchedBy = result.MatchedBy ?? "Exact",
                 FrameData = new FrameDataContract
                 {
                     Startup = result.Move.FrameData.Startup,

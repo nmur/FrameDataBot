@@ -1,4 +1,5 @@
 using FrameData.Api.Endpoints;
+using FrameData.Api.Responses;
 using FrameData.Domain.MoveLookup;
 using FrameData.Infrastructure.Persistence;
 using FrameData.Infrastructure.Persistence.Repositories;
@@ -25,7 +26,10 @@ builder.Services.AddSingleton<CharacterRepository>();
 builder.Services.AddSingleton<MoveRepository>();
 builder.Services.AddSingleton<FrameDataDatasetRepository>();
 builder.Services.AddSingleton<IMoveQueryRepository>(sp => sp.GetRequiredService<MoveRepository>());
+builder.Services.AddSingleton<AliasNormalizer>();
+builder.Services.AddSingleton<FuzzyMoveMatcher>();
 builder.Services.AddSingleton<ExactMoveLookupService>();
+builder.Services.AddSingleton<MoveDisambiguationResponseFactory>();
 builder.Services.AddSingleton<IngestionRunRepository>();
 builder.Services.AddSingleton<CharacterJsonExportService>();
 builder.Services.AddSingleton<CharacterSectionParser>();

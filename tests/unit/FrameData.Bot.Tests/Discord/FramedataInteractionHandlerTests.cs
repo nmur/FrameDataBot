@@ -18,7 +18,7 @@ public sealed class FramedataInteractionHandlerTests
     {
         _apiClient
             .QueryMoveAsync("makoto", "2mk", Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<(MoveQueryResponse?, ErrorResponse?)>((new MoveQueryResponse
+            .Returns(Task.FromResult<(MoveQueryResponse?, MoveAmbiguousResponse?, ErrorResponse?)>((new MoveQueryResponse
             {
                 Character = "Makoto",
                 MatchedMove = "2mk",
@@ -32,7 +32,7 @@ public sealed class FramedataInteractionHandlerTests
                     OnHit = "+1",
                     OnBlock = "-2"
                 }
-            }, null)));
+            }, null, null)));
         var handler = CreateHandler();
 
         await handler.HandleAsync(
@@ -53,7 +53,7 @@ public sealed class FramedataInteractionHandlerTests
     {
         _apiClient
             .QueryMoveAsync("makoto", "unknown", Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<(MoveQueryResponse?, ErrorResponse?)>((null, new ErrorResponse
+            .Returns(Task.FromResult<(MoveQueryResponse?, MoveAmbiguousResponse?, ErrorResponse?)>((null, null, new ErrorResponse
             {
                 Code = "move_not_found",
                 Message = "Move not found"
@@ -69,7 +69,35 @@ public sealed class FramedataInteractionHandlerTests
             _responder);
 
         _responder.DeferCount.ShouldBe(1);
-        _responder.Followups.Single().ShouldBe("Move not found. Check spelling or use canonical notation.");
+        _responder.Followups.Single().ShouldBe("Move not found. Try an exact move name or clearer notation.");
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenMoveIsAmbiguous_DefersAndSendsCandidateFollowup()
+    {
+        _apiClient
+            .QueryMoveAsync("makoto", "hk", Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<(MoveQueryResponse?, MoveAmbiguousResponse?, ErrorResponse?)>((null, new MoveAmbiguousResponse
+            {
+                Message = "Multiple moves matched. Try a more specific move name.",
+                Candidates =
+                [
+                    new MoveCandidate { MoveName = "2hk", Section = "Normals", Score = 100 },
+                    new MoveCandidate { MoveName = "5hk", Section = "Normals", Score = 100 }
+                ]
+            }, null)));
+        var handler = CreateHandler();
+
+        await handler.HandleAsync(
+            "framedata",
+            [
+                new SlashCommandOptionValue("character", "makoto"),
+                new SlashCommandOptionValue("move", "hk")
+            ],
+            _responder);
+
+        _responder.DeferCount.ShouldBe(1);
+        _responder.Followups.Single().ShouldBe("Multiple moves matched. Try a more specific move name. Candidates: 2hk (Normals, 100); 5hk (Normals, 100)");
     }
 
     [Fact]

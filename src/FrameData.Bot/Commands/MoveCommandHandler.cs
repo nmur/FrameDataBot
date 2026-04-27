@@ -14,7 +14,7 @@ public sealed class MoveCommandHandler
         _formatter = formatter;
     }
 
-    public string Handle(string[] args, Func<string, string, Task<(MoveQueryResponse? Response, ErrorResponse? Error)>> query)
+    public string Handle(string[] args, Func<string, string, Task<(MoveQueryResponse? Response, MoveAmbiguousResponse? Ambiguous, ErrorResponse? Error)>> query)
     {
         var parsed = _parser.Parse(args);
         if (!parsed.IsValid)
@@ -27,6 +27,11 @@ public sealed class MoveCommandHandler
         if (result.Response is not null)
         {
             return _formatter.FormatSuccess(result.Response);
+        }
+
+        if (result.Ambiguous is not null)
+        {
+            return _formatter.FormatAmbiguous(result.Ambiguous);
         }
 
         return _formatter.FormatError(result.Error ?? new ErrorResponse { Code = "error", Message = "Unknown error" });

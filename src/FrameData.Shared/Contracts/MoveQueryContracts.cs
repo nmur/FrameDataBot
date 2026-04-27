@@ -9,6 +9,19 @@ public sealed class MoveQueryResponse
     public required FrameDataContract FrameData { get; init; }
 }
 
+public sealed class MoveAmbiguousResponse
+{
+    public required string Message { get; init; }
+    public required IReadOnlyList<MoveCandidate> Candidates { get; init; }
+}
+
+public sealed class MoveCandidate
+{
+    public required string MoveName { get; init; }
+    public required string Section { get; init; }
+    public required decimal Score { get; init; }
+}
+
 public sealed class FrameDataContract
 {
     public string? Startup { get; init; }
