@@ -10,21 +10,22 @@ public sealed class IngestionWorkerOptionsTests
     [Fact]
     public void FromConfiguration_ReadsEnvironmentStyleKeysAndCharacters()
     {
+        var root = Path.Combine(Path.GetTempPath(), $"framedata-dataset-{Guid.NewGuid():N}");
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["POSTGRES_CONNECTION_STRING"] = "Host=localhost;Database=framedata",
                 ["INGESTION_SOURCE_BASE_URL"] = "http://example.test/source.php",
-                ["FRAMEDATA_EXPORTS_PATH"] = "/tmp/framedata",
+                ["FRAMEDATA_DATASET_ROOT"] = root,
+                ["FRAMEDATA_ACTIVE_DATASET_PATH"] = Path.Combine(root, "active"),
                 ["characters"] = "makoto,chun-li"
             })
             .Build();
 
         var options = IngestionWorkerOptions.FromConfiguration(configuration);
 
-        options.PostgresConnectionString.ShouldBe("Host=localhost;Database=framedata");
         options.SourceBaseUrl.ShouldBe("http://example.test/source.php");
-        options.ExportPath.ShouldBe("/tmp/framedata");
+        options.DatasetRoot.ShouldBe(root);
+        options.ActiveDatasetPath.ShouldBe(Path.Combine(root, "active"));
         options.CharacterIds.ShouldBe(["makoto", "chun-li"]);
         options.Validate().ShouldBeEmpty();
     }
@@ -34,69 +35,32 @@ public sealed class IngestionWorkerOptionsTests
     {
         var options = new IngestionWorkerOptions
         {
-            PostgresConnectionString = "",
             SourceBaseUrl = "",
-            ExportPath = ""
+            DatasetRoot = "",
+            ActiveDatasetPath = ""
         };
 
         var errors = options.Validate();
 
-        errors.ShouldContain("POSTGRES_CONNECTION_STRING is required.");
         errors.ShouldContain("Ingestion source base URL is required.");
-        errors.ShouldContain("Frame data export path is required.");
+        errors.ShouldContain("FRAMEDATA_DATASET_ROOT is required.");
+        errors.ShouldContain("FRAMEDATA_ACTIVE_DATASET_PATH is required.");
     }
 
     [Fact]
-    public void Parse_WhenBackupCommandProvided_ReadsOutputPathAndPreservesConfigurationArgs()
+    public void Parse_WhenIngestCommandProvided_PreservesConfigurationArgs()
     {
-        var command = IngestionWorkerCommand.Parse(["backup", "--out", "/tmp/backup", "--characters=makoto"]);
+        var command = IngestionWorkerCommand.Parse(["ingest", "--characters=makoto"]);
 
-        command.Mode.ShouldBe(IngestionWorkerMode.Backup);
-        command.BackupPath.ShouldBe("/tmp/backup");
+        command.Mode.ShouldBe(IngestionWorkerMode.Ingest);
         command.ConfigurationArgs.ShouldBe(["--characters=makoto"]);
     }
 
     [Fact]
-    public void Parse_WhenRestoreCommandProvided_ReadsInputPath()
+    public void Parse_WhenBackupCommandProvided_ReturnsUnknownCommandError()
     {
-        var command = IngestionWorkerCommand.Parse(["restore", "--in=/tmp/backup"]);
-
-        command.Mode.ShouldBe(IngestionWorkerMode.Restore);
-        command.RestorePath.ShouldBe("/tmp/backup");
-    }
-
-    [Fact]
-    public void Validate_WhenBackupPathMissing_ReturnsBackupErrorOnlyForBackupMode()
-    {
-        var options = new IngestionWorkerOptions
-        {
-            Mode = IngestionWorkerMode.Backup,
-            PostgresConnectionString = "Host=localhost",
-            BackupPath = ""
-        };
-
-        var errors = options.Validate();
-
-        errors.ShouldContain("Backup output path is required.");
-        errors.ShouldNotContain("Ingestion source base URL is required.");
-        errors.ShouldNotContain("Frame data export path is required.");
-    }
-
-    [Fact]
-    public void Validate_WhenRestorePathMissing_ReturnsRestoreErrorOnlyForRestoreMode()
-    {
-        var options = new IngestionWorkerOptions
-        {
-            Mode = IngestionWorkerMode.Restore,
-            PostgresConnectionString = "Host=localhost",
-            RestorePath = ""
-        };
-
-        var errors = options.Validate();
-
-        errors.ShouldContain("Restore input path is required.");
-        errors.ShouldNotContain("Ingestion source base URL is required.");
-        errors.ShouldNotContain("Frame data export path is required.");
+        var exception = Should.Throw<ArgumentException>(() => IngestionWorkerCommand.Parse(["backup", "--out", "/tmp/backup"]));
+        exception.Message.ShouldBe("Unknown ingestion worker command: backup");
     }
 
     [Theory]

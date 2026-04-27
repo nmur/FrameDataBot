@@ -10,45 +10,23 @@ services:
     volumes:
       - ${FRAMEDATA_SEQ_DATA:-./data/seq}:/data
 
-  postgres:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-framedata}
-      POSTGRES_USER: ${POSTGRES_USER:-framedata}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - ${FRAMEDATA_POSTGRES_DATA:-./data/postgres}:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
     image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-api:${FRAMEDATA_IMAGE_TAG:-stable}
     pull_policy: always
     restart: unless-stopped
     environment:
       ASPNETCORE_URLS: http://+:8080
-      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=${POSTGRES_DB:-framedata};Username=${POSTGRES_USER:-framedata};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
-      Ingestion__ExportPath: /app/exports/characters
-      Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
-      Ingestion__Characters: ${INGESTION_CHARACTER_SCOPE:-}
-      FRAMEDATA_BACKUP_PATH: ${FRAMEDATA_BACKUP_PATH:-/app/exports/backups/latest}
-      FRAMEDATA_RESTORE_PATH: ${FRAMEDATA_RESTORE_PATH:-/app/exports/backups/latest}
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
       SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
       SEQ_API_KEY: ${SEQ_API_KEY:-}
       SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
     depends_on:
-      postgres:
-        condition: service_healthy
       seq:
         condition: service_started
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
-      - ${FRAMEDATA_EXPORTS_PATH:-./data/exports}:/app/exports
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
 
   bot:
     image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-bot:${FRAMEDATA_IMAGE_TAG:-stable}
@@ -66,22 +44,3 @@ services:
         condition: service_started
       seq:
         condition: service_started
-
-  ingestion:
-    image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-ingestion:${FRAMEDATA_IMAGE_TAG:-stable}
-    pull_policy: always
-    restart: "no"
-    environment:
-      POSTGRES_CONNECTION_STRING: Host=postgres;Port=5432;Database=${POSTGRES_DB:-framedata};Username=${POSTGRES_USER:-framedata};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
-      Ingestion__ExportPath: /app/exports/characters
-      Ingestion__SourceBaseUrl: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
-      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
-      SEQ_API_KEY: ${SEQ_API_KEY:-}
-      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    volumes:
-      - ${FRAMEDATA_EXPORTS_PATH:-./data/exports}:/app/exports

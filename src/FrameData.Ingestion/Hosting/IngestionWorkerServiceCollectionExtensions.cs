@@ -1,9 +1,6 @@
-using FrameData.Domain.MoveLookup;
-using FrameData.Infrastructure.Persistence;
-using FrameData.Infrastructure.Persistence.Repositories;
-using FrameData.Infrastructure.Storage;
-using FrameData.Ingestion.Backup;
+using FrameData.Infrastructure.Dataset;
 using FrameData.Ingestion.Catalog;
+using FrameData.Ingestion.Publishing;
 using FrameData.Ingestion.Services;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
@@ -17,19 +14,14 @@ public static class IngestionWorkerServiceCollectionExtensions
     {
         services.AddSingleton(options);
         services.AddSingleton<ISupportedCharacterCatalog, SupportedCharacterCatalog>();
-        services.AddSingleton(new DbConnectionFactory(options.PostgresConnectionString));
-        services.AddSingleton<SchemaBootstrapper>();
-        services.AddSingleton<CharacterRepository>();
-        services.AddSingleton<MoveRepository>();
-        services.AddSingleton<FrameDataDatasetRepository>();
-        services.AddSingleton<FrameDataBackupService>();
-        services.AddSingleton<IMoveQueryRepository>(sp => sp.GetRequiredService<MoveRepository>());
-        services.AddSingleton<IngestionRunRepository>();
-        services.AddSingleton<CharacterJsonExportService>();
+        services.AddSingleton(new StaticDatasetPublisherOptions
+        {
+            DatasetRoot = options.DatasetRoot,
+            ActiveDatasetPath = options.ActiveDatasetPath
+        });
+        services.AddSingleton<StaticFrameDataDatasetLoader>();
+        services.AddSingleton<StaticDatasetPublisher>();
         services.AddSingleton<CharacterSectionParser>();
-        services.AddSingleton(sp => new CharacterExportWorkflow(
-            sp.GetRequiredService<CharacterJsonExportService>(),
-            options.ExportPath));
         services.AddHttpClient<ISourceHttpClient, SourceHttpClient>(client =>
         {
             client.BaseAddress = new Uri(options.SourceBaseUrl);

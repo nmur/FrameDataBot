@@ -1,8 +1,9 @@
 using FrameData.Domain.Characters;
 using FrameData.Domain.Ingestion;
 using FrameData.Domain.Moves;
-using FrameData.Infrastructure.Persistence.Repositories;
 using FrameData.Ingestion.Catalog;
+using FrameData.Ingestion.Hosting;
+using FrameData.Ingestion.Publishing;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
 using Microsoft.Extensions.Logging;
@@ -16,26 +17,23 @@ public sealed class IngestionOrchestrator
 
     private readonly ISourceHttpClient _sourceClient;
     private readonly CharacterSectionParser _sectionParser;
-    private readonly FrameDataDatasetRepository _datasetRepository;
-    private readonly IngestionRunRepository _runRepository;
-    private readonly CharacterExportWorkflow _exportWorkflow;
+    private readonly StaticDatasetPublisher _datasetPublisher;
+    private readonly string _sourceBaseUrl;
     private readonly ISupportedCharacterCatalog? _catalog;
     private readonly ILogger<IngestionOrchestrator> _logger;
 
     public IngestionOrchestrator(
         ISourceHttpClient sourceClient,
         CharacterSectionParser sectionParser,
-        FrameDataDatasetRepository datasetRepository,
-        IngestionRunRepository runRepository,
-        CharacterExportWorkflow exportWorkflow,
+        StaticDatasetPublisher datasetPublisher,
+        IngestionWorkerOptions options,
         ISupportedCharacterCatalog? catalog = null,
         ILogger<IngestionOrchestrator>? logger = null)
     {
         _sourceClient = sourceClient;
         _sectionParser = sectionParser;
-        _datasetRepository = datasetRepository;
-        _runRepository = runRepository;
-        _exportWorkflow = exportWorkflow;
+        _datasetPublisher = datasetPublisher;
+        _sourceBaseUrl = options.SourceBaseUrl;
         _catalog = catalog;
         _logger = logger ?? NullLogger<IngestionOrchestrator>.Instance;
     }
@@ -65,7 +63,7 @@ public sealed class IngestionOrchestrator
             Status = "Running"
         };
 
-        await _runRepository.SaveAsync(run, cancellationToken);
+        await Task.CompletedTask;
         _logger.LogInformation("Created ingestion run {RunId}.", run.Id);
         return run;
     }
@@ -149,9 +147,8 @@ public sealed class IngestionOrchestrator
                     Aliases = characterScope.Aliases
                 };
 
-                await _exportWorkflow.ExportCharacterAsync(character, domainMoves, cancellationToken);
                 _logger.LogInformation(
-                    "Ingestion run {RunId}: exported and staged {MoveCount} move(s) for {CharacterId}.",
+                    "Ingestion run {RunId}: staged {MoveCount} move(s) for {CharacterId}.",
                     run.Id,
                     domainMoves.Count,
                     characterScope.CharacterId);
@@ -194,12 +191,12 @@ public sealed class IngestionOrchestrator
         if (run.CharactersProcessed > 0)
         {
             _logger.LogInformation(
-                "Ingestion run {RunId}: replacing stored dataset with {CharacterCount} successful character scope(s) and {MoveCount} move(s).",
+                "Ingestion run {RunId}: publishing static dataset with {CharacterCount} successful character scope(s) and {MoveCount} move(s).",
                 run.Id,
                 replacementCharacters.Count,
                 replacementMoves.Count);
 
-            await _datasetRepository.ReplaceAsync(replacementCharacters, replacementMoves, cancellationToken);
+            await _datasetPublisher.PublishAsync(replacementCharacters, replacementMoves, _sourceBaseUrl, cancellationToken);
         }
         else
         {
@@ -210,9 +207,9 @@ public sealed class IngestionOrchestrator
 
         run.CompletedAt = DateTimeOffset.UtcNow;
         run.Status = GetFinalStatus(run);
-        await _runRepository.SaveAsync(run, cancellationToken);
+        await Task.CompletedTask;
         _logger.LogInformation(
-            "Ingestion run {RunId} persisted with final status {Status}. Characters: {CharactersProcessed}; moves: {MovesProcessed}; errors: {ErrorCount}.",
+            "Ingestion run {RunId} completed with final status {Status}. Characters: {CharactersProcessed}; moves: {MovesProcessed}; errors: {ErrorCount}.",
             run.Id,
             run.Status,
             run.CharactersProcessed,

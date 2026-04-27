@@ -1,7 +1,7 @@
-using FrameData.Infrastructure.Persistence;
-using FrameData.Infrastructure.Persistence.Repositories;
+using FrameData.Infrastructure.Dataset;
 using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Hosting;
+using FrameData.Ingestion.Publishing;
 using FrameData.Ingestion.Services;
 using FrameData.Scraper.Source;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,25 +11,23 @@ namespace FrameData.Ingestion.IntegrationTests;
 public sealed class IngestionWorkerHostTests
 {
     [Fact]
-    public void AddFrameDataIngestionWorker_WiresCatalogRepositoriesSchemaBootstrapSourceClientAndOrchestrator()
+    public void AddFrameDataIngestionWorker_WiresCatalogPublisherSourceClientAndOrchestrator()
     {
+        var root = Path.Combine(Path.GetTempPath(), $"framedata-worker-host-test-{Guid.NewGuid():N}");
         var services = new ServiceCollection();
         services.AddFrameDataIngestionWorker(new IngestionWorkerOptions
         {
-            PostgresConnectionString = "Host=localhost;Database=framedata",
             SourceBaseUrl = "http://example.test/source.php",
-            ExportPath = Path.Combine(Path.GetTempPath(), "framedata-worker-host-test")
+            DatasetRoot = root,
+            ActiveDatasetPath = Path.Combine(root, "active")
         });
 
         using var provider = services.BuildServiceProvider();
 
         Assert.IsType<SupportedCharacterCatalog>(provider.GetRequiredService<ISupportedCharacterCatalog>());
-        Assert.IsType<DbConnectionFactory>(provider.GetRequiredService<DbConnectionFactory>());
-        Assert.IsType<SchemaBootstrapper>(provider.GetRequiredService<SchemaBootstrapper>());
-        Assert.IsType<CharacterRepository>(provider.GetRequiredService<CharacterRepository>());
-        Assert.IsType<MoveRepository>(provider.GetRequiredService<MoveRepository>());
-        Assert.IsType<FrameDataDatasetRepository>(provider.GetRequiredService<FrameDataDatasetRepository>());
-        Assert.IsType<IngestionRunRepository>(provider.GetRequiredService<IngestionRunRepository>());
+        Assert.IsType<StaticDatasetPublisherOptions>(provider.GetRequiredService<StaticDatasetPublisherOptions>());
+        Assert.IsType<StaticFrameDataDatasetLoader>(provider.GetRequiredService<StaticFrameDataDatasetLoader>());
+        Assert.IsType<StaticDatasetPublisher>(provider.GetRequiredService<StaticDatasetPublisher>());
         Assert.IsType<SourceHttpClient>(provider.GetRequiredService<ISourceHttpClient>());
         Assert.IsType<IngestionOrchestrator>(provider.GetRequiredService<IngestionOrchestrator>());
     }

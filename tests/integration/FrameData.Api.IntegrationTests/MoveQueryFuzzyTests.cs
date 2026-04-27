@@ -1,85 +1,50 @@
 using System.Net;
 using System.Net.Http.Json;
 using FrameData.Api.IntegrationTests.Fixtures;
-using FrameData.Domain.Characters;
-using FrameData.Domain.Moves;
-using FrameData.Infrastructure.Persistence;
-using FrameData.Infrastructure.Persistence.Repositories;
 using FrameData.Shared.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
 
 namespace FrameData.Api.IntegrationTests;
 
-[Collection(ApiPostgresCollection.Name)]
 public sealed class MoveQueryFuzzyTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
-    private readonly DbConnectionFactory _connectionFactory;
     private readonly HttpClient _client;
+    private readonly WebApplicationFactory<Program> _configuredFactory;
+    private readonly string _datasetPath;
 
-    public MoveQueryFuzzyTests(WebApplicationFactory<Program> factory, PostgresContainerFixture postgres)
+    public MoveQueryFuzzyTests(WebApplicationFactory<Program> factory)
     {
-        _connectionFactory = new DbConnectionFactory(postgres.ConnectionString);
-        Environment.SetEnvironmentVariable("POSTGRES_CONNECTION_STRING", postgres.ConnectionString);
-        _client = factory.WithWebHostBuilder(builder =>
+        _datasetPath = StaticDatasetFixtureWriter.CreateAsync(
+            StaticDatasetFixtureWriter.Character(
+                "makoto",
+                "Makoto",
+                ["mak"],
+                StaticDatasetFixtureWriter.Move("makoto", "2hk", displayOrder: 1, startup: "8"),
+                StaticDatasetFixtureWriter.Move("makoto", "5hk", displayOrder: 2, startup: "10"))).GetAwaiter().GetResult();
+
+        _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
                 configuration.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["POSTGRES_CONNECTION_STRING"] = postgres.ConnectionString
+                    ["FRAMEDATA_ACTIVE_DATASET_PATH"] = _datasetPath
                 });
             });
-        }).CreateClient();
-    }
-
-    public async Task InitializeAsync()
-    {
-        await using var connection = _connectionFactory.CreateOpenConnection();
-        await using var command = new NpgsqlCommand("TRUNCATE ingestion_run_character_statuses, ingestion_runs, moves, characters RESTART IDENTITY CASCADE;", connection);
-        await command.ExecuteNonQueryAsync();
-
-        var characterRepository = new CharacterRepository(_connectionFactory);
-        var moveRepository = new MoveRepository(_connectionFactory);
-        await characterRepository.UpsertAsync(new Character
-        {
-            Id = "makoto",
-            Game = "sf3_3s",
-            Name = "Makoto",
-            SourceCharacterId = 17,
-            DisplayOrder = 17,
-            Aliases = ["mak"]
         });
-
-        await moveRepository.UpsertMovesAsync("makoto",
-        [
-            new Move
-            {
-                Id = "makoto-normals-2hk",
-                CharacterId = "makoto",
-                Game = "sf3_3s",
-                CharacterName = "Makoto",
-                Section = "Normals",
-                CanonicalName = "2hk",
-                DisplayOrder = 1,
-                FrameData = new MoveFrameData { Startup = "8", Active = "4", Recovery = "20", OnHit = "KD", OnBlock = "-10" }
-            },
-            new Move
-            {
-                Id = "makoto-normals-5hk",
-                CharacterId = "makoto",
-                Game = "sf3_3s",
-                CharacterName = "Makoto",
-                Section = "Normals",
-                CanonicalName = "5hk",
-                DisplayOrder = 2,
-                FrameData = new MoveFrameData { Startup = "10", Active = "3", Recovery = "19", OnHit = "+1", OnBlock = "-3" }
-            }
-        ]);
+        _client = _configuredFactory.CreateClient();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync()
+    {
+        _client.Dispose();
+        _configuredFactory.Dispose();
+        StaticDatasetFixtureWriter.Delete(_datasetPath);
+        return Task.CompletedTask;
+    }
 
     [Theory]
     [InlineData("cr.HK")]

@@ -7,20 +7,21 @@ using Microsoft.Extensions.Configuration;
 
 namespace FrameData.Api.IntegrationTests;
 
-public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
+public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
+    private readonly string _datasetPath;
     private readonly HttpClient _client;
     private readonly WebApplicationFactory<Program> _configuredFactory;
-    private string _datasetPath = "";
 
-    public MoveQueryExactTests(WebApplicationFactory<Program> factory)
+    public MoveQueryStaticDatasetTests(WebApplicationFactory<Program> factory)
     {
         _datasetPath = StaticDatasetFixtureWriter.CreateAsync(
             StaticDatasetFixtureWriter.Character(
-                "makoto",
-                "Makoto",
-                ["mak"],
-                StaticDatasetFixtureWriter.Move("makoto", "2mk"))).GetAwaiter().GetResult();
+                "chun-li",
+                "Chun-Li",
+                ["chun", "chun li"],
+                StaticDatasetFixtureWriter.Move("chun-li", "2mk", startup: "5"),
+                StaticDatasetFixtureWriter.Move("chun-li", "Kikouken (Jab)", displayOrder: 2, startup: "13"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -46,26 +47,28 @@ public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task GetMoveQuery_WhenExactMatch_ReturnsOk()
+    public async Task GetMoveQuery_ReadsExactMoveFromStaticDataset()
     {
-        var response = await _client.GetAsync("/v1/moves/query?character=makoto&moveInput=2mk");
+        var response = await _client.GetAsync("/v1/moves/query?character=chun&moveInput=2mk");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
         Assert.NotNull(payload);
-        Assert.Equal("Makoto", payload.Character);
+        Assert.Equal("Chun-Li", payload.Character);
         Assert.Equal("2mk", payload.MatchedMove);
+        Assert.Equal("5", payload.FrameData.Startup);
     }
 
     [Fact]
-    public async Task GetMoveQuery_WhenMoveNotFound_ReturnsNotFound()
+    public async Task GetMoveQuery_ReadsAliasAndFuzzyMoveFromStaticDataset()
     {
-        var response = await _client.GetAsync("/v1/moves/query?character=makoto&moveInput=5lk");
+        var response = await _client.GetAsync(
+            "/v1/moves/query?character=chun-li&moveInput=light%20kikouken");
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
         Assert.NotNull(payload);
-        Assert.Equal("move_not_found", payload.Code);
+        Assert.Equal("Kikouken (Jab)", payload.MatchedMove);
+        Assert.Equal("Alias", payload.MatchedBy);
     }
-
 }

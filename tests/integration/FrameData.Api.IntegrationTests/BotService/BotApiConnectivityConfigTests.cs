@@ -31,9 +31,9 @@ public sealed class BotApiConnectivityConfigTests
 
         Assert.Contains("image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-api:${FRAMEDATA_IMAGE_TAG:-stable}", composeContent);
         Assert.Contains("image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-bot:${FRAMEDATA_IMAGE_TAG:-stable}", composeContent);
-        Assert.Contains("image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-ingestion:${FRAMEDATA_IMAGE_TAG:-stable}", composeContent);
         Assert.Contains("pull_policy: always", composeContent);
         Assert.DoesNotContain("\"5432:5432\"", composeContent);
+        Assert.DoesNotContain("ingestion:", composeContent);
     }
 
     [Fact]

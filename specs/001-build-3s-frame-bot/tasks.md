@@ -45,10 +45,10 @@ description: "Task list for implementing Discord 3s frame data bot"
 1. Execute `T001-T015` before starting any story work.
 2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`) and live Discord gateway/slash-command follow-up (`T083-T095`).
 3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
-4. Deliver US2 real persistence/worker follow-up (`T101-T118`) before starting US3.
-5. Deliver US2 backup/restore follow-up (`T119-T125`).
-6. Deliver Seq centralized logging follow-up (`T126-T135`) before starting US3 so production diagnostics are available.
-7. Deliver refinements in order: US3 -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
+4. Historical note: the Postgres persistence follow-up (`T101-T118`) and JSON backup/restore follow-up (`T119-T125`) were completed, but are superseded by the static dataset storage refactor (`T136-T150`).
+5. Deliver Seq centralized logging follow-up (`T126-T135`) before storage/media refactors so production diagnostics are available.
+6. Deliver static dataset storage refactor (`T136-T150`) before US4 image work so move data and media share one persistent dataset bundle.
+7. Deliver refinements in order: US3 -> static dataset refactor -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
 8. Complete polish tasks (`T065-T070`) after desired story set is done.
 9. At each step, consult the reference list above for requirements and contracts.
 
@@ -148,9 +148,9 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ## Phase 4: User Story 2 - Source Ingestion and Persistence (Priority: P1)
 
-**Goal**: Ingest source sections (Normals/Specials/Super Arts/Misc), persist to PostgreSQL, and export one JSON file per character.
+**Goal**: Ingest source sections (Normals/Specials/Super Arts/Misc), publish a versioned static dataset directory, and make the API queryable from JSON files without PostgreSQL.
 
-**Independent Test**: Run ingestion and verify database updates + one JSON export per character; each run replaces the stored dataset with successful character scopes and reports retry-required failures.
+**Independent Test**: Run ingestion and verify `manifest.json`, one JSON file per character, and the active dataset pointer are produced; the API loads the active dataset from disk and answers move queries without PostgreSQL.
 
 ### Tests for User Story 2 (MANDATORY) ⚠️
 
@@ -168,11 +168,11 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T035 [US2] Implement character JSON export workflow in `src/FrameData.Ingestion/Services/CharacterExportWorkflow.cs`
 - [X] T036 [US2] Implement ingestion trigger/status endpoints with explicit retry-required failure reporting in `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`
 
-**Checkpoint**: US1 live lookup plus US2 ingestion scaffold complete; real production persistence follows in `T101-T118`.
+**Checkpoint**: US1 live lookup plus US2 ingestion scaffold complete; historical Postgres persistence follows in `T101-T118` and is superseded by the static dataset refactor in `T136-T150`.
 
 ---
 
-### Real Ingestion Persistence Follow-Up
+### Real Ingestion Persistence Follow-Up (Historical - Superseded)
 
 **Goal**: Replace the ingestion scaffold with a real one-shot worker and Postgres-backed read/write path shared by API and bot.
 
@@ -206,7 +206,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ---
 
-### JSON Backup and Restore Follow-Up
+### JSON Backup and Restore Follow-Up (Historical - Superseded)
 
 **Goal**: Export and restore the queryable frame-data dataset using portable JSON files.
 
@@ -225,7 +225,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T124 [US2] Wire backup service into ingestion DI in `src/FrameData.Ingestion/Hosting/IngestionWorkerServiceCollectionExtensions.cs`
 - [X] T125 [US2] Update compose/env/quickstart documentation for backup and restore commands in `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
 
-**Checkpoint**: Operators can export a portable JSON backup and restore it transactionally into PostgreSQL without re-scraping the source site.
+**Checkpoint**: Superseded by the static dataset storage refactor. Operators no longer need separate JSON backup/restore commands once the active dataset directory is the portable JSON/media artifact.
 
 ---
 
@@ -249,6 +249,37 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T135 [US2] Run unit tests with `dotnet test tests/unit/FrameData.Domain.Tests/FrameData.Domain.Tests.csproj --no-build`, `dotnet test tests/unit/FrameData.Bot.Tests/FrameData.Bot.Tests.csproj --no-build`, and `dotnet test tests/unit/FrameData.Ingestion.Tests/FrameData.Ingestion.Tests.csproj --no-build` when the environment permits the VSTest local socket
 
 **Checkpoint**: API, Bot, and Ingestion logs are centralized in Seq for local and production deployments, with enough detail to trace requests and ingestion work end to end.
+
+---
+
+### Static Dataset Storage Refactor Follow-Up
+
+**Goal**: Replace the Postgres-backed runtime store with a versioned static JSON/media dataset on disk, remove separate JSON backup/restore modes, and move ingestion into a separate on-demand Compose stack.
+
+**Independent Test**: Build a fixture dataset directory, start the API against it, verify exact/fuzzy move queries resolve from JSON files without PostgreSQL, run ingestion publishing into a staging dataset, and verify atomic active-dataset replacement while the main Compose stack contains only always-running services.
+
+#### Tests for Static Dataset Storage Refactor (MANDATORY) ⚠️
+
+- [X] T136 [P] [US2] Add unit tests for static dataset manifest validation and active-path option validation in `tests/unit/FrameData.Ingestion.Tests/Dataset/StaticDatasetOptionsTests.cs`
+- [X] T137 [P] [US2] Add unit tests for static dataset file writing, manifest generation, and atomic publish semantics in `tests/unit/FrameData.Ingestion.Tests/Dataset/StaticDatasetPublisherTests.cs`
+- [X] T138 [P] [US2] Add API integration tests proving `GET /v1/moves/query` reads exact and alias/fuzzy matches from fixture JSON files without PostgreSQL in `tests/integration/FrameData.Api.IntegrationTests/MoveQueryStaticDatasetTests.cs`
+- [X] T139 [P] [US2] Add ingestion integration tests proving the worker publishes `manifest.json`, `characters/*.json`, and preserves the previous active dataset on failed publish in `tests/integration/FrameData.Ingestion.IntegrationTests/StaticDatasetPublishingTests.cs`
+- [X] T140 [P] [US2] Add Compose configuration validation tests or scripted checks for runtime and ingestion Compose separation in `tests/integration/FrameData.Ingestion.IntegrationTests/StaticDatasetComposeConfigTests.cs`
+
+#### Implementation for Static Dataset Storage Refactor
+
+- [X] T141 [US2] Define static dataset manifest and character file contracts in `src/FrameData.Shared/Contracts/StaticDatasetContracts.cs` and `src/FrameData.Domain/Datasets/StaticFrameDataDataset.cs`
+- [X] T142 [US2] Implement static dataset reader and in-memory move query repository in `src/FrameData.Infrastructure/Dataset/StaticFrameDataDatasetLoader.cs` and `src/FrameData.Infrastructure/Dataset/StaticMoveQueryRepository.cs`
+- [X] T143 [US2] Wire API startup to `FRAMEDATA_ACTIVE_DATASET_PATH`, static dataset loading, and `StaticMoveQueryRepository` in `src/FrameData.Api/Program.cs`
+- [X] T144 [US2] Remove API runtime dependency on PostgreSQL, schema bootstrap, Npgsql repositories, and ingestion trigger/status endpoints in `src/FrameData.Api/Program.cs`, `src/FrameData.Api/Endpoints/IngestionEndpoints.cs`, and `src/FrameData.Api/FrameData.Api.csproj`
+- [X] T145 [US2] Implement dataset publisher for ingestion output in `src/FrameData.Ingestion/Publishing/StaticDatasetPublisher.cs` and update `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs` to write versioned JSON datasets instead of database rows
+- [X] T146 [US2] Replace ingestion worker backup/restore command modes with ingest/publish-only options in `src/FrameData.Ingestion/Hosting/IngestionWorkerCommand.cs`, `src/FrameData.Ingestion/Hosting/IngestionWorkerOptions.cs`, `src/FrameData.Ingestion/Hosting/IngestionWorker.cs`, and `src/FrameData.Ingestion/Program.cs`
+- [X] T147 [US2] Remove JSON backup/restore service and Postgres dataset repository from runtime code in `src/FrameData.Ingestion/Backup/FrameDataBackupService.cs` and `src/FrameData.Infrastructure/Persistence/Repositories/FrameDataDatasetRepository.cs`
+- [X] T148 [US2] Remove `postgres` and `ingestion` services from `docker-compose.yml` and `docker-compose.prod.yml`, and add one-shot ingestion topology in `docker-compose.ingestion.yml` with the shared dataset root mounted read-write
+- [X] T149 [US2] Update dataset environment variables and examples in `.env.example`, `.env.prod.example`, and `.env.ingestion.example` using `FRAMEDATA_DATASET_ROOT` and `FRAMEDATA_ACTIVE_DATASET_PATH`
+- [X] T150 [US2] Update static dataset operations documentation in `specs/001-build-3s-frame-bot/quickstart.md` and `docs/prod-compose-deployment.md`, including local Unraid dataset paths, active dataset switching, and validation commands
+
+**Checkpoint**: Runtime Bot/API/Seq stack reads a static active dataset without PostgreSQL; ingestion runs only through the separate ingestion Compose file and publishes portable JSON/media dataset directories.
 
 ---
 
@@ -281,21 +312,21 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 **Goal**: Capture and serve last active-frame hitbox image references when derivable.
 
-**Independent Test**: For moves with supported hitbox display pages, image references are stored and returned with query responses.
+**Independent Test**: For moves with supported hitbox display pages, last-active PNG files and media metadata are stored inside the static dataset `media/` tree and returned with query responses as relative media references.
 
 ### Tests for User Story 4 (MANDATORY) ⚠️
 
 - [ ] T046 [P] [US4] Add unit tests for hitbox display parsing and frame detection in `tests/unit/FrameData.Ingestion.Tests/Scraping/HitboxFrameParserTests.cs`
-- [ ] T047 [P] [US4] Add unit tests for move image persistence logic in `tests/unit/FrameData.Ingestion.Tests/Media/MoveImagePersistenceTests.cs`
-- [ ] T048 [P] [US4] Add integration tests for image capture and retrieval in `tests/integration/FrameData.Ingestion.IntegrationTests/MoveImageFlowTests.cs`
+- [ ] T047 [P] [US4] Add unit tests for static dataset move image pathing and media metadata persistence in `tests/unit/FrameData.Ingestion.Tests/Media/MoveImageDatasetStorageTests.cs`
+- [ ] T048 [P] [US4] Add integration tests for image capture, static dataset media publish, and API media retrieval in `tests/integration/FrameData.Ingestion.IntegrationTests/MoveImageStaticDatasetFlowTests.cs`
 - [ ] T049 [P] [US4] Add contract tests for media field in query response in `tests/contract/FrameData.Contracts.Tests/MoveMediaContractTests.cs`
 
 ### Implementation for User Story 4
 
 - [ ] T050 [P] [US4] Implement MoveImage domain model in `src/FrameData.Domain/Media/MoveImage.cs`
 - [ ] T051 [P] [US4] Implement hitbox display scraper for last active frame in `src/FrameData.Scraper/Parsing/HitboxDisplayParser.cs`
-- [ ] T052 [US4] Implement image storage and metadata repository in `src/FrameData.Infrastructure/Storage/MoveImageStorageService.cs` and `src/FrameData.Infrastructure/Persistence/Repositories/MoveImageRepository.cs`
-- [ ] T053 [US4] Integrate media enrichment into move query endpoint in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
+- [ ] T052 [US4] Implement static dataset image storage and media metadata writing in `src/FrameData.Ingestion/Media/MoveImageDatasetStorageService.cs` and `src/FrameData.Shared/Contracts/MoveMediaContracts.cs`
+- [ ] T053 [US4] Integrate static media references into dataset loading and move query responses in `src/FrameData.Infrastructure/Dataset/StaticFrameDataDatasetLoader.cs` and `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
 
 **Checkpoint**: US4 adds optional visual data while preserving text-only functionality.
 
@@ -375,21 +406,23 @@ description: "Task list for implementing Discord 3s frame data bot"
   - US1 (Phase 3) and US2 (Phase 4) start after Foundational.
   - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
   - US1 Discord gateway follow-up (`T083-T095`) completes before US3 response disambiguation work, because US3 changes the live command response path.
-  - US2 real persistence follow-up (`T101-T118`) is the next slice and must complete before US3, US4, US6, or final MVP validation, because those stories depend on real persisted data rather than in-memory seed data.
-  - US3 (Phase 5) depends on US1 baseline lookup behavior and US2 real persistence.
-  - US4 (Phase 6) depends on US2 real persistence pipeline.
+  - US2 real persistence follow-up (`T101-T118`) was completed as the first production persistence slice, but is superseded by the static dataset storage refactor.
+  - Static dataset storage refactor (`T136-T150`) must complete before US4, US5, US6, or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL.
+  - US3 (Phase 5) depends on US1 baseline lookup behavior and a query repository implementation; its completed matcher work must be preserved when the static repository replaces the Postgres repository.
+  - US4 (Phase 6) depends on static dataset storage so image metadata and files can be published beside move JSON.
   - US5 (Phase 7) depends on US4 image-capture data.
-  - US6 (Phase 8) depends on US2 real persistence and US1 live Discord response pipeline.
+  - US6 (Phase 8) depends on static dataset storage and US1 live Discord response pipeline.
 - Final Phase: depends on all desired stories being complete.
 
 ### User Story Completion Order
 
 1. US1 + runtime parity follow-up + Discord gateway follow-up + US2 scaffold
-2. US2 real persistence/worker follow-up (`T101-T118`)
+2. Historical US2 Postgres persistence/worker follow-up (`T101-T118`) and backup/restore follow-up (`T119-T125`)
 3. US3 (fuzzy/alias usability)
-4. US4 (last active-frame image)
-5. US5 (storage impact decision)
-6. US6 (advanced metadata + rich Discord response)
+4. Static dataset storage refactor (`T136-T150`)
+5. US4 (last active-frame image in the static media dataset)
+6. US5 (storage impact decision)
+7. US6 (advanced metadata + rich Discord response)
 
 ### Within Each User Story
 
@@ -421,6 +454,7 @@ T027, T028, T029, T030
 T031, T032
 T101, T102, T103, T104, T105, T106, T107
 T110, T111, T112, T113
+T136, T137, T138, T139, T140
 ```
 
 ### User Story 3
@@ -465,16 +499,17 @@ T096, T097, T098
 1. Complete Setup and Foundational phases.
 2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
 3. Deliver US1 Discord gateway/slash-command follow-up so `/framedata` works in a real Discord channel.
-4. Deliver US2 real ingestion persistence follow-up so the worker writes PostgreSQL and JSON exports.
-5. Validate API and bot queries against persisted ingestion rows.
+4. Deliver the static dataset storage refactor so the worker writes versioned JSON/media datasets and the API reads the active dataset from disk.
+5. Validate API and bot queries against the mounted static dataset.
 6. Validate and demo MVP.
 
 ### Incremental Delivery
 
-1. Add US3 fuzzy/alias support.
-2. Add US4 last active-frame image support.
-3. Add US5 storage assessment before any full-frame archival.
-4. Add US6 advanced metadata support and rich Discord response formatting.
+1. Preserve US3 fuzzy/alias support while swapping the query repository to static dataset loading.
+2. Complete the static dataset storage refactor (`T136-T150`).
+3. Add US4 last active-frame image support inside the static media dataset.
+4. Add US5 storage assessment before any full-frame archival.
+5. Add US6 advanced metadata support and rich Discord response formatting.
 
 ### Quality Gates
 
