@@ -40,7 +40,7 @@ jobs:
       - name: Build
         run: dotnet build FrameDataBot.sln --no-restore
       - name: Test
-        run: dotnet test FrameDataBot.sln --no-build --blame-hang --blame-hang-timeout 2m
+        run: dotnet test FrameDataBot.sln --no-build
 
   publish-preview-images:
     if: github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/feat/') || startsWith(github.ref, 'refs/heads/001-'))

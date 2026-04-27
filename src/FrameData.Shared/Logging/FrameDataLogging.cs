@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using Serilog.Core;
 
 namespace FrameData.Shared.Logging;
 
@@ -11,20 +12,16 @@ public static class FrameDataLogging
     public const string SeqApiKeyEnvironmentVariable = "SEQ_API_KEY";
     public const string SeqMinimumLevelEnvironmentVariable = "SEQ_MINIMUM_LEVEL";
 
-    public static void Configure(ILoggingBuilder logging, IConfiguration configuration, string serviceName)
-    {
-        Log.Logger = CreateLogger(configuration, serviceName);
+    public static Logger CreateLogger(IConfiguration configuration, string serviceName)
+        => BuildLogger(configuration, serviceName);
 
+    public static void Configure(ILoggingBuilder logging, Serilog.ILogger logger)
+    {
         logging.ClearProviders();
-        logging.AddSerilog(Log.Logger, dispose: true);
+        logging.AddSerilog(logger, dispose: false);
     }
 
-    public static void CloseAndFlush()
-    {
-        Log.CloseAndFlush();
-    }
-
-    private static Serilog.Core.Logger CreateLogger(IConfiguration configuration, string serviceName)
+    private static Logger BuildLogger(IConfiguration configuration, string serviceName)
     {
         var applicationLevel = ReadLevel(
             configuration,

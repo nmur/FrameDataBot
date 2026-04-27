@@ -37,7 +37,8 @@ public static class IngestionWorkerProgram
         }
 
         var services = new ServiceCollection();
-        services.AddLogging(builder => FrameDataLogging.Configure(builder, configuration, "FrameData.Ingestion"));
+        using var logger = FrameDataLogging.CreateLogger(configuration, "FrameData.Ingestion");
+        services.AddLogging(builder => FrameDataLogging.Configure(builder, logger));
         services.AddFrameDataIngestionWorker(options);
 
         try
@@ -57,7 +58,7 @@ public static class IngestionWorkerProgram
         }
         finally
         {
-            FrameDataLogging.CloseAndFlush();
+            logger.Dispose();
         }
     }
 }
