@@ -30,6 +30,23 @@ public sealed class FuzzyMatcherTests
         candidates[0].Score.ShouldBe(100);
     }
 
+    [Theory]
+    [InlineData("kanipan", "Dudley", "2hk")]
+    [InlineData("chesto", "Makoto", "Hayate")]
+    public void Rank_WhenInputUsesMoveSpecificColloquialAlias_RanksConfiguredMoveFirst(
+        string input,
+        string expectedCharacter,
+        string expectedMove)
+    {
+        var candidates = _matcher.Rank(input, CreateMoveSpecificColloquialMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].Move.CharacterName.ShouldBe(expectedCharacter);
+        candidates[0].MatchedAlias.ShouldBe(input);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
     [Fact]
     public void Rank_WhenDirectionalInputIsMoreSpecific_ItScoresHigherThanButtonOnlyInput()
     {
@@ -235,6 +252,35 @@ public sealed class FuzzyMatcherTests
                 Section = "Specials",
                 CanonicalName = "Hayate",
                 DisplayOrder = 3,
+                FrameData = new MoveFrameData { Startup = "12" }
+            }
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateMoveSpecificColloquialMoves()
+    {
+        return
+        [
+            new Move
+            {
+                Id = "dudley-2hk",
+                CharacterId = "dudley",
+                Game = "sf3_3s",
+                CharacterName = "Dudley",
+                Section = "Normals",
+                CanonicalName = "2hk",
+                DisplayOrder = 1,
+                FrameData = new MoveFrameData { Startup = "8" }
+            },
+            new Move
+            {
+                Id = "makoto-hayate",
+                CharacterId = "makoto",
+                Game = "sf3_3s",
+                CharacterName = "Makoto",
+                Section = "Specials",
+                CanonicalName = "Hayate",
+                DisplayOrder = 2,
                 FrameData = new MoveFrameData { Startup = "12" }
             }
         ];

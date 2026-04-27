@@ -5,6 +5,12 @@ namespace FrameData.Domain.MoveLookup;
 
 public sealed partial class AliasNormalizer
 {
+    private static readonly IReadOnlyDictionary<string, string[]> MoveSpecificColloquialAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["dudley:2hk"] = ["kanipan"],
+        ["makoto:hayate"] = ["chesto"]
+    };
+
     private static readonly IReadOnlyDictionary<string, string[]> KnownMoveShortNameAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
     {
         ["tatsumakisenpuukyaku"] = ["tatsu"],
@@ -73,6 +79,7 @@ public sealed partial class AliasNormalizer
         AddCloseNormalAliases(aliases, move, normalizedCanonical);
         AddSpecialMoveStrengthAliases(aliases, move);
         AddKnownMoveShortNameAliases(aliases, move);
+        AddMoveSpecificColloquialAliases(aliases, move, normalizedCanonical);
         AddColloquialAliases(aliases, move, normalizedCanonical);
 
         return aliases
@@ -209,6 +216,20 @@ public sealed partial class AliasNormalizer
         if (normalizedCanonical == "2mk")
         {
             AddAlias(aliases, move, "low forward", MoveAliasType.Colloquial);
+        }
+    }
+
+    private void AddMoveSpecificColloquialAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        var key = $"{Normalize(move.CharacterId)}:{normalizedCanonical}";
+        if (!MoveSpecificColloquialAliases.TryGetValue(key, out var colloquialAliases))
+        {
+            return;
+        }
+
+        foreach (var colloquialAlias in colloquialAliases)
+        {
+            AddAlias(aliases, move, colloquialAlias, MoveAliasType.Colloquial);
         }
     }
 
