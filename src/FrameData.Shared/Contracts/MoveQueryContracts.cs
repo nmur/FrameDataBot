@@ -6,6 +6,9 @@ public sealed class MoveQueryResponse
     public required string MatchedMove { get; init; }
     public required string Section { get; init; }
     public required string MatchedBy { get; init; }
+    public string? Motion { get; init; }
+    public string? Damage { get; init; }
+    public string? Stun { get; init; }
     public required FrameDataContract FrameData { get; init; }
 }
 

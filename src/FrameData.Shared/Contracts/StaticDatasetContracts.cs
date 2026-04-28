@@ -49,6 +49,9 @@ public sealed class StaticDatasetMove
     public required string CanonicalName { get; init; }
     public int? DisplayOrder { get; init; }
     public string? SourceMoveId { get; init; }
+    public string? Motion { get; init; }
+    public string? Damage { get; init; }
+    public string? Stun { get; init; }
     public required StaticDatasetMoveFrameData FrameData { get; init; }
     public IReadOnlyList<StaticDatasetMoveMedia> Media { get; init; } = [];
 }

@@ -38,6 +38,9 @@ public sealed class MoveQueryContractTests
             MatchedMove = "2mk",
             Section = "Normals",
             MatchedBy = "Exact",
+            Motion = "236P",
+            Damage = "60",
+            Stun = "7",
             FrameData = new FrameDataContract
             {
                 Startup = "6",
@@ -50,6 +53,9 @@ public sealed class MoveQueryContractTests
         };
 
         Assert.Equal("makoto", response.Character);
+        Assert.Equal("236P", response.Motion);
+        Assert.Equal("60", response.Damage);
+        Assert.Equal("7", response.Stun);
         Assert.Equal("6", response.FrameData.Startup);
     }
 }

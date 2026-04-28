@@ -97,6 +97,15 @@ components:
         matchedBy:
           type: string
           enum: [Exact, Alias, Fuzzy]
+        motion:
+          type: string
+          description: Optional source command/input notation, primarily present for Specials and Super Arts.
+        damage:
+          type: string
+          description: Optional source damage value preserved as text.
+        stun:
+          type: string
+          description: Optional source stun value preserved as text.
         frameData:
           $ref: '#/components/schemas/FrameData'
         media:

@@ -24,6 +24,7 @@
 ### Session 2026-04-28
 
 - Q: Should the next Discord response implementation continue with primitive text before rich formatting? → A: No. The bot should use Discord embeds as the default `/framedata` response format for move results now, with concise plain-text fallback content retained for send failures, validation errors, and clients where embeds cannot be displayed.
+- Q: Should ingestion preserve non-frame source columns such as Specials/Super Arts Motion plus Damage and Stun? → A: Yes. These values should be optional move attributes that are parsed from source tables when present and retained through the stored dataset and lookup response path.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -237,6 +238,9 @@ properties without breaking MVP fields.
   including matched character, matched move, section, and frame-data fields, while
   preserving concise plain-text fallback content for send failures, validation errors,
   and clients where embeds cannot be displayed.
+- **FR-021**: Ingestion MUST preserve optional source table values for Motion, Damage,
+  and Stun as move attributes when those columns are present, including Motion values
+  on Specials and Super Arts.
 
 ### Verification Requirements *(mandatory)*
 
@@ -252,7 +256,7 @@ properties without breaking MVP fields.
 - **Character**: A playable 3s character with source-page identifier, display name,
   aliases, and associated move set.
 - **Move**: A single attack entry tied to one character and one section, with canonical
-  name and frame data values.
+  name, optional Motion/Damage/Stun source attributes, and frame data values.
 - **MoveAlias**: A normalized alternate input form for a move, including shorthand,
   numpad notation, and colloquial terms.
 - **MatchCandidate**: A scored move candidate containing normalized query,

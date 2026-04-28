@@ -20,7 +20,13 @@ public sealed class MoveEmbedResponseFactory
         var builder = new EmbedBuilder()
             .WithTitle($"{response.Character} - {response.MatchedMove}")
             .WithColor(SuccessColor)
-            .AddField("Section", response.Section, inline: true)
+            .AddField("Section", response.Section, inline: true);
+
+        AddOptionalField(builder, "Motion", response.Motion);
+
+        builder
+            .AddField("Damage", DisplayValue(response.Damage), inline: true)
+            .AddField("Stun", DisplayValue(response.Stun), inline: true)
             .AddField("Startup", DisplayValue(response.FrameData.Startup), inline: true)
             .AddField("Active", DisplayValue(response.FrameData.Active), inline: true)
             .AddField("Recovery", DisplayValue(response.FrameData.Recovery), inline: true)
@@ -85,6 +91,14 @@ public sealed class MoveEmbedResponseFactory
     private static string DisplayValue(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "?" : value;
+    }
+
+    private static void AddOptionalField(EmbedBuilder builder, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            builder.AddField(name, value, inline: true);
+        }
     }
 
     private static string ErrorTitle(string code)

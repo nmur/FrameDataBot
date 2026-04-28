@@ -46,6 +46,10 @@
   - `canonicalName` (string, required)
   - `displayOrder` (int, optional)
   - `sourceMoveId` (string, optional)
+  - `motion` (string, optional): source command/input notation, primarily present
+    for Specials and Super Arts.
+  - `damage` (string, optional): source damage column value preserved as text.
+  - `stun` (string, optional): source stun column value preserved as text.
   - `frameData` (MoveFrameData, required)
   - `metadata` (MoveMetadata, optional)
 - Relationships:
@@ -53,6 +57,8 @@
   - One-to-many with `MoveAlias` and `MoveImage`.
 - Validation:
   - Unique constraint: `characterId + section + canonicalName`.
+  - `motion`, `damage`, and `stun` are optional because source sections do not all
+    expose the same columns.
 
 ## MoveFrameData
 

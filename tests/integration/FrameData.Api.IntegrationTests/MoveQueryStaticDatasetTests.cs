@@ -21,7 +21,14 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                 "Chun-Li",
                 ["chun", "chun li"],
                 StaticDatasetFixtureWriter.Move("chun-li", "2mk", startup: "5"),
-                StaticDatasetFixtureWriter.Move("chun-li", "Kikouken (Jab)", displayOrder: 2, startup: "13"))).GetAwaiter().GetResult();
+                StaticDatasetFixtureWriter.Move(
+                    "chun-li",
+                    "Kikouken (Jab)",
+                    displayOrder: 2,
+                    startup: "13",
+                    motion: "236P",
+                    damage: "60",
+                    stun: "7"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -70,5 +77,8 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.NotNull(payload);
         Assert.Equal("Kikouken (Jab)", payload.MatchedMove);
         Assert.Equal("Alias", payload.MatchedBy);
+        Assert.Equal("236P", payload.Motion);
+        Assert.Equal("60", payload.Damage);
+        Assert.Equal("7", payload.Stun);
     }
 }

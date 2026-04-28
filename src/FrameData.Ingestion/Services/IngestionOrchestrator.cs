@@ -123,12 +123,15 @@ public sealed class IngestionOrchestrator
                 foreach (var move in domainMoves)
                 {
                     _logger.LogDebug(
-                        "Ingestion run {RunId}: parsed move {CharacterId}/{MoveId} {MoveName} ({Section}) startup={Startup} active={Active} recovery={Recovery} onHit={OnHit} onBlock={OnBlock}.",
+                        "Ingestion run {RunId}: parsed move {CharacterId}/{MoveId} {MoveName} ({Section}) motion={Motion} damage={Damage} stun={Stun} startup={Startup} active={Active} recovery={Recovery} onHit={OnHit} onBlock={OnBlock}.",
                         run.Id,
                         characterScope.CharacterId,
                         move.Id,
                         move.CanonicalName,
                         move.Section,
+                        move.Motion,
+                        move.Damage,
+                        move.Stun,
                         move.FrameData.Startup,
                         move.FrameData.Active,
                         move.FrameData.Recovery,
@@ -264,6 +267,9 @@ public sealed class IngestionOrchestrator
             Section = section,
             CanonicalName = parsed.CanonicalName,
             DisplayOrder = displayOrder,
+            Motion = parsed.Motion,
+            Damage = parsed.Damage,
+            Stun = parsed.Stun,
             FrameData = new MoveFrameData
             {
                 Startup = parsed.Startup,

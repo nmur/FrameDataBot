@@ -47,8 +47,8 @@ description: "Task list for implementing Discord 3s frame data bot"
 3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
 4. Historical note: the Postgres persistence follow-up (`T101-T118`) and JSON backup/restore follow-up (`T119-T125`) were completed, but are superseded by the static dataset storage refactor (`T136-T150`).
 5. Deliver Seq centralized logging follow-up (`T126-T135`) before storage/media refactors so production diagnostics are available.
-6. Deliver static dataset storage refactor (`T136-T150`) before US4 image work so move data and media share one persistent dataset bundle.
-7. Deliver refinements in order: US3 -> static dataset refactor -> US4 -> US5 -> US6 advanced metadata. Embed response formatting is part of the US1 live Discord response path.
+6. Deliver static dataset storage refactor (`T136-T150`) and source column expansion (`T151-T156`) before US4 image work so move data and media share one persistent dataset bundle with all currently required source columns.
+7. Deliver refinements in order: US3 -> static dataset refactor/source column expansion -> US4 -> US5 -> US6 advanced metadata. Embed response formatting is part of the US1 live Discord response path.
 8. Complete polish tasks (`T065-T070`) after desired story set is done.
 9. At each step, consult the reference list above for requirements and contracts.
 
@@ -291,6 +291,28 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ---
 
+### Source Column Expansion Follow-Up
+
+**Goal**: Preserve Motion, Damage, and Stun source table columns as optional move attributes through ingestion, static dataset publishing/loading, API contracts, and Discord move responses.
+
+**Independent Test**: Parse fixture Specials and Super Arts source tables that include Motion, Damage, and Stun columns, publish/load a static dataset, query the API, and verify the Discord response includes those values when present while existing moves without those columns still work.
+
+#### Tests for Source Column Expansion (MANDATORY) ⚠️
+
+- [X] T151 [P] [US2] Add parser coverage for Motion, Damage, and Stun columns in `tests/unit/FrameData.Ingestion.Tests/Scraping/CharacterSectionParserTests.cs`
+- [X] T152 [P] [US2] Add static dataset/API/Discord response coverage for Motion, Damage, and Stun in `tests/unit/FrameData.Ingestion.Tests/Dataset/StaticDatasetPublisherTests.cs`, `tests/integration/FrameData.Api.IntegrationTests/MoveQueryStaticDatasetTests.cs`, `tests/unit/FrameData.Bot.Tests/Formatting/MoveEmbedResponseFactoryTests.cs`, and `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs`
+
+#### Implementation for Source Column Expansion
+
+- [X] T153 [P] [US2] Add optional Motion, Damage, and Stun properties to move contracts/models in `src/FrameData.Domain/Moves/Move.cs`, `src/FrameData.Shared/Contracts/StaticDatasetContracts.cs`, and `src/FrameData.Shared/Contracts/MoveQueryContracts.cs`
+- [X] T154 [US2] Parse and map Motion, Damage, and Stun source columns in `src/FrameData.Scraper/Parsing/CharacterSectionParser.cs` and `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
+- [X] T155 [US2] Persist and load Motion, Damage, and Stun through the static dataset and API response in `src/FrameData.Ingestion/Publishing/StaticDatasetPublisher.cs`, `src/FrameData.Infrastructure/Dataset/StaticFrameDataDatasetLoader.cs`, and `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
+- [X] T156 [US2] Display optional Motion, Damage, and Stun values in Discord fallback/embed formatting in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
+
+**Checkpoint**: Source Motion, Damage, and Stun columns survive ingestion and are visible in lookup responses when present.
+
+---
+
 ## Phase 5: User Story 3 - Notation and Alias Resolution (Priority: P2)
 
 **Goal**: Support shorthand/numpad/colloquial input with fuzzy matching and safe disambiguation.
@@ -407,7 +429,7 @@ description: "Task list for implementing Discord 3s frame data bot"
   - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
   - US1 Discord gateway follow-up (`T083-T095`) and embed response follow-up (`T096-T100`) complete before US3 response disambiguation work, because US3 changes the live command response path.
   - US2 real persistence follow-up (`T101-T118`) was completed as the first production persistence slice, but is superseded by the static dataset storage refactor.
-  - Static dataset storage refactor (`T136-T150`) must complete before US4, US5, US6, or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL.
+  - Static dataset storage refactor (`T136-T150`) plus source column expansion (`T151-T156`) must complete before US4, US5, US6, or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL and must retain all currently required source columns.
   - US3 (Phase 5) depends on US1 baseline lookup behavior and a query repository implementation; its completed matcher work must be preserved when the static repository replaces the Postgres repository.
   - US4 (Phase 6) depends on static dataset storage so image metadata and files can be published beside move JSON.
   - US5 (Phase 7) depends on US4 image-capture data.
@@ -456,6 +478,7 @@ T031, T032
 T101, T102, T103, T104, T105, T106, T107
 T110, T111, T112, T113
 T136, T137, T138, T139, T140
+T151, T152, T153
 ```
 
 ### User Story 3
@@ -500,14 +523,14 @@ T062
 2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
 3. Deliver US1 Discord gateway/slash-command follow-up so `/framedata` works in a real Discord channel.
 4. Deliver US1 Discord embed response follow-up so `/framedata` returns structured frame-data embeds with text fallback.
-5. Deliver the static dataset storage refactor so the worker writes versioned JSON/media datasets and the API reads the active dataset from disk.
+5. Deliver the static dataset storage refactor and source column expansion so the worker writes versioned JSON/media datasets and the API reads all required move attributes from the active dataset on disk.
 6. Validate API and bot queries against the mounted static dataset.
 7. Validate and demo MVP.
 
 ### Incremental Delivery
 
 1. Preserve US3 fuzzy/alias support while swapping the query repository to static dataset loading.
-2. Complete the static dataset storage refactor (`T136-T150`).
+2. Complete the static dataset storage refactor (`T136-T150`) and source column expansion (`T151-T156`).
 3. Add US4 last active-frame image support inside the static media dataset.
 4. Add US5 storage assessment before any full-frame archival.
 5. Add US6 advanced metadata support to the existing embed response format.

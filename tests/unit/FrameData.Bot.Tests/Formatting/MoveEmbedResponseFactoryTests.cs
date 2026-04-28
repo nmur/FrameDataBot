@@ -31,6 +31,8 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Makoto - Hayate");
         FieldValue(response, "Section").ShouldBe("Specials");
+        FieldValue(response, "Damage").ShouldBe("?");
+        FieldValue(response, "Stun").ShouldBe("?");
         FieldValue(response, "Startup").ShouldBe("12");
         FieldValue(response, "Active").ShouldBe("3");
         FieldValue(response, "Recovery").ShouldBe("21");
@@ -38,6 +40,35 @@ public sealed class MoveEmbedResponseFactoryTests
         FieldValue(response, "On-Block").ShouldBe("-6");
         response.IsEphemeral.ShouldBeFalse();
     }
+
+    [Fact]
+    public void Create_WhenMoveHasSourceAttributes_AddsOptionalFields()
+    {
+        var response = _factory.Create(new MoveQueryResponse
+        {
+            Character = "Makoto",
+            MatchedMove = "Hayate",
+            Section = "Specials",
+            MatchedBy = "Exact",
+            Motion = "236P",
+            Damage = "120",
+            Stun = "17",
+            FrameData = new FrameDataContract
+            {
+                Startup = "12",
+                Active = "3",
+                Recovery = "21",
+                OnHit = "+2",
+                OnBlock = "-6"
+            }
+        });
+
+        response.Content.ShouldBe("Makoto Hayate (Specials) | Motion 236P Damage 120 Stun 17 Startup 12 Active 3 Recovery 21 OnHit +2 OnBlock -6");
+        FieldValue(response, "Motion").ShouldBe("236P");
+        FieldValue(response, "Damage").ShouldBe("120");
+        FieldValue(response, "Stun").ShouldBe("17");
+    }
+
 
     [Fact]
     public void Create_WhenMoveIsAmbiguous_BuildsCandidateEmbedWithFallbackContent()

@@ -157,6 +157,9 @@ public sealed class StaticFrameDataDatasetLoader
             CanonicalName = move.CanonicalName,
             DisplayOrder = move.DisplayOrder,
             SourceMoveId = move.SourceMoveId,
+            Motion = move.Motion,
+            Damage = move.Damage,
+            Stun = move.Stun,
             FrameData = new MoveFrameData
             {
                 Startup = move.FrameData.Startup,

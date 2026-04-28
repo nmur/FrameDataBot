@@ -67,6 +67,9 @@ public static class MoveQueryEndpoint
                 MatchedMove = result.Move.CanonicalName,
                 Section = result.Move.Section,
                 MatchedBy = result.MatchedBy ?? "Exact",
+                Motion = result.Move.Motion,
+                Damage = result.Move.Damage,
+                Stun = result.Move.Stun,
                 FrameData = new FrameDataContract
                 {
                     Startup = result.Move.FrameData.Startup,

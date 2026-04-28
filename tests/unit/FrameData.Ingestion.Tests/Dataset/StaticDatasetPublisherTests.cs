@@ -75,6 +75,31 @@ public sealed class StaticDatasetPublisherTests
         }
     }
 
+    [Fact]
+    public async Task PublishAsync_PreservesMotionDamageAndStunInCharacterFiles()
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var publisher = CreatePublisher(root);
+
+            await publisher.PublishAsync(
+                [CreateCharacter("makoto", "Makoto")],
+                [CreateMove("makoto", "Hayate", motion: "236P", damage: "120", stun: "17")]);
+
+            var loaded = await new StaticFrameDataDatasetLoader().LoadAsync(Path.Combine(root, "active"));
+
+            var move = loaded.Moves.Single();
+            move.Motion.ShouldBe("236P");
+            move.Damage.ShouldBe("120");
+            move.Stun.ShouldBe("17");
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
     private static StaticDatasetPublisher CreatePublisher(string root)
         => new(new StaticDatasetPublisherOptions
         {
@@ -94,7 +119,13 @@ public sealed class StaticDatasetPublisherTests
             Aliases = [id[..3]]
         };
 
-    private static Move CreateMove(string characterId, string canonicalName, string startup = "6")
+    private static Move CreateMove(
+        string characterId,
+        string canonicalName,
+        string startup = "6",
+        string? motion = null,
+        string? damage = null,
+        string? stun = null)
         => new()
         {
             Id = $"{characterId}-normals-{canonicalName}",
@@ -104,6 +135,9 @@ public sealed class StaticDatasetPublisherTests
             Section = "Normals",
             CanonicalName = canonicalName,
             DisplayOrder = 1,
+            Motion = motion,
+            Damage = damage,
+            Stun = stun,
             FrameData = new MoveFrameData
             {
                 Startup = startup,

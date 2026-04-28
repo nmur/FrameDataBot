@@ -10,5 +10,8 @@ public sealed class Move
     public required string CanonicalName { get; init; }
     public int? DisplayOrder { get; init; }
     public string? SourceMoveId { get; init; }
+    public string? Motion { get; init; }
+    public string? Damage { get; init; }
+    public string? Stun { get; init; }
     public required MoveFrameData FrameData { get; init; }
 }

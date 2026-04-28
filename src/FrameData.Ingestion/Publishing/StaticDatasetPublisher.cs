@@ -249,6 +249,9 @@ public sealed class StaticDatasetPublisher
             CanonicalName = move.CanonicalName,
             DisplayOrder = move.DisplayOrder,
             SourceMoveId = move.SourceMoveId,
+            Motion = move.Motion,
+            Damage = move.Damage,
+            Stun = move.Stun,
             FrameData = new StaticDatasetMoveFrameData
             {
                 Startup = move.FrameData.Startup,

@@ -86,4 +86,35 @@ public sealed class CharacterSectionParserTests
         parsed[0].OnHit.ShouldBe("1");
         parsed[0].FrameAdvantage.ShouldBe("1");
     }
+
+    [Fact]
+    public void Parse_WhenMotionDamageAndStunColumnsExist_ParsesSourceAttributes()
+    {
+        const string html = """
+            <html><body>
+              <h2>Specials</h2>
+              <table>
+                <tr><th>Name</th><th>Motion</th><th>Damage</th><th>Stun</th><th>Startup</th><th>Hit</th></tr>
+                <tr><td>Hayate</td><td>236P</td><td>120</td><td>17</td><td>12</td><td>3</td></tr>
+              </table>
+              <h2>Super Arts</h2>
+              <table>
+                <tr><th>Name</th><th>Motion</th><th>Dmg.</th><th>Stun</th><th>Startup</th></tr>
+                <tr><td>Seichusen Godanzuki</td><td>236236P</td><td>320</td><td>0</td><td>1</td></tr>
+              </table>
+            </body></html>
+            """;
+
+        var parsed = _parser.Parse(html);
+
+        parsed.Count.ShouldBe(2);
+        parsed[0].Section.ShouldBe("Specials");
+        parsed[0].Motion.ShouldBe("236P");
+        parsed[0].Damage.ShouldBe("120");
+        parsed[0].Stun.ShouldBe("17");
+        parsed[1].Section.ShouldBe("Super Arts");
+        parsed[1].Motion.ShouldBe("236236P");
+        parsed[1].Damage.ShouldBe("320");
+        parsed[1].Stun.ShouldBe("0");
+    }
 }

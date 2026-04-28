@@ -71,7 +71,10 @@ internal static class StaticDatasetFixtureWriter
         string characterId,
         string canonicalName,
         int displayOrder = 1,
-        string startup = "6")
+        string startup = "6",
+        string? motion = null,
+        string? damage = null,
+        string? stun = null)
         => new()
         {
             Id = $"{characterId}-normals-{canonicalName}",
@@ -79,6 +82,9 @@ internal static class StaticDatasetFixtureWriter
             Section = "Normals",
             CanonicalName = canonicalName,
             DisplayOrder = displayOrder,
+            Motion = motion,
+            Damage = damage,
+            Stun = stun,
             FrameData = new StaticDatasetMoveFrameData
             {
                 Startup = startup,
