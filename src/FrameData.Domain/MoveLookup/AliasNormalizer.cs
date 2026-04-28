@@ -11,6 +11,7 @@ public sealed partial class AliasNormalizer
         ["alex:jstampede"] = ["stomp"],
         ["dudley:2hk"] = ["kanipan", "crab punch"],
         ["dudley:taunt"] = ["rose"],
+        ["dudley:6hk"] = ["dart shot"],
         ["dudley:towardhk"] = ["dart shot"],
         ["dudley:towardshk"] = ["dart shot"],
         ["ken:2mp"] = ["emperor punch", "emperors punch", "emperor's punch"],
@@ -111,6 +112,7 @@ public sealed partial class AliasNormalizer
         }
 
         var value = input.Trim().ToLowerInvariant();
+        value = ApplyDirectionalPhraseAliases(value);
         foreach (var alias in AttackTermAliases.OrderByDescending(alias => alias.Key.Length))
         {
             value = Regex.Replace(value, $@"\b{Regex.Escape(alias.Key)}\b", alias.Value, RegexOptions.IgnoreCase);
@@ -168,6 +170,16 @@ public sealed partial class AliasNormalizer
                 AddAlias(aliases, move, $"d/b.{button}", MoveAliasType.Abbreviation);
                 AddAlias(aliases, move, $"down back {button}", MoveAliasType.Numpad);
                 AddAlias(aliases, move, $"down-back {button}", MoveAliasType.Numpad);
+                break;
+            case '3':
+                AddAlias(aliases, move, $"df.{button}", MoveAliasType.Abbreviation);
+                AddAlias(aliases, move, $"d/f.{button}", MoveAliasType.Abbreviation);
+                AddAlias(aliases, move, $"down forward {button}", MoveAliasType.Numpad);
+                AddAlias(aliases, move, $"down-forward {button}", MoveAliasType.Numpad);
+                break;
+            case '6':
+                AddAlias(aliases, move, $"toward {button}", MoveAliasType.Numpad);
+                AddAlias(aliases, move, $"towards {button}", MoveAliasType.Numpad);
                 break;
             case 'j':
                 AddAlias(aliases, move, $"j.{button}", MoveAliasType.Abbreviation);
@@ -615,9 +627,49 @@ public sealed partial class AliasNormalizer
             return "1" + compact["downback".Length..];
         }
 
+        if (compact.StartsWith('1') && compact.Length > 1)
+        {
+            return compact;
+        }
+
         if (compact.StartsWith("db", StringComparison.Ordinal) && compact.Length > 2)
         {
             return "1" + compact[2..];
+        }
+
+        if (compact.StartsWith("downforward", StringComparison.Ordinal))
+        {
+            return "3" + compact["downforward".Length..];
+        }
+
+        if (compact.StartsWith('3') && compact.Length > 1)
+        {
+            return compact;
+        }
+
+        if (compact.StartsWith("df", StringComparison.Ordinal) && compact.Length > 2)
+        {
+            return "3" + compact[2..];
+        }
+
+        if (compact.StartsWith("towards", StringComparison.Ordinal))
+        {
+            return "6" + compact["towards".Length..];
+        }
+
+        if (compact.StartsWith("toward", StringComparison.Ordinal))
+        {
+            return "6" + compact["toward".Length..];
+        }
+
+        if (compact.StartsWith('6') && compact.Length > 1)
+        {
+            return compact;
+        }
+
+        if (compact.StartsWith("back", StringComparison.Ordinal) && IsDirectionalFiveSuffix(compact["back".Length..]))
+        {
+            return "5" + compact["back".Length..];
         }
 
         if (compact.StartsWith("crouching", StringComparison.Ordinal))
@@ -688,6 +740,13 @@ public sealed partial class AliasNormalizer
         return compact;
     }
 
+    private static string ApplyDirectionalPhraseAliases(string value)
+    {
+        value = DownBackPhrase().Replace(value, "1");
+        value = DownForwardPhrase().Replace(value, "3");
+        return value;
+    }
+
     private static string GetMoveBaseName(string canonicalName)
     {
         var match = ParentheticalVariantName().Match(canonicalName);
@@ -732,9 +791,18 @@ public sealed partial class AliasNormalizer
         return value is "lp" or "mp" or "hp" or "lk" or "mk" or "hk";
     }
 
+    private static bool IsDirectionalFiveSuffix(string value)
+        => IsButtonSuffix(value) || value.StartsWith("sa", StringComparison.Ordinal);
+
     private static bool IsSuperArt(Move move)
         => string.Equals(move.Section, "SuperArts", StringComparison.OrdinalIgnoreCase)
             || string.Equals(move.Section, "Super Arts", StringComparison.OrdinalIgnoreCase);
+
+    [GeneratedRegex(@"\bdown\s*(?:\+|/|-)?\s*back\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex DownBackPhrase();
+
+    [GeneratedRegex(@"\bdown\s*(?:\+|/|-)?\s*forward\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex DownForwardPhrase();
 
     [GeneratedRegex("[^a-z0-9]+", RegexOptions.Compiled)]
     private static partial Regex NonLookupCharacters();
