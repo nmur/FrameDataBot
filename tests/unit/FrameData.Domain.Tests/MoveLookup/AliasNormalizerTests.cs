@@ -29,6 +29,8 @@ public sealed class AliasNormalizerTests
     [InlineData("low forward", "2mk")]
     [InlineData("Standing LP", "5lp")]
     [InlineData("st.HK", "5hk")]
+    [InlineData("RH", "hk")]
+    [InlineData("Air Knee Smash RH", "jkneesmashhk")]
     [InlineData("jumping Heavy Punch", "jhp")]
     [InlineData("air Heavy Punch", "jhp")]
     [InlineData("jp.HP", "jhp")]

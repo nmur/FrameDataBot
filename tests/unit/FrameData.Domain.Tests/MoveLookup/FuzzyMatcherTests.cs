@@ -311,6 +311,9 @@ public sealed class FuzzyMatcherTests
     [Theory]
     [InlineData("light hadouken", "Hadouken (Jab)", "lighthadouken")]
     [InlineData("light tatsumaki senpuu kyaku", "Tatsumaki Senpuu Kyaku (Short)", "lighttatsumakisenpuukyaku")]
+    [InlineData("air knee smash rh", "Air Knee Smash (RH)", "jkneesmashhk")]
+    [InlineData("air knee smash roundhouse", "Air Knee Smash (RH)", "jkneesmashhk")]
+    [InlineData("air knee smash heavy kick", "Air Knee Smash (RH)", "jkneesmashhk")]
     public void Rank_WhenSpecialMoveHasParenthesizedNormal_GeneratesStrengthAliases(
         string input,
         string expectedMove,
@@ -1238,6 +1241,17 @@ public sealed class FuzzyMatcherTests
                 CanonicalName = "Shipuujinrai Kyaku",
                 DisplayOrder = 6,
                 FrameData = new MoveFrameData { Startup = "2" }
+            },
+            new Move
+            {
+                Id = "alex-air-knee-smash-rh",
+                CharacterId = "alex",
+                Game = "sf3_3s",
+                CharacterName = "Alex",
+                Section = "Specials",
+                CanonicalName = "Air Knee Smash (RH)",
+                DisplayOrder = 7,
+                FrameData = new MoveFrameData { Startup = "5" }
             }
         ];
     }

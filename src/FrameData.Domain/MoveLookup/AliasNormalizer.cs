@@ -83,7 +83,8 @@ public sealed partial class AliasNormalizer
         ["hp"] = new StrengthAlias("heavy", "hp"),
         ["lk"] = new StrengthAlias("light", "lk"),
         ["mk"] = new StrengthAlias("medium", "mk"),
-        ["hk"] = new StrengthAlias("heavy", "hk")
+        ["hk"] = new StrengthAlias("heavy", "hk"),
+        ["rh"] = new StrengthAlias("heavy", "hk")
     };
 
     private static readonly IReadOnlyDictionary<string, string> AttackTermAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -101,6 +102,7 @@ public sealed partial class AliasNormalizer
         ["heavy kick"] = "hk",
         ["high kick"] = "hk",
         ["roundhouse"] = "hk",
+        ["rh"] = "hk",
         ["low forward"] = "2mk"
     };
 
