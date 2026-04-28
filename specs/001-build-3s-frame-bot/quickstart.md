@@ -97,7 +97,7 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 6. Query a known move via Discord:
    - `/framedata character:makoto move:2mk`
 7. Confirm the Discord response is a structured embed with character, move, section,
-   startup, active, recovery, on-hit, and on-block fields plus concise fallback content.
+   startup, active, recovery, on-hit, and on-block fields without duplicate message text.
 8. Confirm unknown move/character responses are clear.
 9. Confirm Seq contains operational detail:
    - `ServiceName = 'FrameData.Bot'`

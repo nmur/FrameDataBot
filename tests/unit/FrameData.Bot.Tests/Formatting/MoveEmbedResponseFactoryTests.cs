@@ -6,10 +6,10 @@ namespace FrameData.Bot.Tests.Formatting;
 
 public sealed class MoveEmbedResponseFactoryTests
 {
-    private readonly MoveEmbedResponseFactory _factory = new(new MoveResponseFormatter());
+    private readonly MoveEmbedResponseFactory _factory = new();
 
     [Fact]
-    public void Create_WhenMoveFound_BuildsFrameDataEmbedWithFallbackContent()
+    public void Create_WhenMoveFound_BuildsFrameDataEmbedWithoutMessageContent()
     {
         var response = _factory.Create(new MoveQueryResponse
         {
@@ -27,7 +27,7 @@ public sealed class MoveEmbedResponseFactoryTests
             }
         });
 
-        response.Content.ShouldBe("Makoto Hayate (Specials) | Startup 12 Active 3 Recovery 21 OnHit +2 OnBlock -6");
+        response.Content.ShouldBeNull();
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Makoto - Hayate");
         FieldValue(response, "Section").ShouldBe("Specials");
@@ -63,7 +63,7 @@ public sealed class MoveEmbedResponseFactoryTests
             }
         });
 
-        response.Content.ShouldBe("Makoto Hayate (Specials) | Motion 236P Damage 120 Stun 17 Startup 12 Active 3 Recovery 21 OnHit +2 OnBlock -6");
+        response.Content.ShouldBeNull();
         FieldValue(response, "Motion").ShouldBe("236P");
         FieldValue(response, "Damage").ShouldBe("120");
         FieldValue(response, "Stun").ShouldBe("17");
@@ -71,7 +71,7 @@ public sealed class MoveEmbedResponseFactoryTests
 
 
     [Fact]
-    public void Create_WhenMoveIsAmbiguous_BuildsCandidateEmbedWithFallbackContent()
+    public void Create_WhenMoveIsAmbiguous_BuildsCandidateEmbedWithoutMessageContent()
     {
         var response = _factory.Create(new MoveAmbiguousResponse
         {
@@ -83,7 +83,7 @@ public sealed class MoveEmbedResponseFactoryTests
             ]
         });
 
-        response.Content.ShouldBe("Multiple moves matched. Try a more specific move name. Candidates: 2hk (Normals, 100); 5hk (Normals, 94)");
+        response.Content.ShouldBeNull();
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Multiple moves matched");
         response.Embed.Description.ShouldBe("Multiple moves matched. Try a more specific move name.");
@@ -92,7 +92,7 @@ public sealed class MoveEmbedResponseFactoryTests
     }
 
     [Fact]
-    public void Create_WhenErrorReturned_BuildsErrorEmbedWithFallbackContent()
+    public void Create_WhenErrorReturned_BuildsErrorEmbedWithoutMessageContent()
     {
         var response = _factory.Create(new ErrorResponse
         {
@@ -100,7 +100,7 @@ public sealed class MoveEmbedResponseFactoryTests
             Message = "Move not found"
         });
 
-        response.Content.ShouldBe("Move not found. Try an exact move name or clearer notation.");
+        response.Content.ShouldBeNull();
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Move not found");
         response.Embed.Description.ShouldBe("Move not found. Try an exact move name or clearer notation.");

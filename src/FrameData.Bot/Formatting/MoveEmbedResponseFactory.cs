@@ -8,12 +8,6 @@ public sealed class MoveEmbedResponseFactory
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
-    private readonly MoveResponseFormatter _formatter;
-
-    public MoveEmbedResponseFactory(MoveResponseFormatter formatter)
-    {
-        _formatter = formatter;
-    }
 
     public DiscordMoveResponse Create(MoveQueryResponse response)
     {
@@ -40,7 +34,6 @@ public sealed class MoveEmbedResponseFactory
 
         return new DiscordMoveResponse
         {
-            Content = LimitMessageContent(_formatter.FormatSuccess(response)),
             Embed = builder.Build()
         };
     }
@@ -58,22 +51,19 @@ public sealed class MoveEmbedResponseFactory
 
         return new DiscordMoveResponse
         {
-            Content = LimitMessageContent(_formatter.FormatAmbiguous(response)),
             Embed = builder.Build()
         };
     }
 
     public DiscordMoveResponse Create(ErrorResponse error)
     {
-        var content = _formatter.FormatError(error);
         var builder = new EmbedBuilder()
             .WithTitle(ErrorTitle(error.Code))
-            .WithDescription(content)
+            .WithDescription(ErrorDescription(error))
             .WithColor(ErrorColor);
 
         return new DiscordMoveResponse
         {
-            Content = LimitMessageContent(content),
             Embed = builder.Build(),
             IsEphemeral = false
         };
@@ -111,9 +101,14 @@ public sealed class MoveEmbedResponseFactory
         };
     }
 
-    private static string LimitMessageContent(string value)
+    private static string ErrorDescription(ErrorResponse error)
     {
-        return Limit(value, 2000);
+        return error.Code switch
+        {
+            "unsupported_character" => "Unsupported character. Try a supported character name.",
+            "move_not_found" => "Move not found. Try an exact move name or clearer notation.",
+            _ => error.Message
+        };
     }
 
     private static string LimitFieldValue(string value)

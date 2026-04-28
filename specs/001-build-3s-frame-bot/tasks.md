@@ -105,15 +105,15 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T022 [US1] Implement exact lookup domain service in `src/FrameData.Domain/MoveLookup/ExactMoveLookupService.cs`
 - [X] T023 [US1] Implement move query repository in `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`
 - [X] T024 [US1] Implement API endpoint for `GET /v1/moves/query` exact mode in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
-- [X] T025 [US1] Implement Discord `/framedata` exact-query handler in `src/FrameData.Bot/Commands/MoveCommandHandler.cs`
-- [X] T026 [US1] Implement not-found/unsupported-character response mapper in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [X] T025 [US1] Implement Discord `/framedata` exact-query handler in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+- [X] T026 [US1] Implement not-found/unsupported-character response mapper in `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
 
 ### Scope Simplification Follow-Up (Single-Game Interface)
 
-- [X] T071 [P] [US1] Remove `game` input from Discord command parser/handler flow and update affected unit tests in `src/FrameData.Bot/Commands/MoveCommandParser.cs`, `src/FrameData.Bot/Commands/MoveCommandHandler.cs`, and `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
+- [X] T071 [P] [US1] Remove `game` input from Discord command parser/handler flow and update affected unit tests in `src/FrameData.Bot/Commands/MoveCommandParser.cs`, `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`, and `tests/unit/FrameData.Bot.Tests/Commands/MoveCommandParserTests.cs`
 - [X] T072 [P] [US1] Remove `game` query parameter and unsupported-game path from move query endpoint and API integration tests in `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs` and `tests/integration/FrameData.Api.IntegrationTests/MoveQueryExactTests.cs`
 - [X] T073 [US1] Remove game-discriminator handling from exact lookup service/repository interface and related domain tests in `src/FrameData.Domain/MoveLookup/ExactMoveLookupService.cs`, `src/FrameData.Domain/MoveLookup/IMoveQueryRepository.cs`, `src/FrameData.Infrastructure/Persistence/Repositories/MoveRepository.cs`, and `tests/unit/FrameData.Domain.Tests/MoveLookup/ExactMoveLookupServiceTests.cs`
-- [X] T074 [US1] Update contract tests and response formatting for single-game behavior in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs` and `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [X] T074 [US1] Update contract tests and response formatting for single-game behavior in `tests/contract/FrameData.Contracts.Tests/MoveQueryContractTests.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
 
 ### Runtime Containerization Follow-Up (Bot Service Parity)
 
@@ -135,7 +135,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T087 [P] [US1] Add contract tests for the Discord slash command schema in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
 - [X] T088 [P] [US1] Implement slash command definition builder in `src/FrameData.Bot/Discord/FramedataSlashCommandDefinition.cs`
 - [X] T089 [P] [US1] Implement slash interaction option mapper in `src/FrameData.Bot/Discord/SlashCommandInteractionMapper.cs`
-- [X] T090 [US1] Implement Discord interaction handler that calls `IMoveQueryApiClient` and `MoveResponseFormatter` in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+- [X] T090 [US1] Implement Discord interaction handler that calls `IMoveQueryApiClient` and `MoveEmbedResponseFactory` in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
 - [X] T091 [US1] Implement guild command registration service in `src/FrameData.Bot/Discord/DiscordCommandRegistrar.cs`
 - [X] T092 [US1] Replace bot keepalive loop with Discord gateway login/start/stop lifecycle in `src/FrameData.Bot/Hosting/BotRuntimeService.cs`
 - [X] T093 [US1] Wire Discord.Net socket client, interaction service, registrar, and handler into DI in `src/FrameData.Bot/Program.cs`
@@ -145,10 +145,10 @@ description: "Task list for implementing Discord 3s frame data bot"
 ### Discord Embed Response Follow-Up
 
 - [X] T096 [P] [US1] Add unit tests for successful, ambiguous, and error embed formatting in `tests/unit/FrameData.Bot.Tests/Formatting/MoveEmbedResponseFactoryTests.cs`
-- [X] T097 [P] [US1] Add unit tests for interaction handler embed sending and fallback content in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerEmbedResponseTests.cs`
-- [X] T098 [P] [US1] Update contract tests for embed-first `/framedata` responses with text fallback in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
+- [X] T097 [P] [US1] Add unit tests for interaction handler embed-only sending in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerEmbedResponseTests.cs`
+- [X] T098 [P] [US1] Update contract tests for embed-only `/framedata` responses in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
 - [X] T099 [P] [US1] Implement Discord move response model and embed factory in `src/FrameData.Bot/Formatting/DiscordMoveResponse.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
-- [X] T100 [US1] Extend Discord responder abstraction and interaction handler to send Discord.Net embeds with fallback content in `src/FrameData.Bot/Discord/IDiscordInteractionResponder.cs`, `src/FrameData.Bot/Discord/SocketSlashCommandResponder.cs`, and `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+- [X] T100 [US1] Extend Discord responder abstraction and interaction handler to send Discord.Net embeds without duplicate message content in `src/FrameData.Bot/Discord/IDiscordInteractionResponder.cs`, `src/FrameData.Bot/Discord/SocketSlashCommandResponder.cs`, and `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
 
 **Checkpoint**: US1 fully testable and deployable as a live Discord MVP with structured embed responses.
 
@@ -307,7 +307,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T153 [P] [US2] Add optional Motion, Damage, and Stun properties to move contracts/models in `src/FrameData.Domain/Moves/Move.cs`, `src/FrameData.Shared/Contracts/StaticDatasetContracts.cs`, and `src/FrameData.Shared/Contracts/MoveQueryContracts.cs`
 - [X] T154 [US2] Parse and map Motion, Damage, and Stun source columns in `src/FrameData.Scraper/Parsing/CharacterSectionParser.cs` and `src/FrameData.Ingestion/Services/IngestionOrchestrator.cs`
 - [X] T155 [US2] Persist and load Motion, Damage, and Stun through the static dataset and API response in `src/FrameData.Ingestion/Publishing/StaticDatasetPublisher.cs`, `src/FrameData.Infrastructure/Dataset/StaticFrameDataDatasetLoader.cs`, and `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
-- [X] T156 [US2] Display optional Motion, Damage, and Stun values in Discord fallback/embed formatting in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
+- [X] T156 [US2] Display optional Motion plus Damage and Stun values in Discord embed formatting in `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
 
 **Checkpoint**: Source Motion, Damage, and Stun columns survive ingestion and are visible in lookup responses when present.
 
@@ -332,7 +332,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T042 [P] [US3] Implement alias normalization service in `src/FrameData.Domain/MoveLookup/AliasNormalizer.cs`
 - [X] T043 [US3] Implement fuzzy matcher service using FuzzySharp in `src/FrameData.Domain/MoveLookup/FuzzyMoveMatcher.cs`
 - [X] T044 [US3] Implement disambiguation response builder in `src/FrameData.Api/Responses/MoveDisambiguationResponseFactory.cs`
-- [X] T045 [US3] Update Discord response flow for candidate selection prompts in `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [X] T045 [US3] Update Discord response flow for candidate selection prompts in `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
 
 **Checkpoint**: US3 adds robust user-friendly lookup behavior without breaking US1.
 
@@ -399,7 +399,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 - [ ] T062 [P] [US6] Implement MoveMetadata domain model in `src/FrameData.Domain/Moves/MoveMetadata.cs`
 - [ ] T063 [US6] Implement metadata ingestion mapper in `src/FrameData.Ingestion/Mapping/MoveMetadataMapper.cs`
-- [ ] T064 [US6] Integrate metadata serialization in API and bot formatters in `src/FrameData.Api/Responses/MoveQueryResponseFactory.cs` and `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
+- [ ] T064 [US6] Integrate metadata serialization in API and bot formatters in `src/FrameData.Api/Responses/MoveQueryResponseFactory.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
 
 **Checkpoint**: US6 delivers advanced detail extension while preserving backward compatibility with the US1 embed response contract.
 
@@ -522,7 +522,7 @@ T062
 1. Complete Setup and Foundational phases.
 2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
 3. Deliver US1 Discord gateway/slash-command follow-up so `/framedata` works in a real Discord channel.
-4. Deliver US1 Discord embed response follow-up so `/framedata` returns structured frame-data embeds with text fallback.
+4. Deliver US1 Discord embed response follow-up so `/framedata` returns structured frame-data embeds without duplicate message text.
 5. Deliver the static dataset storage refactor and source column expansion so the worker writes versioned JSON/media datasets and the API reads all required move attributes from the active dataset on disk.
 6. Validate API and bot queries against the mounted static dataset.
 7. Validate and demo MVP.

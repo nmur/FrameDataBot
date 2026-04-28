@@ -208,9 +208,10 @@ Rationale:
 
 ## Decision 16: Interaction Response Strategy
 
-- Decision: Use Discord embeds as the default public move lookup response, with concise
-  plain-text fallback content retained for send failures, validation errors, and clients
-  where embeds cannot be displayed.
+- Decision: Use Discord embeds as the default public move lookup response, without
+  duplicate plain-text message content for formatted move, ambiguous, or query-error
+  results. Content-only text remains acceptable for validation or operational failures
+  where no embed result exists.
 - Rationale: The gateway, API, and query pipeline are already in place, so the next
   response slice can improve readability directly. Keeping embed construction in the
   Bot service avoids coupling the API to Discord-specific presentation while allowing

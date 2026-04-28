@@ -14,7 +14,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
     private readonly IMoveQueryApiClient _apiClient = Substitute.For<IMoveQueryApiClient>();
 
     [Fact]
-    public async Task HandleAsync_WhenMoveFound_SendsEmbedAndTextFallback()
+    public async Task HandleAsync_WhenMoveFound_SendsEmbedOnlyFollowup()
     {
         _apiClient
             .QueryMoveAsync("makoto", "hayate", Arg.Any<CancellationToken>())
@@ -46,7 +46,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
 
         responder.DeferCount.ShouldBe(1);
         var followup = responder.Followups.Single();
-        followup.Content.ShouldBe("Makoto Hayate (Specials) | Startup 12 Active 3 Recovery 21 OnHit +2 OnBlock -6");
+        followup.Content.ShouldBeNull();
         followup.Embed.ShouldNotBeNull();
         followup.Embed.Title.ShouldBe("Makoto - Hayate");
         followup.Ephemeral.ShouldBeFalse();
@@ -79,7 +79,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
         return new FramedataInteractionHandler(
             new SlashCommandInteractionMapper(),
             _apiClient,
-            new MoveEmbedResponseFactory(new MoveResponseFormatter()),
+            new MoveEmbedResponseFactory(),
             NullLogger<FramedataInteractionHandler>.Instance);
     }
 
@@ -94,17 +94,17 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string content, Embed? embed = null, bool ephemeral = false)
+        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
         {
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string content, Embed? embed = null, bool ephemeral = false)
+        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
         {
             Followups.Add(new SentInteractionResponse(content, embed, ephemeral));
             return Task.CompletedTask;
         }
     }
 
-    private sealed record SentInteractionResponse(string Content, Embed? Embed, bool Ephemeral);
+    private sealed record SentInteractionResponse(string? Content, Embed? Embed, bool Ephemeral);
 }

@@ -1,13 +1,13 @@
 # Implementation Plan: Discord 3s Frame Data Bot
 
 **Branch**: `001-build-3s-frame-bot` | **Date**: 2026-04-25 | **Spec**: `/specs/001-build-3s-frame-bot/spec.md`
-**Input**: Feature specification from `/specs/001-build-3s-frame-bot/spec.md`, plus 2026-04-25 planning refinement for real ingestion, 2026-04-27 planning refinement to replace Postgres-backed query persistence with a versioned static JSON/media dataset on disk, 2026-04-28 refinement to make Discord embeds the default bot response format instead of primitive text, and 2026-04-28 source-column refinement to preserve Motion, Damage, and Stun values from ingestion.
+**Input**: Feature specification from `/specs/001-build-3s-frame-bot/spec.md`, plus 2026-04-25 planning refinement for real ingestion, 2026-04-27 planning refinement to replace Postgres-backed query persistence with a versioned static JSON/media dataset on disk, 2026-04-28 refinement to make Discord embeds the default bot response format instead of primitive text, 2026-04-28 source-column refinement to preserve Motion, Damage, and Stun values from ingestion, and 2026-04-28 refinement to remove duplicate basic text content from normal embed responses.
 
 ## Summary
 
 Revise the US2 persistence direction from a Postgres-backed runtime store to a static dataset model. Ingestion remains a Dockerized one-shot worker, but it is no longer part of the always-running application stack. The worker scrapes source pages, writes a versioned dataset directory containing `manifest.json`, per-character move JSON files, and later media files, then atomically publishes that directory under a shared local dataset path. The API and Bot stack mount the active dataset read-only; the API loads all move data into memory at startup and uses static-file-backed query indexes for exact, alias, and fuzzy lookup. JSON backup/restore utility modes are no longer needed because the dataset itself is already a portable JSON/media bundle.
 
-The production/runtime stack keeps Bot, API, and Seq as long-running services. A separate ingestion Compose file runs the ingestion worker on demand against the same host dataset root so operators can refresh the static dataset without keeping ingestion or Postgres online. The Bot should render move lookup results as Discord embeds by default, with concise plain-text fallback content preserved for failures or clients where embeds cannot be displayed. Later image work stores last-active screenshots beside the move data and attaches that local media to the existing embed response rather than requiring public media URLs.
+The production/runtime stack keeps Bot, API, and Seq as long-running services. A separate ingestion Compose file runs the ingestion worker on demand against the same host dataset root so operators can refresh the static dataset without keeping ingestion or Postgres online. The Bot should render move lookup results as Discord embeds by default without also sending the old basic text response content. Later image work stores last-active screenshots beside the move data and attaches that local media to the existing embed response rather than requiring public media URLs.
 
 Ingestion also preserves source move columns that are not part of the classic frame timing set. `Motion` is optional and expected primarily on Specials and Super Arts source tables; `Damage` and `Stun` are optional source columns that should travel with the move record through the static dataset, API response contract, and Discord presentation when present.
 
@@ -62,10 +62,10 @@ Post-Phase 1 re-check:
 ### Step 3: Promote Discord Responses to Embeds
 
 - Keep the API contract neutral and continue returning structured move-query JSON.
-- Add a Bot-owned response model/factory that maps `MoveQueryResponse`, `MoveAmbiguousResponse`, and `ErrorResponse` into Discord.Net embed payloads plus concise fallback content.
+- Add a Bot-owned response model/factory that maps `MoveQueryResponse`, `MoveAmbiguousResponse`, and `ErrorResponse` into Discord.Net embed payloads without duplicate plain-text message content.
 - Use embed fields for section, startup, active, recovery, on-hit, and on-block values so frame data scans cleanly in Discord.
 - Extend the Discord interaction responder abstraction so tests can verify embed payloads without live Discord, and `SocketSlashCommandResponder` can send the built embed through Discord.Net.
-- Preserve text fallback behavior for validation errors, send failures, and any future non-embed-capable response path.
+- Keep content-only text only for validation or operational failures where no formatted embed result exists.
 
 ### Step 4: Convert Ingestion Into a Dataset Publisher
 

@@ -22,9 +22,9 @@ public sealed class DiscordCommandContractTests
     }
 
     [Fact]
-    public void FramedataMoveResponse_UsesEmbedWithTextFallback()
+    public void FramedataMoveResponse_UsesEmbedWithoutMessageContent()
     {
-        var factory = new MoveEmbedResponseFactory(new MoveResponseFormatter());
+        var factory = new MoveEmbedResponseFactory();
 
         var response = factory.Create(new MoveQueryResponse
         {
@@ -42,7 +42,7 @@ public sealed class DiscordCommandContractTests
             }
         });
 
-        Assert.False(string.IsNullOrWhiteSpace(response.Content));
+        Assert.Null(response.Content);
         Assert.NotNull(response.Embed);
         Assert.Equal("Makoto - Hayate", response.Embed.Title);
         Assert.Contains(response.Embed.Fields, field => field.Name == "Section" && field.Value == "Specials");
@@ -54,9 +54,9 @@ public sealed class DiscordCommandContractTests
     }
 
     [Fact]
-    public void FramedataErrorResponse_KeepsTextFallbackWithErrorEmbed()
+    public void FramedataErrorResponse_UsesErrorEmbedWithoutMessageContent()
     {
-        var factory = new MoveEmbedResponseFactory(new MoveResponseFormatter());
+        var factory = new MoveEmbedResponseFactory();
 
         var response = factory.Create(new ErrorResponse
         {
@@ -64,9 +64,9 @@ public sealed class DiscordCommandContractTests
             Message = "Unsupported character"
         });
 
-        Assert.Equal("Unsupported character. Try a supported character name.", response.Content);
+        Assert.Null(response.Content);
         Assert.NotNull(response.Embed);
         Assert.Equal("Unsupported character", response.Embed.Title);
-        Assert.Equal(response.Content, response.Embed.Description);
+        Assert.Equal("Unsupported character. Try a supported character name.", response.Embed.Description);
     }
 }

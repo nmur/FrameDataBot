@@ -205,8 +205,8 @@
 
 - Description: Runtime response payload sent back to a Discord interaction.
 - Fields:
-  - `content` (string, required): concise plain text fallback for accessibility,
-    logging, and send-failure recovery.
+  - `content` (string, optional): omitted for normal formatted embed responses;
+    available for validation or operational failures where no embed result exists.
   - `embedTitle` (string, required for successful move responses): rich response title.
   - `embedColor` (integer, optional): Discord embed accent color.
   - `embedFields` (collection, required for successful move responses): structured
@@ -215,7 +215,5 @@
     future media embeds with `attachment://...`.
   - `isEphemeral` (bool, required): defaults to `false` for channel-visible answers.
 - Validation:
-  - Fallback content must fit Discord message content limits.
-  - Embed content must fit Discord embed limits and preserve enough fallback text for
-    clients or failures where embeds cannot be sent.
+  - Embed content must fit Discord embed limits.
   - Validation failures may be content-only when no move result exists.

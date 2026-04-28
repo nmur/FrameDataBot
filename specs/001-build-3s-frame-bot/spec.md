@@ -23,8 +23,9 @@
 
 ### Session 2026-04-28
 
-- Q: Should the next Discord response implementation continue with primitive text before rich formatting? → A: No. The bot should use Discord embeds as the default `/framedata` response format for move results now, with concise plain-text fallback content retained for send failures, validation errors, and clients where embeds cannot be displayed.
+- Q: Should the next Discord response implementation continue with primitive text before rich formatting? → A: No. The bot should use Discord embeds as the default `/framedata` response format for move results now; the later 2026-04-28 clarification removes duplicate basic text from normal embed responses.
 - Q: Should ingestion preserve non-frame source columns such as Specials/Super Arts Motion plus Damage and Stun? → A: Yes. These values should be optional move attributes that are parsed from source tables when present and retained through the stored dataset and lookup response path.
+- Q: Should normal embed responses keep the old basic text response as message content? → A: No. Formatted move, ambiguous, and query-error results should be sent as embed-only Discord responses; content-only text remains acceptable for validation or operational failures where no embed result exists.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -163,8 +164,8 @@ properties without breaking MVP fields.
 2. **Given** enriched metadata is unavailable, **When** a move is requested, **Then**
    basic frame data still returns successfully.
 3. **Given** response enrichment is enabled, **When** a move response is sent to
-   Discord, **Then** the bot uses a rich structured response while preserving a plain
-   text fallback.
+   Discord, **Then** the bot uses a rich structured embed without duplicate plain-text
+   message content.
 
 ## Out of Scope *(mandatory)*
 
@@ -235,9 +236,10 @@ properties without breaking MVP fields.
   command for the configured guild, receive slash-command interactions, and route them
   through the move query flow.
 - **FR-020**: The bot MUST use a rich Discord embed as the default move lookup response,
-  including matched character, matched move, section, and frame-data fields, while
-  preserving concise plain-text fallback content for send failures, validation errors,
-  and clients where embeds cannot be displayed.
+  including matched character, matched move, section, and frame-data fields, without
+  sending duplicate plain-text message content for formatted move, ambiguous, or
+  query-error results. Validation or operational failures where no embed result exists
+  MAY remain content-only.
 - **FR-021**: Ingestion MUST preserve optional source table values for Motion, Damage,
   and Stun as move attributes when those columns are present, including Motion values
   on Specials and Super Arts.

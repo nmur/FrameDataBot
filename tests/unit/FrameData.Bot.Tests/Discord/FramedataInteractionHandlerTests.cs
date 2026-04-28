@@ -46,7 +46,9 @@ public sealed class FramedataInteractionHandlerTests
 
         _responder.DeferCount.ShouldBe(1);
         _responder.InitialResponses.ShouldBeEmpty();
-        _responder.Followups.Single().ShouldBe("Makoto 2mk (Normals) | Startup 6 Active 3 Recovery 17 OnHit +1 OnBlock -2");
+        _responder.Followups.Single().ShouldBeNull();
+        _responder.FollowupEmbeds.Single().ShouldNotBeNull();
+        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk");
     }
 
     [Fact]
@@ -70,7 +72,9 @@ public sealed class FramedataInteractionHandlerTests
             _responder);
 
         _responder.DeferCount.ShouldBe(1);
-        _responder.Followups.Single().ShouldBe("Move not found. Try an exact move name or clearer notation.");
+        _responder.Followups.Single().ShouldBeNull();
+        _responder.FollowupEmbeds.Single().ShouldNotBeNull();
+        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Move not found");
     }
 
     [Fact]
@@ -98,7 +102,9 @@ public sealed class FramedataInteractionHandlerTests
             _responder);
 
         _responder.DeferCount.ShouldBe(1);
-        _responder.Followups.Single().ShouldBe("Multiple moves matched. Try a more specific move name. Candidates: 2hk (Normals, 100); 5hk (Normals, 100)");
+        _responder.Followups.Single().ShouldBeNull();
+        _responder.FollowupEmbeds.Single().ShouldNotBeNull();
+        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Multiple moves matched");
     }
 
     [Fact]
@@ -121,16 +127,16 @@ public sealed class FramedataInteractionHandlerTests
         return new FramedataInteractionHandler(
             new SlashCommandInteractionMapper(),
             _apiClient,
-            new MoveEmbedResponseFactory(new MoveResponseFormatter()),
+            new MoveEmbedResponseFactory(),
             NullLogger<FramedataInteractionHandler>.Instance);
     }
 
     private sealed class TestDiscordInteractionResponder : IDiscordInteractionResponder
     {
         public int DeferCount { get; private set; }
-        public List<string> InitialResponses { get; } = [];
+        public List<string?> InitialResponses { get; } = [];
         public List<Embed?> InitialResponseEmbeds { get; } = [];
-        public List<string> Followups { get; } = [];
+        public List<string?> Followups { get; } = [];
         public List<Embed?> FollowupEmbeds { get; } = [];
 
         public Task DeferAsync(bool ephemeral = false)
@@ -139,14 +145,14 @@ public sealed class FramedataInteractionHandlerTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string content, Embed? embed = null, bool ephemeral = false)
+        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
         {
             InitialResponses.Add(content);
             InitialResponseEmbeds.Add(embed);
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string content, Embed? embed = null, bool ephemeral = false)
+        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
         {
             Followups.Add(content);
             FollowupEmbeds.Add(embed);

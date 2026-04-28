@@ -47,34 +47,28 @@ The default successful `/framedata` response uses a Discord embed with:
 - On-Hit / On-Block fields
 - Optional notes or advanced properties section when metadata exists
 - Optional image/media attachment when available in a later media slice
-- Concise plain-text fallback content summarizing the same move
-
-Example fallback content:
-
-```text
-Makoto Hayate (Specials) | Startup 12 Active 3 Recovery 21 OnHit +2 OnBlock -6
-```
+- No duplicate plain-text message content for formatted move results
 
 ### Ambiguous Match
 
-- Embed or fallback content with a short explanation.
+- Embed with a short explanation.
 - Ordered candidate list with move name, section, and score when available.
 - No silent low-confidence final match
 
 ### Not Found
 
-- Error embed or fallback content explaining no match found.
+- Error embed explaining no match found.
 - Suggestion to provide exact move name or clearer notation.
 
 ### Unsupported Character
 
-- Error embed or fallback content explaining the character is not supported.
+- Error embed explaining the character is not supported.
 - Suggestion to provide a supported character name.
 
-### Fallback Rules
+### Content Rules
 
-- The bot should always provide concise `content` alongside embeds for accessibility,
-  logging, and graceful fallback.
+- Formatted move, ambiguous, and query-error results should send the embed by itself
+  with no duplicate message `content`.
 - Validation failures may remain content-only if no move query result exists.
 - Future media responses attach local files and reference them from the embed with
   `attachment://...`; they do not require a public CDN.

@@ -17,12 +17,12 @@ public sealed class SocketSlashCommandResponder : IDiscordInteractionResponder
         return _command.DeferAsync(ephemeral);
     }
 
-    public Task RespondAsync(string content, Embed? embed = null, bool ephemeral = false)
+    public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
     {
         return _command.RespondAsync(content, embed: embed, ephemeral: ephemeral);
     }
 
-    public Task FollowupAsync(string content, Embed? embed = null, bool ephemeral = false)
+    public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
     {
         return _command.FollowupAsync(content, embed: embed, ephemeral: ephemeral);
     }
