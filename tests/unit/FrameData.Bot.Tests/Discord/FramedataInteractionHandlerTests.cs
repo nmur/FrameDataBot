@@ -1,3 +1,4 @@
+using Discord;
 using FrameData.Bot.Api;
 using FrameData.Bot.Discord;
 using FrameData.Bot.Formatting;
@@ -120,7 +121,7 @@ public sealed class FramedataInteractionHandlerTests
         return new FramedataInteractionHandler(
             new SlashCommandInteractionMapper(),
             _apiClient,
-            new MoveResponseFormatter(),
+            new MoveEmbedResponseFactory(new MoveResponseFormatter()),
             NullLogger<FramedataInteractionHandler>.Instance);
     }
 
@@ -128,7 +129,9 @@ public sealed class FramedataInteractionHandlerTests
     {
         public int DeferCount { get; private set; }
         public List<string> InitialResponses { get; } = [];
+        public List<Embed?> InitialResponseEmbeds { get; } = [];
         public List<string> Followups { get; } = [];
+        public List<Embed?> FollowupEmbeds { get; } = [];
 
         public Task DeferAsync(bool ephemeral = false)
         {
@@ -136,15 +139,17 @@ public sealed class FramedataInteractionHandlerTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string content, bool ephemeral = false)
+        public Task RespondAsync(string content, Embed? embed = null, bool ephemeral = false)
         {
             InitialResponses.Add(content);
+            InitialResponseEmbeds.Add(embed);
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string content, bool ephemeral = false)
+        public Task FollowupAsync(string content, Embed? embed = null, bool ephemeral = false)
         {
             Followups.Add(content);
+            FollowupEmbeds.Add(embed);
             return Task.CompletedTask;
         }
     }

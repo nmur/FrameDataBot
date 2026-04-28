@@ -1,8 +1,7 @@
 services:
   ingestion:
-    build:
-      context: .
-      dockerfile: Dockerfile.ingestion
+    image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-ingestion:${FRAMEDATA_IMAGE_TAG:-stable}
+    pull_policy: always
     environment:
       FRAMEDATA_DATASET_ROOT: ${FRAMEDATA_DATASET_ROOT:-/data/framedata}
       FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}

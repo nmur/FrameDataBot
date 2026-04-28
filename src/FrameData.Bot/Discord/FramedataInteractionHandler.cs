@@ -11,18 +11,18 @@ public sealed class FramedataInteractionHandler
 {
     private readonly SlashCommandInteractionMapper _mapper;
     private readonly IMoveQueryApiClient _apiClient;
-    private readonly MoveResponseFormatter _formatter;
+    private readonly MoveEmbedResponseFactory _responseFactory;
     private readonly ILogger<FramedataInteractionHandler> _logger;
 
     public FramedataInteractionHandler(
         SlashCommandInteractionMapper mapper,
         IMoveQueryApiClient apiClient,
-        MoveResponseFormatter formatter,
+        MoveEmbedResponseFactory responseFactory,
         ILogger<FramedataInteractionHandler> logger)
     {
         _mapper = mapper;
         _apiClient = apiClient;
-        _formatter = formatter;
+        _responseFactory = responseFactory;
         _logger = logger;
     }
 
@@ -62,14 +62,14 @@ public sealed class FramedataInteractionHandler
         try
         {
             var result = await _apiClient.QueryMoveAsync(invocation.Character, invocation.Move, cancellationToken);
-            var content = FormatQueryResult(result.Response, result.Ambiguous, result.Error);
+            var moveResponse = FormatQueryResult(result.Response, result.Ambiguous, result.Error);
             _logger.LogInformation(
                 "Discord /framedata interaction completed for character {Character} and move input {MoveInput} with result {ResultCode}.",
                 invocation.Character,
                 invocation.Move,
                 result.Response is not null ? "ok" : result.Ambiguous is not null ? "ambiguous" : result.Error?.Code ?? "error");
 
-            await responder.FollowupAsync(content);
+            await responder.FollowupAsync(moveResponse.Content, moveResponse.Embed, moveResponse.IsEphemeral);
         }
         catch (Exception exception)
         {
@@ -78,22 +78,18 @@ public sealed class FramedataInteractionHandler
         }
     }
 
-    private string FormatQueryResult(MoveQueryResponse? response, MoveAmbiguousResponse? ambiguous, ErrorResponse? error)
+    private DiscordMoveResponse FormatQueryResult(MoveQueryResponse? response, MoveAmbiguousResponse? ambiguous, ErrorResponse? error)
     {
         if (response is not null)
         {
-            return _formatter.FormatSuccess(response);
+            return _responseFactory.Create(response);
         }
 
         if (ambiguous is not null)
         {
-            return _formatter.FormatAmbiguous(ambiguous);
+            return _responseFactory.Create(ambiguous);
         }
 
-        return _formatter.FormatError(error ?? new ErrorResponse
-        {
-            Code = "error",
-            Message = "Unknown error"
-        });
+        return error is null ? _responseFactory.CreateFallbackError() : _responseFactory.Create(error);
     }
 }

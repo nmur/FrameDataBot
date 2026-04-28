@@ -96,18 +96,18 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 5. Confirm `/framedata` appears in the configured guild.
 6. Query a known move via Discord:
    - `/framedata character:makoto move:2mk`
-7. Confirm unknown move/character responses are clear.
-8. Confirm Seq contains operational detail:
+7. Confirm the Discord response is a structured embed with character, move, section,
+   startup, active, recovery, on-hit, and on-block fields plus concise fallback content.
+8. Confirm unknown move/character responses are clear.
+9. Confirm Seq contains operational detail:
    - `ServiceName = 'FrameData.Bot'`
    - `ServiceName = 'FrameData.Api'`
    - `ServiceName = 'FrameData.Ingestion'`
 
-## Rich Response Follow-Up Validation
+## Media Attachment Follow-Up Validation
 
-1. Query a move with complete frame data.
-2. Confirm Discord response uses a structured embed with character, move, section, and frame-data fields.
-3. Query a move with optional media once image ingestion exists.
-4. Confirm the embed sends local files as Discord attachments and references them with `attachment://...`.
+1. Query a move with optional media once image ingestion exists.
+2. Confirm the existing embed sends local files as Discord attachments and references them with `attachment://...`.
 
 ## Security Baseline
 

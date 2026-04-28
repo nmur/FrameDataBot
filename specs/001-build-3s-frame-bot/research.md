@@ -208,14 +208,16 @@ Rationale:
 
 ## Decision 16: Interaction Response Strategy
 
-- Decision: Ship primitive public text responses first, then add a rich Discord embed
-  response builder as a planned follow-up.
-- Rationale: Primitive text proves the full Discord gateway -> API -> formatter -> reply
-  path with minimal formatting risk. A later embed builder can improve readability and
-  include optional media while preserving a text fallback.
+- Decision: Use Discord embeds as the default public move lookup response, with concise
+  plain-text fallback content retained for send failures, validation errors, and clients
+  where embeds cannot be displayed.
+- Rationale: The gateway, API, and query pipeline are already in place, so the next
+  response slice can improve readability directly. Keeping embed construction in the
+  Bot service avoids coupling the API to Discord-specific presentation while allowing
+  later media attachments to reuse the same response path.
 - Alternatives considered:
-  - Rich embed response as the first implementation: deferred because it couples gateway
-    readiness to UI formatting and media edge cases.
+  - Continue primitive text as the default: rejected because it delays the requested
+    rich Discord experience even though the live interaction path now exists.
   - Ephemeral responses by default: rejected for the first pass because the requested UX
     is invocation in a Discord channel and shared channel answers are useful for frame
     data lookup.

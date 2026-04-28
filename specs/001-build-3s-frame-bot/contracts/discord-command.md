@@ -23,7 +23,7 @@
   - Extract `character` and `move` option values.
   - Reject missing/blank values with a clear validation response.
   - Query the API with `GET /v1/moves/query?character={character}&moveInput={move}`.
-  - Reply to the Discord interaction with the move result or actionable error.
+  - Reply to the Discord interaction with an embed-first move result or actionable error.
 - The handler should defer/acknowledge the interaction when needed so API latency does
   not exceed Discord's initial response window.
 
@@ -36,45 +36,45 @@
 
 ## Response Shapes
 
-### Primitive Successful Match
+### Successful Match Embed
 
-The first gateway implementation may return plain text with:
+The default successful `/framedata` response uses a Discord embed with:
 
-- Character name
-- Matched move name
-- Move section
-- Startup / Active / Recovery / On-Hit / On-Block values when available
+- Embed title: `{Character} - {Matched move}`
+- Color accent chosen by response type or move category
+- Section field
+- Startup / Active / Recovery fields
+- On-Hit / On-Block fields
+- Optional notes or advanced properties section when metadata exists
+- Optional image/media attachment when available in a later media slice
+- Concise plain-text fallback content summarizing the same move
 
-Example format:
+Example fallback content:
 
 ```text
 Makoto Hayate (Specials) | Startup 12 Active 3 Recovery 21 OnHit +2 OnBlock -6
 ```
 
-### Rich Successful Match
-
-Planned follow-up response using a Discord embed:
-
-- Embed title: `{Character} - {Matched move}`
-- Section field
-- Startup / Active / Recovery fields
-- On-Hit / On-Block fields
-- Optional advanced properties section when metadata exists
-- Optional image/media reference when available
-- Plain text fallback content remains available
-
 ### Ambiguous Match
 
-- Short explanation
-- Ordered candidate list with move name and section
+- Embed or fallback content with a short explanation.
+- Ordered candidate list with move name, section, and score when available.
 - No silent low-confidence final match
 
 ### Not Found
 
-- Error message explaining no match found
-- Suggestion to provide exact move name or clearer notation
+- Error embed or fallback content explaining no match found.
+- Suggestion to provide exact move name or clearer notation.
 
 ### Unsupported Character
 
-- Error message explaining the character is not supported
-- Suggestion to provide a supported character name
+- Error embed or fallback content explaining the character is not supported.
+- Suggestion to provide a supported character name.
+
+### Fallback Rules
+
+- The bot should always provide concise `content` alongside embeds for accessibility,
+  logging, and graceful fallback.
+- Validation failures may remain content-only if no move query result exists.
+- Future media responses attach local files and reference them from the embed with
+  `attachment://...`; they do not require a public CDN.

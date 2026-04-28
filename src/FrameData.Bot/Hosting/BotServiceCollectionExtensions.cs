@@ -15,6 +15,7 @@ public static class BotServiceCollectionExtensions
         services.AddSingleton(options);
         services.AddSingleton<MoveCommandParser>();
         services.AddSingleton<MoveResponseFormatter>();
+        services.AddSingleton<MoveEmbedResponseFactory>();
         services.AddSingleton<MoveCommandHandler>();
         services.AddSingleton<SlashCommandInteractionMapper>();
         services.AddSingleton<FramedataInteractionHandler>();

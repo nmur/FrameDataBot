@@ -43,12 +43,12 @@ description: "Task list for implementing Discord 3s frame data bot"
 ## Core Implementation Runbook
 
 1. Execute `T001-T015` before starting any story work.
-2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`) and live Discord gateway/slash-command follow-up (`T083-T095`).
+2. Deliver US1 (`T016-T026`) including Bot runtime/container parity follow-up (`T075-T082`), live Discord gateway/slash-command follow-up (`T083-T095`), and Discord embed response follow-up (`T096-T100`).
 3. Deliver US2 (`T027-T036`) as MVP ingestion backbone.
 4. Historical note: the Postgres persistence follow-up (`T101-T118`) and JSON backup/restore follow-up (`T119-T125`) were completed, but are superseded by the static dataset storage refactor (`T136-T150`).
 5. Deliver Seq centralized logging follow-up (`T126-T135`) before storage/media refactors so production diagnostics are available.
 6. Deliver static dataset storage refactor (`T136-T150`) before US4 image work so move data and media share one persistent dataset bundle.
-7. Deliver refinements in order: US3 -> static dataset refactor -> US4 -> US5 -> US6 rich response/media formatting (`T096-T100`).
+7. Deliver refinements in order: US3 -> static dataset refactor -> US4 -> US5 -> US6 advanced metadata. Embed response formatting is part of the US1 live Discord response path.
 8. Complete polish tasks (`T065-T070`) after desired story set is done.
 9. At each step, consult the reference list above for requirements and contracts.
 
@@ -142,7 +142,15 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [X] T094 [US1] Update bot runtime option validation for Discord gateway configuration in `src/FrameData.Bot/Hosting/BotRuntimeOptions.cs`, `src/FrameData.Bot/Hosting/BotRuntimeOptionsLoader.cs`, and `tests/unit/FrameData.Bot.Tests/Hosting/BotHostBootstrapTests.cs`
 - [X] T095 [US1] Update Discord gateway smoke-test instructions and environment examples in `.env.example`, `.env.prod.example`, and `specs/001-build-3s-frame-bot/quickstart.md`
 
-**Checkpoint**: US1 fully testable and deployable as a live Discord MVP.
+### Discord Embed Response Follow-Up
+
+- [X] T096 [P] [US1] Add unit tests for successful, ambiguous, and error embed formatting in `tests/unit/FrameData.Bot.Tests/Formatting/MoveEmbedResponseFactoryTests.cs`
+- [X] T097 [P] [US1] Add unit tests for interaction handler embed sending and fallback content in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerEmbedResponseTests.cs`
+- [X] T098 [P] [US1] Update contract tests for embed-first `/framedata` responses with text fallback in `tests/contract/FrameData.Contracts.Tests/DiscordCommandContractTests.cs`
+- [X] T099 [P] [US1] Implement Discord move response model and embed factory in `src/FrameData.Bot/Formatting/DiscordMoveResponse.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
+- [X] T100 [US1] Extend Discord responder abstraction and interaction handler to send Discord.Net embeds with fallback content in `src/FrameData.Bot/Discord/IDiscordInteractionResponder.cs`, `src/FrameData.Bot/Discord/SocketSlashCommandResponder.cs`, and `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
+
+**Checkpoint**: US1 fully testable and deployable as a live Discord MVP with structured embed responses.
 
 ---
 
@@ -371,15 +379,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 - [ ] T063 [US6] Implement metadata ingestion mapper in `src/FrameData.Ingestion/Mapping/MoveMetadataMapper.cs`
 - [ ] T064 [US6] Integrate metadata serialization in API and bot formatters in `src/FrameData.Api/Responses/MoveQueryResponseFactory.cs` and `src/FrameData.Bot/Formatting/MoveResponseFormatter.cs`
 
-### Rich Discord Response Follow-Up
-
-- [ ] T096 [P] [US6] Add unit tests for rich Discord embed formatting in `tests/unit/FrameData.Bot.Tests/Formatting/RichMoveResponseFormatterTests.cs`
-- [ ] T097 [P] [US6] Add unit tests for rich response fallback behavior in `tests/unit/FrameData.Bot.Tests/Discord/FramedataInteractionHandlerRichResponseTests.cs`
-- [ ] T098 [P] [US6] Implement rich Discord response model in `src/FrameData.Bot/Formatting/DiscordMoveResponse.cs`
-- [ ] T099 [US6] Implement rich embed formatter with primitive text fallback in `src/FrameData.Bot/Formatting/RichMoveResponseFormatter.cs`
-- [ ] T100 [US6] Integrate rich response sending into the Discord interaction handler in `src/FrameData.Bot/Discord/FramedataInteractionHandler.cs`
-
-**Checkpoint**: US6 delivers advanced detail extension while preserving backward compatibility.
+**Checkpoint**: US6 delivers advanced detail extension while preserving backward compatibility with the US1 embed response contract.
 
 ---
 
@@ -405,24 +405,24 @@ description: "Task list for implementing Discord 3s frame data bot"
 - User Stories:
   - US1 (Phase 3) and US2 (Phase 4) start after Foundational.
   - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
-  - US1 Discord gateway follow-up (`T083-T095`) completes before US3 response disambiguation work, because US3 changes the live command response path.
+  - US1 Discord gateway follow-up (`T083-T095`) and embed response follow-up (`T096-T100`) complete before US3 response disambiguation work, because US3 changes the live command response path.
   - US2 real persistence follow-up (`T101-T118`) was completed as the first production persistence slice, but is superseded by the static dataset storage refactor.
   - Static dataset storage refactor (`T136-T150`) must complete before US4, US5, US6, or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL.
   - US3 (Phase 5) depends on US1 baseline lookup behavior and a query repository implementation; its completed matcher work must be preserved when the static repository replaces the Postgres repository.
   - US4 (Phase 6) depends on static dataset storage so image metadata and files can be published beside move JSON.
   - US5 (Phase 7) depends on US4 image-capture data.
-  - US6 (Phase 8) depends on static dataset storage and US1 live Discord response pipeline.
+  - US6 (Phase 8) depends on static dataset storage and US1 live Discord embed response pipeline.
 - Final Phase: depends on all desired stories being complete.
 
 ### User Story Completion Order
 
-1. US1 + runtime parity follow-up + Discord gateway follow-up + US2 scaffold
+1. US1 + runtime parity follow-up + Discord gateway follow-up + embed response follow-up + US2 scaffold
 2. Historical US2 Postgres persistence/worker follow-up (`T101-T118`) and backup/restore follow-up (`T119-T125`)
 3. US3 (fuzzy/alias usability)
 4. Static dataset storage refactor (`T136-T150`)
 5. US4 (last active-frame image in the static media dataset)
 6. US5 (storage impact decision)
-7. US6 (advanced metadata + rich Discord response)
+7. US6 (advanced metadata)
 
 ### Within Each User Story
 
@@ -444,6 +444,7 @@ T020, T021
 T075, T076
 T083, T084, T085, T087
 T088, T089
+T096, T097, T098, T099
 ```
 
 ### User Story 2
@@ -487,7 +488,6 @@ T056
 # Run in parallel:
 T059, T060, T061
 T062
-T096, T097, T098
 ```
 
 ---
@@ -499,9 +499,10 @@ T096, T097, T098
 1. Complete Setup and Foundational phases.
 2. Deliver US1 exact lookup path and Bot runtime/container parity follow-up.
 3. Deliver US1 Discord gateway/slash-command follow-up so `/framedata` works in a real Discord channel.
-4. Deliver the static dataset storage refactor so the worker writes versioned JSON/media datasets and the API reads the active dataset from disk.
-5. Validate API and bot queries against the mounted static dataset.
-6. Validate and demo MVP.
+4. Deliver US1 Discord embed response follow-up so `/framedata` returns structured frame-data embeds with text fallback.
+5. Deliver the static dataset storage refactor so the worker writes versioned JSON/media datasets and the API reads the active dataset from disk.
+6. Validate API and bot queries against the mounted static dataset.
+7. Validate and demo MVP.
 
 ### Incremental Delivery
 
@@ -509,7 +510,7 @@ T096, T097, T098
 2. Complete the static dataset storage refactor (`T136-T150`).
 3. Add US4 last active-frame image support inside the static media dataset.
 4. Add US5 storage assessment before any full-frame archival.
-5. Add US6 advanced metadata support and rich Discord response formatting.
+5. Add US6 advanced metadata support to the existing embed response format.
 
 ### Quality Gates
 

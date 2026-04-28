@@ -199,12 +199,17 @@
 
 - Description: Runtime response payload sent back to a Discord interaction.
 - Fields:
-  - `content` (string, required for primitive response): plain text fallback.
-  - `embedTitle` (string, optional): rich response title when embeds are enabled.
-  - `embedFields` (collection, optional): structured frame data fields.
-  - `imageUrl` (string, optional): optional media reference when available.
+  - `content` (string, required): concise plain text fallback for accessibility,
+    logging, and send-failure recovery.
+  - `embedTitle` (string, required for successful move responses): rich response title.
+  - `embedColor` (integer, optional): Discord embed accent color.
+  - `embedFields` (collection, required for successful move responses): structured
+    frame-data fields such as section, startup, active, recovery, on-hit, and on-block.
+  - `attachmentFileName` (string, optional): local Discord attachment name used by
+    future media embeds with `attachment://...`.
   - `isEphemeral` (bool, required): defaults to `false` for channel-visible answers.
 - Validation:
-  - Primitive response must fit Discord message content limits.
-  - Rich response must preserve enough text fallback for clients or failures where
-    embeds cannot be sent.
+  - Fallback content must fit Discord message content limits.
+  - Embed content must fit Discord embed limits and preserve enough fallback text for
+    clients or failures where embeds cannot be sent.
+  - Validation failures may be content-only when no move result exists.

@@ -18,8 +18,12 @@
 
 ### Session 2026-04-25
 
-- Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command for the configured guild, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. The first pass may use primitive text; rich Discord responses are planned as a follow-up.
+- Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command for the configured guild, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. The original first pass allowed primitive text; the 2026-04-28 clarification supersedes that response-format direction.
 - Q: Does US2 completion require a real ingestion worker and persistent PostgreSQL read/write path, not only parser/orchestrator scaffolding? → A: Yes. The ingestion service must run as a deployable worker, ingest the full supported character/source-id catalog by default, insert/update character, move, and ingestion run records in PostgreSQL, export one JSON file per character, and API/bot move lookup must read from that same persistent store.
+
+### Session 2026-04-28
+
+- Q: Should the next Discord response implementation continue with primitive text before rich formatting? → A: No. The bot should use Discord embeds as the default `/framedata` response format for move results now, with concise plain-text fallback content retained for send failures, validation errors, and clients where embeds cannot be displayed.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -47,7 +51,7 @@ receives frame data for the intended move.
 4. **Given** the bot is running with valid Discord configuration and the API is
    reachable, **When** a Discord user invokes `/framedata` in a channel with
    `character` and `move`, **Then** the bot acknowledges the interaction and posts the
-   corresponding frame-data response or actionable error.
+   corresponding structured embed frame-data response or actionable error.
 
 ---
 
@@ -229,9 +233,10 @@ properties without breaking MVP fields.
 - **FR-019**: The bot runtime MUST connect to Discord, register the `/framedata` slash
   command for the configured guild, receive slash-command interactions, and route them
   through the move query flow.
-- **FR-020**: The bot MUST initially support a primitive text Discord response and MUST
-  plan a rich Discord response format that can include structured fields and optional
-  media without breaking the text fallback.
+- **FR-020**: The bot MUST use a rich Discord embed as the default move lookup response,
+  including matched character, matched move, section, and frame-data fields, while
+  preserving concise plain-text fallback content for send failures, validation errors,
+  and clients where embeds cannot be displayed.
 
 ### Verification Requirements *(mandatory)*
 
