@@ -166,6 +166,95 @@ public sealed class FuzzyMatcherTests
         candidates[0].Score.ShouldBe(100);
     }
 
+    [Theory]
+    [InlineData("sa1", "First Super", "sa1")]
+    [InlineData("super art 2", "Second Super", "superart2")]
+    [InlineData("sa3", "Third Super", "sa3")]
+    public void Rank_WhenInputUsesGenericSuperArtAlias_UsesSuperArtDisplayOrder(
+        string input,
+        string expectedMove,
+        string expectedAlias)
+    {
+        var candidates = _matcher.Rank(input, CreateGenericSuperArtMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("sa1", "Alex", "Hyper Bomb", "sa1")]
+    [InlineData("reverse sa1", "Alex", "Reverse Hyper Bomb", "reversesa1")]
+    [InlineData("back sa1", "Alex", "Reverse Hyper Bomb", "backsa1")]
+    [InlineData("from behind sa1", "Alex", "Reverse Hyper Bomb", "frombehindsa1")]
+    [InlineData("sa2", "Alex", "Boomerang Raid", "sa2")]
+    [InlineData("sa3", "Alex", "Stun Gun Headbutt", "sa3")]
+    [InlineData("sa1", "Akuma", "Messatsu Gou Hadou", "sa1")]
+    [InlineData("air sa1", "Akuma", "Tenma Gou Zankuu", "jsa1")]
+    [InlineData("jp sa1", "Akuma", "Tenma Gou Zankuu", "jsa1")]
+    [InlineData("jumping sa1", "Akuma", "Tenma Gou Zankuu", "jsa1")]
+    [InlineData("sa2", "Akuma", "Messatsu Gou Shoryuu", "sa2")]
+    [InlineData("sa3", "Akuma", "Messatsu Gou Rasen (Ground)", "sa3")]
+    [InlineData("air sa3", "Akuma", "Messatsu Gou Rasen (Air)", "jsa3")]
+    [InlineData("light sa2", "Hugo", "Megaton Press (Jab)", "lightsa2")]
+    [InlineData("sa2 mp", "Hugo", "Megaton Press (Strong)", "sa2mp")]
+    [InlineData("hp sa2", "Hugo", "Megaton Press (Fierce)", "hpsa2")]
+    [InlineData("sa2", "Ibuki", "Yoroi Doushi", "sa2")]
+    [InlineData("missed sa2", "Ibuki", "Missed grab (Chi Blast)", "missedsa2")]
+    [InlineData("whiffed sa2", "Ibuki", "Missed grab (Chi Blast)", "whiffedsa2")]
+    [InlineData("sa1", "Oro", "Kishin Riki", "sa1")]
+    [InlineData("sa1 grab", "Oro", "Ground Grab", "sa1grab")]
+    [InlineData("sa1 throw", "Oro", "Ground Grab", "sa1throw")]
+    [InlineData("sa1 air grab", "Oro", "Air Grab", "sa1airgrab")]
+    [InlineData("sa1 air throw", "Oro", "Air Grab", "sa1airthrow")]
+    [InlineData("ex sa1", "Oro", "EX Kishin Riki", "exsa1")]
+    [InlineData("sa2", "Oro", "Yagyou Dama", "sa2")]
+    [InlineData("ex sa2", "Oro", "EX Yagyou Dama", "exsa2")]
+    [InlineData("sa3", "Oro", "Tengu Stones", "sa3")]
+    [InlineData("sa3", "Q", "Total Destruction", "sa3")]
+    [InlineData("sa3 punch", "Q", "Far Grab", "sa3punch")]
+    [InlineData("sa3 kick", "Q", "Close Grab", "sa3kick")]
+    [InlineData("sa1", "Ryu", "Shinku Hadouken", "sa1")]
+    [InlineData("sa2", "Ryu", "Shin Shoryuken", "sa2")]
+    [InlineData("far sa2", "Ryu", "Shin Shoryuken (Far)", "farsa2")]
+    [InlineData("missed sa2", "Ryu", "Shin Shoryuken (Far)", "missedsa2")]
+    [InlineData("whiffed sa2", "Ryu", "Shin Shoryuken (Far)", "whiffedsa2")]
+    [InlineData("sa3", "Ryu", "Denjin Hadouken", "sa3")]
+    [InlineData("sa2", "Twelve", "X.F.L.A.T.", "sa2")]
+    [InlineData("air sa2", "Twelve", "X.F.L.A.T. (Air hit)", "jsa2")]
+    [InlineData("sa3", "Twelve", "X.C.O.P.Y.", "sa3")]
+    [InlineData("sa3", "Urien", "Aegis Reflector", "sa3")]
+    [InlineData("ex sa3", "Urien", "Aegis Reflector (EX)", "exsa3")]
+    public void Rank_WhenInputUsesSuperArtAliasException_RanksConfiguredMoveFirst(
+        string input,
+        string character,
+        string expectedMove,
+        string expectedAlias)
+    {
+        var characterMoves = CreateSuperArtExceptionMoves()
+            .Where(move => string.Equals(move.CharacterName, character, StringComparison.Ordinal));
+
+        var candidates = _matcher.Rank(input, characterMoves);
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Rank_WhenTwelveHasTwoXCopyRows_Sa3TargetsFirstXCopy()
+    {
+        var characterMoves = CreateSuperArtExceptionMoves()
+            .Where(move => string.Equals(move.CharacterName, "Twelve", StringComparison.Ordinal));
+
+        var candidates = _matcher.Rank("sa3", characterMoves);
+
+        candidates[0].MoveId.ShouldBe("twelve-xcopy-first");
+        candidates[0].CanonicalName.ShouldBe("X.C.O.P.Y.");
+    }
+
     [Fact]
     public void Rank_WhenDirectionalInputIsMoreSpecific_ItScoresHigherThanButtonOnlyInput()
     {
@@ -373,6 +462,76 @@ public sealed class FuzzyMatcherTests
                 DisplayOrder = 3,
                 FrameData = new MoveFrameData { Startup = "12" }
             }
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateGenericSuperArtMoves()
+    {
+        return
+        [
+            CreateTestMove("generic-5lp", "generic", "Generic", "Normals", "5lp", 1),
+            CreateTestMove("generic-first-super", "generic", "Generic", "SuperArts", "First Super", 10),
+            CreateTestMove("generic-second-super", "generic", "Generic", "SuperArts", "Second Super", 20),
+            CreateTestMove("generic-third-super", "generic", "Generic", "SuperArts", "Third Super", 30)
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateSuperArtExceptionMoves()
+    {
+        return
+        [
+            CreateTestMove("alex-hyper-bomb", "alex", "Alex", "SuperArts", "Hyper Bomb", 1),
+            CreateTestMove("alex-reverse-hyper-bomb", "alex", "Alex", "SuperArts", "Reverse Hyper Bomb", 2),
+            CreateTestMove("alex-boomerang-raid", "alex", "Alex", "SuperArts", "Boomerang Raid", 3),
+            CreateTestMove("alex-stun-gun-headbutt", "alex", "Alex", "SuperArts", "Stun Gun Headbutt", 4),
+
+            CreateTestMove("akuma-messatsu-gou-hadou", "akuma", "Akuma", "SuperArts", "Messatsu Gou Hadou", 1),
+            CreateTestMove("akuma-tenma-gou-zankuu", "akuma", "Akuma", "SuperArts", "Tenma Gou Zankuu", 2),
+            CreateTestMove("akuma-messatsu-gou-shoryuu", "akuma", "Akuma", "SuperArts", "Messatsu Gou Shoryuu", 3),
+            CreateTestMove("akuma-messatsu-gou-rasen-ground", "akuma", "Akuma", "SuperArts", "Messatsu Gou Rasen (Ground)", 4),
+            CreateTestMove("akuma-messatsu-gou-rasen-air", "akuma", "Akuma", "SuperArts", "Messatsu Gou Rasen (Air)", 5),
+            CreateTestMove("akuma-kongou-kokuretsu-zan", "akuma", "Akuma", "SuperArts", "Kongou Kokuretsu Zan", 6),
+
+            CreateTestMove("hugo-gigas-breaker", "hugo", "Hugo", "SuperArts", "Gigas Breaker", 1),
+            CreateTestMove("hugo-megaton-press-jab", "hugo", "Hugo", "SuperArts", "Megaton Press (Jab)", 2),
+            CreateTestMove("hugo-megaton-press-strong", "hugo", "Hugo", "SuperArts", "Megaton Press (Strong)", 3),
+            CreateTestMove("hugo-megaton-press-fierce", "hugo", "Hugo", "SuperArts", "Megaton Press (Fierce)", 4),
+            CreateTestMove("hugo-hammer-frenzy", "hugo", "Hugo", "SuperArts", "Hammer Frenzy", 5),
+
+            CreateTestMove("ibuki-kasumi-suzaku", "ibuki", "Ibuki", "SuperArts", "Kasumi Suzaku", 1),
+            CreateTestMove("ibuki-yoroi-doushi", "ibuki", "Ibuki", "SuperArts", "Yoroi Doushi", 2),
+            CreateTestMove("ibuki-missed-grab-chi-blast", "ibuki", "Ibuki", "SuperArts", "Missed grab (Chi Blast)", 3),
+            CreateTestMove("ibuki-yami-shigure", "ibuki", "Ibuki", "SuperArts", "Yami Shigure", 4),
+
+            CreateTestMove("oro-kishin-riki", "oro", "Oro", "SuperArts", "Kishin Riki", 1),
+            CreateTestMove("oro-ground-grab", "oro", "Oro", "SuperArts", "Ground Grab", 2),
+            CreateTestMove("oro-air-grab", "oro", "Oro", "SuperArts", "Air Grab", 3),
+            CreateTestMove("oro-ex-kishin-riki", "oro", "Oro", "SuperArts", "EX Kishin Riki", 4),
+            CreateTestMove("oro-yagyou-dama", "oro", "Oro", "SuperArts", "Yagyou Dama", 5),
+            CreateTestMove("oro-ex-yagyou-dama", "oro", "Oro", "SuperArts", "EX Yagyou Dama", 6),
+            CreateTestMove("oro-tengu-stones", "oro", "Oro", "SuperArts", "Tengu Stones", 7),
+
+            CreateTestMove("q-critical-combo-attack", "q", "Q", "SuperArts", "Critical Combo Attack", 1),
+            CreateTestMove("q-deadly-double-combination", "q", "Q", "SuperArts", "Deadly Double Combination", 2),
+            CreateTestMove("q-total-destruction", "q", "Q", "SuperArts", "Total Destruction", 3),
+            CreateTestMove("q-far-grab", "q", "Q", "SuperArts", "Far Grab", 4),
+            CreateTestMove("q-close-grab", "q", "Q", "SuperArts", "Close Grab", 5),
+
+            CreateTestMove("ryu-shinku-hadouken", "ryu", "Ryu", "SuperArts", "Shinku Hadouken", 1),
+            CreateTestMove("ryu-shin-shoryuken", "ryu", "Ryu", "SuperArts", "Shin Shoryuken", 2),
+            CreateTestMove("ryu-shin-shoryuken-far", "ryu", "Ryu", "SuperArts", "Shin Shoryuken (Far)", 3),
+            CreateTestMove("ryu-denjin-hadouken", "ryu", "Ryu", "SuperArts", "Denjin Hadouken", 4),
+
+            CreateTestMove("twelve-xndl", "twelve", "Twelve", "SuperArts", "X.N.D.L.", 1),
+            CreateTestMove("twelve-xflat", "twelve", "Twelve", "SuperArts", "X.F.L.A.T.", 2),
+            CreateTestMove("twelve-xflat-air-hit", "twelve", "Twelve", "SuperArts", "X.F.L.A.T. (Air hit)", 3),
+            CreateTestMove("twelve-xcopy-first", "twelve", "Twelve", "SuperArts", "X.C.O.P.Y.", 4),
+            CreateTestMove("twelve-xcopy-second", "twelve", "Twelve", "SuperArts", "X.C.O.P.Y.", 5),
+
+            CreateTestMove("urien-tyrant-slaughter", "urien", "Urien", "SuperArts", "Tyrant Slaughter", 1),
+            CreateTestMove("urien-temporal-thunder", "urien", "Urien", "SuperArts", "Temporal Thunder", 2),
+            CreateTestMove("urien-aegis-reflector", "urien", "Urien", "SuperArts", "Aegis Reflector", 3),
+            CreateTestMove("urien-aegis-reflector-ex", "urien", "Urien", "SuperArts", "Aegis Reflector (EX)", 4)
         ];
     }
 
@@ -939,6 +1098,25 @@ public sealed class FuzzyMatcherTests
             }
         ];
     }
+
+    private static Move CreateTestMove(
+        string id,
+        string characterId,
+        string characterName,
+        string section,
+        string canonicalName,
+        int displayOrder)
+        => new()
+        {
+            Id = id,
+            CharacterId = characterId,
+            Game = "sf3_3s",
+            CharacterName = characterName,
+            Section = section,
+            CanonicalName = canonicalName,
+            DisplayOrder = displayOrder,
+            FrameData = new MoveFrameData { Startup = "1" }
+        };
 
     private static IReadOnlyList<Move> CreateNormalVariantMoves()
     {

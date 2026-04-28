@@ -120,7 +120,7 @@ public sealed partial class AliasNormalizer
         return ApplyPositionPrefix(compact);
     }
 
-    public IReadOnlyList<MoveAlias> CreateAliases(Move move)
+    public IReadOnlyList<MoveAlias> CreateAliases(Move move, IReadOnlyList<Move>? characterMoves = null)
     {
         var aliases = new List<MoveAlias>();
         AddAlias(aliases, move, move.CanonicalName, MoveAliasType.Canonical);
@@ -132,6 +132,7 @@ public sealed partial class AliasNormalizer
         AddKnownMoveShortNameAliases(aliases, move);
         AddMoveSpecificColloquialAliases(aliases, move, normalizedCanonical);
         AddColloquialAliases(aliases, move, normalizedCanonical);
+        AddSuperArtAliases(aliases, move, normalizedCanonical, characterMoves);
 
         return aliases
             .GroupBy(alias => alias.NormalizedAlias, StringComparer.OrdinalIgnoreCase)
@@ -290,6 +291,305 @@ public sealed partial class AliasNormalizer
         }
     }
 
+    private void AddSuperArtAliases(
+        List<MoveAlias> aliases,
+        Move move,
+        string normalizedCanonical,
+        IReadOnlyList<Move>? characterMoves)
+    {
+        if (!IsSuperArt(move))
+        {
+            return;
+        }
+
+        var characterId = Normalize(move.CharacterId);
+        var normalizedBase = Normalize(GetMoveBaseName(move.CanonicalName));
+        AddConfiguredSuperArtAliases(aliases, move, characterId, normalizedCanonical, normalizedBase);
+
+        var genericNumber = GetGenericSuperArtNumber(move, characterMoves);
+        if (genericNumber is not null)
+        {
+            AddSuperArtNumberAliases(aliases, move, genericNumber.Value);
+        }
+    }
+
+    private void AddConfiguredSuperArtAliases(
+        List<MoveAlias> aliases,
+        Move move,
+        string characterId,
+        string normalizedCanonical,
+        string normalizedBase)
+    {
+        switch (characterId)
+        {
+            case "alex":
+                AddAlexSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "akuma":
+                AddAkumaSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "hugo":
+                AddHugoSuperArtAliases(aliases, move, normalizedBase);
+                break;
+            case "ibuki":
+                AddIbukiSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "oro":
+                AddOroSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "q":
+                AddQSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "ryu":
+                AddRyuSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "twelve":
+                AddTwelveSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+            case "urien":
+                AddUrienSuperArtAliases(aliases, move, normalizedCanonical);
+                break;
+        }
+    }
+
+    private void AddAlexSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "hyperbomb":
+                AddSuperArtNumberAliases(aliases, move, 1);
+                break;
+            case "reversehyperbomb":
+                AddQualifiedSuperArtAliases(aliases, move, 1, "reverse", "back", "from behind");
+                break;
+        }
+    }
+
+    private void AddAkumaSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "messatsugouhadou":
+                AddSuperArtNumberAliases(aliases, move, 1);
+                break;
+            case "tenmagouzankuu":
+                AddAirSuperArtAliases(aliases, move, 1);
+                break;
+            case "messatsugoushoryuu":
+                AddSuperArtNumberAliases(aliases, move, 2);
+                break;
+            case "messatsugourasenground":
+                AddSuperArtNumberAliases(aliases, move, 3);
+                break;
+            case "messatsugourasenair":
+                AddAirSuperArtAliases(aliases, move, 3);
+                break;
+        }
+    }
+
+    private void AddHugoSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedBase)
+    {
+        if (normalizedBase != "megatonpress")
+        {
+            return;
+        }
+
+        AddSuperArtNumberAliases(aliases, move, 2);
+        var strengthAlias = GetParentheticalStrengthAlias(move.CanonicalName);
+        if (strengthAlias is not null)
+        {
+            AddStrengthSuperArtAliases(aliases, move, 2, strengthAlias);
+        }
+    }
+
+    private void AddIbukiSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "yoroidoushi":
+                AddSuperArtNumberAliases(aliases, move, 2);
+                break;
+            case "missedgrabchiblast":
+                AddQualifiedSuperArtAliases(aliases, move, 2, "missed", "whiffed", "whiff");
+                break;
+        }
+    }
+
+    private void AddOroSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "kishinriki":
+                AddSuperArtNumberAliases(aliases, move, 1);
+                break;
+            case "groundgrab":
+                AddTrailingSuperArtAliases(aliases, move, 1, "grab", "throw");
+                break;
+            case "jgrab":
+                AddTrailingSuperArtAliases(aliases, move, 1, "air grab", "air throw");
+                break;
+            case "exkishinriki":
+                AddQualifiedSuperArtAliases(aliases, move, 1, "ex");
+                break;
+            case "yagyoudama":
+                AddSuperArtNumberAliases(aliases, move, 2);
+                break;
+            case "exyagyoudama":
+                AddQualifiedSuperArtAliases(aliases, move, 2, "ex");
+                break;
+        }
+    }
+
+    private void AddQSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "totaldestruction":
+                AddSuperArtNumberAliases(aliases, move, 3);
+                break;
+            case "fargrab":
+                AddTrailingSuperArtAliases(aliases, move, 3, "punch");
+                break;
+            case "closegrab":
+                AddTrailingSuperArtAliases(aliases, move, 3, "kick");
+                break;
+        }
+    }
+
+    private void AddRyuSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "shinshoryuken":
+                AddSuperArtNumberAliases(aliases, move, 2);
+                break;
+            case "shinshoryukenfar":
+                AddQualifiedSuperArtAliases(aliases, move, 2, "far", "missed", "whiffed", "whiff");
+                break;
+            case "denjinhadouken":
+                AddSuperArtNumberAliases(aliases, move, 3);
+                break;
+        }
+    }
+
+    private void AddTwelveSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "xflat":
+                AddSuperArtNumberAliases(aliases, move, 2);
+                break;
+            case "xflatairhit":
+                AddAirSuperArtAliases(aliases, move, 2);
+                break;
+        }
+    }
+
+    private void AddUrienSuperArtAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
+    {
+        switch (normalizedCanonical)
+        {
+            case "aegisreflector":
+                AddSuperArtNumberAliases(aliases, move, 3);
+                break;
+            case "aegisreflectorex":
+                AddQualifiedSuperArtAliases(aliases, move, 3, "ex");
+                break;
+        }
+    }
+
+    private int? GetGenericSuperArtNumber(Move move, IReadOnlyList<Move>? characterMoves)
+    {
+        if (characterMoves is null || IsGenericSuperArtAliasDisabled(move) || ShouldSkipGenericSuperArtAlias(move))
+        {
+            return null;
+        }
+
+        var characterId = Normalize(move.CharacterId);
+        var primarySuperArts = characterMoves
+            .Where(candidate => string.Equals(Normalize(candidate.CharacterId), characterId, StringComparison.Ordinal)
+                && IsSuperArt(candidate)
+                && !IsGenericSuperArtAliasDisabled(candidate)
+                && !ShouldSkipGenericSuperArtAlias(candidate))
+            .OrderBy(candidate => candidate.DisplayOrder ?? int.MaxValue)
+            .ThenBy(candidate => candidate.CanonicalName, StringComparer.Ordinal)
+            .GroupBy(candidate => Normalize(GetMoveBaseName(candidate.CanonicalName)), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .Take(3)
+            .ToArray();
+
+        for (var index = 0; index < primarySuperArts.Length; index++)
+        {
+            if (string.Equals(primarySuperArts[index].Id, move.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return index + 1;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsGenericSuperArtAliasDisabled(Move move)
+        => string.Equals(move.CharacterId, "akuma", StringComparison.OrdinalIgnoreCase);
+
+    private bool ShouldSkipGenericSuperArtAlias(Move move)
+    {
+        var characterId = Normalize(move.CharacterId);
+        var normalizedCanonical = Normalize(move.CanonicalName);
+
+        return characterId switch
+        {
+            "alex" => normalizedCanonical is "reversehyperbomb",
+            "ibuki" => normalizedCanonical is "missedgrabchiblast",
+            "oro" => normalizedCanonical is "groundgrab" or "jgrab" or "exkishinriki" or "exyagyoudama",
+            "q" => normalizedCanonical is "fargrab" or "closegrab",
+            "ryu" => normalizedCanonical is "shinshoryukenfar",
+            "twelve" => normalizedCanonical is "xflatairhit",
+            "urien" => normalizedCanonical is "aegisreflectorex",
+            _ => false
+        };
+    }
+
+    private void AddSuperArtNumberAliases(List<MoveAlias> aliases, Move move, int number)
+    {
+        AddAlias(aliases, move, $"sa{number}", MoveAliasType.Abbreviation);
+        AddAlias(aliases, move, $"sa {number}", MoveAliasType.Abbreviation);
+        AddAlias(aliases, move, $"super art {number}", MoveAliasType.Derived);
+        AddAlias(aliases, move, $"super {number}", MoveAliasType.Derived);
+    }
+
+    private void AddAirSuperArtAliases(List<MoveAlias> aliases, Move move, int number)
+    {
+        AddQualifiedSuperArtAliases(aliases, move, number, "air", "jp", "jumping", "jump");
+        AddTrailingSuperArtAliases(aliases, move, number, "air");
+    }
+
+    private void AddQualifiedSuperArtAliases(List<MoveAlias> aliases, Move move, int number, params string[] qualifiers)
+    {
+        foreach (var qualifier in qualifiers)
+        {
+            AddAlias(aliases, move, $"{qualifier} sa{number}", MoveAliasType.Colloquial);
+            AddAlias(aliases, move, $"sa{number} {qualifier}", MoveAliasType.Colloquial);
+            AddAlias(aliases, move, $"{qualifier} super art {number}", MoveAliasType.Colloquial);
+        }
+    }
+
+    private void AddTrailingSuperArtAliases(List<MoveAlias> aliases, Move move, int number, params string[] suffixes)
+    {
+        foreach (var suffix in suffixes)
+        {
+            AddAlias(aliases, move, $"sa{number} {suffix}", MoveAliasType.Colloquial);
+            AddAlias(aliases, move, $"{suffix} sa{number}", MoveAliasType.Colloquial);
+            AddAlias(aliases, move, $"super art {number} {suffix}", MoveAliasType.Colloquial);
+        }
+    }
+
+    private void AddStrengthSuperArtAliases(List<MoveAlias> aliases, Move move, int number, StrengthAlias strengthAlias)
+    {
+        AddQualifiedSuperArtAliases(aliases, move, number, strengthAlias.Strength, strengthAlias.Button);
+        AddTrailingSuperArtAliases(aliases, move, number, strengthAlias.Strength, strengthAlias.Button);
+    }
+
     private void AddAlias(List<MoveAlias> aliases, Move move, string alias, MoveAliasType aliasType)
     {
         var normalized = Normalize(alias);
@@ -431,6 +731,10 @@ public sealed partial class AliasNormalizer
     {
         return value is "lp" or "mp" or "hp" or "lk" or "mk" or "hk";
     }
+
+    private static bool IsSuperArt(Move move)
+        => string.Equals(move.Section, "SuperArts", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(move.Section, "Super Arts", StringComparison.OrdinalIgnoreCase);
 
     [GeneratedRegex("[^a-z0-9]+", RegexOptions.Compiled)]
     private static partial Regex NonLookupCharacters();

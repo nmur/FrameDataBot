@@ -26,8 +26,9 @@ public sealed class FuzzyMoveMatcher
             return [];
         }
 
-        return moves
-            .Select(move => RankMove(normalizedQuery, move))
+        var moveList = moves as IReadOnlyList<Move> ?? moves.ToArray();
+        return moveList
+            .Select(move => RankMove(normalizedQuery, move, moveList))
             .Where(candidate => candidate is not null)
             .Select(candidate => candidate!)
             .GroupBy(candidate => candidate.MoveId, StringComparer.OrdinalIgnoreCase)
@@ -66,9 +67,9 @@ public sealed class FuzzyMoveMatcher
         return passingCandidates[0].Score - passingCandidates[1].Score <= AmbiguityScoreDelta;
     }
 
-    private MatchCandidate? RankMove(string normalizedQuery, Move move)
+    private MatchCandidate? RankMove(string normalizedQuery, Move move, IReadOnlyList<Move> characterMoves)
     {
-        return _normalizer.CreateAliases(move)
+        return _normalizer.CreateAliases(move, characterMoves)
             .Select(alias => CreateCandidate(normalizedQuery, move, alias))
             .OrderByDescending(candidate => candidate.Score)
             .ThenBy(candidate => candidate.AliasType is MoveAliasType.Canonical ? 1 : 0)
