@@ -7,15 +7,66 @@ public sealed partial class AliasNormalizer
 {
     private static readonly IReadOnlyDictionary<string, string[]> MoveSpecificColloquialAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
     {
-        ["dudley:2hk"] = ["kanipan"],
+        ["alex:jdownhp"] = ["dive"],
+        ["alex:jstampede"] = ["stomp"],
+        ["dudley:2hk"] = ["kanipan", "crab punch"],
+        ["dudley:taunt"] = ["rose"],
+        ["dudley:towardhk"] = ["dart shot"],
+        ["dudley:towardshk"] = ["dart shot"],
+        ["ken:2mp"] = ["emperor punch", "emperors punch", "emperor's punch"],
+        ["necro:1hp"] = ["elbow cannon"],
+        ["q:captureanddeadlyblow"] = ["command grab", "cmd grab"],
+        ["q:dashingheadattack"] = ["dash punch"],
+        ["q:dashingheadattackhold"] = ["overhead dash punch"],
+        ["q:dashinglegattack"] = ["low dash punch"],
+        ["q:highspeedbarrage"] = ["slaps"],
+        ["sean:taunt"] = ["basketball"],
+        ["urien:2hp"] = ["launcher"],
         ["makoto:hayate"] = ["chesto"]
     };
 
     private static readonly IReadOnlyDictionary<string, string[]> KnownMoveShortNameAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
     {
+        ["gigasbreaker"] = ["720"],
+        ["giantpalmbomber"] = ["clap"],
+        ["geneijin"] = ["geneijin"],
+        ["hadouken"] = ["fireball"],
+        ["hammerfrenzy"] = ["hammer mountain"],
+        ["hyakuretsukyaku"] = ["lightning legs"],
+        ["jetuppercut"] = ["dp"],
+        ["kikoken"] = ["fireball", "hadouken"],
+        ["kikouken"] = ["fireball", "hadouken"],
+        ["kikkoken"] = ["fireball", "hadouken"],
+        ["kongoukokuretsuzan"] = ["kkz"],
+        ["coldbluekick"] = ["cbk"],
+        ["denjinhadouken"] = ["denjin"],
+        ["joudansokutougeri"] = ["donkey kick"],
+        ["lightofvirtue"] = ["lov", "sonic boom", "boom", "fireball"],
+        ["lkswingblow"] = ["ssb"],
+        ["machinegunblow"] = ["mgb"],
+        ["monsterlariat"] = ["lariat", "coathanger"],
+        ["moonsaultpress"] = ["spd"],
+        ["risingrageflash"] = ["flash kick"],
+        ["aegisreflector"] = ["aegis", "mirror"],
+        ["chariotrush"] = ["tackle", "shoulder"],
+        ["metallicsphere"] = ["sphere", "fireball"],
+        ["seanroll"] = ["roll"],
+        ["shakunetsuhadouken"] = ["red hadouken", "red fireball"],
+        ["shoryuken"] = ["dp"],
+        ["shootdownbackbreaker"] = ["backbreaker", "bb"],
+        ["shortswingblow"] = ["ssb"],
+        ["shungokusatsu"] = ["demon"],
+        ["shungokusastu"] = ["demon"],
         ["tatsumakisenpuukyaku"] = ["tatsu"],
+        ["tetsuzankou"] = ["shoulder"],
+        ["tourouzan"] = ["slashes", "rekkas", "mantis slash"],
+        ["violencekneedrop"] = ["knee drop", "knee"],
         ["shipuujinraikyaku"] = ["shipu", "shippu"],
-        ["universaloverhead"] = ["uoh"]
+        ["tengustones"] = ["stones"],
+        ["universaloverhead"] = ["uoh"],
+        ["yagyoudama"] = ["yagyou", "booger"],
+        ["zenpoutenshin"] = ["zenpo", "command grab", "cmd grab"],
+        ["zesshouhohou"] = ["lunch punch"]
     };
 
     private static readonly IReadOnlyDictionary<string, StrengthAlias> ParentheticalStrengthAliases = new Dictionary<string, StrengthAlias>(StringComparer.OrdinalIgnoreCase)
@@ -110,6 +161,12 @@ public sealed partial class AliasNormalizer
                 AddAlias(aliases, move, $"st.{button}", MoveAliasType.Abbreviation);
                 AddAlias(aliases, move, $"s.{button}", MoveAliasType.Abbreviation);
                 AddAlias(aliases, move, $"standing {button}", MoveAliasType.Numpad);
+                break;
+            case '1':
+                AddAlias(aliases, move, $"db.{button}", MoveAliasType.Abbreviation);
+                AddAlias(aliases, move, $"d/b.{button}", MoveAliasType.Abbreviation);
+                AddAlias(aliases, move, $"down back {button}", MoveAliasType.Numpad);
+                AddAlias(aliases, move, $"down-back {button}", MoveAliasType.Numpad);
                 break;
             case 'j':
                 AddAlias(aliases, move, $"j.{button}", MoveAliasType.Abbreviation);
@@ -253,6 +310,16 @@ public sealed partial class AliasNormalizer
 
     private static string ApplyPositionPrefix(string compact)
     {
+        if (compact.StartsWith("downback", StringComparison.Ordinal))
+        {
+            return "1" + compact["downback".Length..];
+        }
+
+        if (compact.StartsWith("db", StringComparison.Ordinal) && compact.Length > 2)
+        {
+            return "1" + compact[2..];
+        }
+
         if (compact.StartsWith("crouching", StringComparison.Ordinal))
         {
             return "2" + compact["crouching".Length..];
@@ -263,7 +330,7 @@ public sealed partial class AliasNormalizer
             return "2" + compact["crouch".Length..];
         }
 
-        if (compact.StartsWith("cr", StringComparison.Ordinal))
+        if (compact.StartsWith("cr", StringComparison.Ordinal) && IsButtonSuffix(compact[2..]))
         {
             return "2" + compact[2..];
         }
@@ -283,7 +350,7 @@ public sealed partial class AliasNormalizer
             return "5" + compact["stand".Length..];
         }
 
-        if (compact.StartsWith("st", StringComparison.Ordinal))
+        if (compact.StartsWith("st", StringComparison.Ordinal) && IsButtonSuffix(compact[2..]))
         {
             return "5" + compact[2..];
         }

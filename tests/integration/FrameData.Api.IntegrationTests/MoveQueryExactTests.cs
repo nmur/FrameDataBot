@@ -20,7 +20,12 @@ public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Pr
                 "makoto",
                 "Makoto",
                 ["mak"],
-                StaticDatasetFixtureWriter.Move("makoto", "2mk"))).GetAwaiter().GetResult();
+                StaticDatasetFixtureWriter.Move("makoto", "2mk")),
+            StaticDatasetFixtureWriter.Character(
+                "akuma",
+                "Akuma",
+                [],
+                StaticDatasetFixtureWriter.Move("akuma", "5lp"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -55,6 +60,18 @@ public sealed class MoveQueryExactTests : IClassFixture<WebApplicationFactory<Pr
         Assert.NotNull(payload);
         Assert.Equal("Makoto", payload.Character);
         Assert.Equal("2mk", payload.MatchedMove);
+    }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenAkumaQueriedAsGouki_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/v1/moves/query?character=gouki&moveInput=5lp");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Akuma", payload.Character);
+        Assert.Equal("5lp", payload.MatchedMove);
     }
 
     [Fact]

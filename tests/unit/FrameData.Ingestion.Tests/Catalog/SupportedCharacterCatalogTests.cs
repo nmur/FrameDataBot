@@ -42,6 +42,16 @@ public sealed class SupportedCharacterCatalogTests
     }
 
     [Fact]
+    public void ResolveScope_WhenAkumaAliasProvided_ReturnsAkuma()
+    {
+        var scope = _catalog.ResolveScope(["gouki"]);
+
+        scope.Count.ShouldBe(1);
+        scope[0].CharacterId.ShouldBe("akuma");
+        scope[0].CharacterName.ShouldBe("Akuma");
+    }
+
+    [Fact]
     public void ResolveScope_WhenNoCharacterIdsProvided_ReturnsEnabledCatalog()
     {
         var scope = _catalog.ResolveScope([]);

@@ -7,6 +7,11 @@ namespace FrameData.Infrastructure.Dataset;
 
 public sealed class StaticMoveQueryRepository : IMoveQueryRepository
 {
+    private static readonly IReadOnlyDictionary<string, string[]> BuiltInCharacterAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["akuma"] = ["gouki"]
+    };
+
     private readonly IReadOnlyDictionary<string, Character> _charactersByLookup;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<Move>> _movesByCharacterId;
 
@@ -80,6 +85,14 @@ public sealed class StaticMoveQueryRepository : IMoveQueryRepository
             foreach (var alias in character.Aliases)
             {
                 AddCharacterLookup(lookup, alias, character);
+            }
+
+            if (BuiltInCharacterAliases.TryGetValue(character.Id, out var aliases))
+            {
+                foreach (var alias in aliases)
+                {
+                    AddCharacterLookup(lookup, alias, character);
+                }
             }
         }
 

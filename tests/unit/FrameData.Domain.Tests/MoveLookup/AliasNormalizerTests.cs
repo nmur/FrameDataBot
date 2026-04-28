@@ -11,13 +11,20 @@ public sealed class AliasNormalizerTests
     [InlineData("cr.HK", "2hk")]
     [InlineData("crouching Heavy Kick", "2hk")]
     [InlineData("2HK", "2hk")]
+    [InlineData("Down Back + Fierce", "1hp")]
+    [InlineData("down-back HP", "1hp")]
+    [InlineData("db.HP", "1hp")]
+    [InlineData("d/b fierce", "1hp")]
     [InlineData("low forward", "2mk")]
     [InlineData("Standing LP", "5lp")]
+    [InlineData("st.HK", "5hk")]
     [InlineData("jumping Heavy Punch", "jhp")]
     [InlineData("air Heavy Punch", "jhp")]
     [InlineData("jp.HP", "jhp")]
     [InlineData("jp tatsu", "jtatsu")]
     [InlineData("j.HK", "jhk")]
+    [InlineData("stomp", "stomp")]
+    [InlineData("crab punch", "crabpunch")]
     public void Normalize_ConvertsCommonNotationToStableLookupForm(string input, string expected)
     {
         var normalized = _normalizer.Normalize(input);
