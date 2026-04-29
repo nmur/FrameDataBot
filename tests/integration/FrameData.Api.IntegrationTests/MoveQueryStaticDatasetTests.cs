@@ -116,4 +116,54 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("Success", payload.Media.CaptureStatus);
         Assert.Null(payload.Media.FallbackReason);
     }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenActiveDatasetChanges_ReloadsMediaMetadata()
+    {
+        var initialResponse = await _client.GetAsync(
+            "/v1/moves/query?character=chun-li&moveInput=Kikouken%20%28Jab%29");
+
+        Assert.Equal(HttpStatusCode.OK, initialResponse.StatusCode);
+        var initialPayload = await initialResponse.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(initialPayload);
+        Assert.Null(initialPayload.Media);
+
+        await StaticDatasetFixtureWriter.WriteAsync(
+            _datasetPath,
+            StaticDatasetFixtureWriter.Character(
+                "chun-li",
+                "Chun-Li",
+                ["chun", "chun li"],
+                StaticDatasetFixtureWriter.Move("chun-li", "2mk", startup: "5"),
+                StaticDatasetFixtureWriter.Move(
+                    "chun-li",
+                    "Kikouken (Jab)",
+                    displayOrder: 2,
+                    startup: "13",
+                    motion: "236P",
+                    damage: "60",
+                    stun: "7",
+                    media:
+                    [
+                        new StaticDatasetMoveMedia
+                        {
+                            Type = "RepresentativeActiveFrame",
+                            Path = "media/chun-li/chun-li-normals-kikouken-jab/representative-active-frame.png",
+                            SelectedFrame = "010",
+                            SelectionStrategy = "largest-active-hitbox-area",
+                            CaptureStatus = "Success"
+                        }
+                    ])));
+        File.SetLastWriteTimeUtc(Path.Combine(_datasetPath, "manifest.json"), DateTime.UtcNow.AddMinutes(1));
+
+        var reloadedResponse = await _client.GetAsync(
+            "/v1/moves/query?character=chun-li&moveInput=Kikouken%20%28Jab%29");
+
+        Assert.Equal(HttpStatusCode.OK, reloadedResponse.StatusCode);
+        var reloadedPayload = await reloadedResponse.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(reloadedPayload);
+        Assert.NotNull(reloadedPayload.Media);
+        Assert.Equal("media/chun-li/chun-li-normals-kikouken-jab/representative-active-frame.png", reloadedPayload.Media.RepresentativeFrameImageUrl);
+        Assert.Equal("010", reloadedPayload.Media.SelectedFrame);
+    }
 }

@@ -1,6 +1,5 @@
 using FrameData.Api.Endpoints;
 using FrameData.Api.Responses;
-using FrameData.Domain.Datasets;
 using FrameData.Domain.MoveLookup;
 using FrameData.Infrastructure.Dataset;
 using FrameData.Shared.Logging;
@@ -11,19 +10,18 @@ FrameDataLogging.Configure(builder.Logging, builder.Configuration, "FrameData.Ap
 builder.Services.AddSerilog(Log.Logger, dispose: false);
 
 builder.Services.AddSingleton<StaticFrameDataDatasetLoader>();
-builder.Services.AddSingleton(sp =>
+builder.Services.AddSingleton<IMoveQueryRepository>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var activeDatasetPath = configuration["FRAMEDATA_ACTIVE_DATASET_PATH"]
         ?? configuration["FrameData:ActiveDatasetPath"]
         ?? Path.Combine("data", "framedata", "active");
 
-    return sp.GetRequiredService<StaticFrameDataDatasetLoader>()
-        .LoadAsync(activeDatasetPath)
-        .GetAwaiter()
-        .GetResult();
+    return new ReloadingStaticMoveQueryRepository(
+        sp.GetRequiredService<StaticFrameDataDatasetLoader>(),
+        activeDatasetPath,
+        sp.GetRequiredService<ILogger<ReloadingStaticMoveQueryRepository>>());
 });
-builder.Services.AddSingleton<IMoveQueryRepository, StaticMoveQueryRepository>();
 builder.Services.AddSingleton<AliasNormalizer>();
 builder.Services.AddSingleton<FuzzyMoveMatcher>();
 builder.Services.AddSingleton<ExactMoveLookupService>();
@@ -40,7 +38,10 @@ try
 
     app.MapGet("/", () => "Hello World!");
     app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-    _ = app.Services.GetRequiredService<StaticFrameDataDataset>();
+    _ = app.Services.GetRequiredService<IMoveQueryRepository>()
+        .SupportsCharacterAsync(string.Empty)
+        .GetAwaiter()
+        .GetResult();
     app.MapMoveQueryEndpoint();
 
     await app.RunAsync();

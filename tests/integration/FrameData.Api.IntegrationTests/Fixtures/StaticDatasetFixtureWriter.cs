@@ -13,7 +13,18 @@ internal static class StaticDatasetFixtureWriter
     public static async Task<string> CreateAsync(params StaticDatasetCharacterDocument[] characterDocuments)
     {
         var root = Path.Combine(Path.GetTempPath(), $"framedata-api-dataset-{Guid.NewGuid():N}");
+        await WriteAsync(root, characterDocuments);
+        return root;
+    }
+
+    public static async Task WriteAsync(string root, params StaticDatasetCharacterDocument[] characterDocuments)
+    {
         var charactersDirectory = Path.Combine(root, "characters");
+        if (Directory.Exists(charactersDirectory))
+        {
+            Directory.Delete(charactersDirectory, recursive: true);
+        }
+
         Directory.CreateDirectory(charactersDirectory);
         Directory.CreateDirectory(Path.Combine(root, "media"));
 
@@ -43,8 +54,6 @@ internal static class StaticDatasetFixtureWriter
             MediaCount = characterDocuments.Sum(document => document.Moves.Sum(move => move.Media.Count)),
             Characters = manifestCharacters
         });
-
-        return root;
     }
 
     public static StaticDatasetCharacterDocument Character(

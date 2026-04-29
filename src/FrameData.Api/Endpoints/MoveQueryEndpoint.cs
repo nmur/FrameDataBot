@@ -55,13 +55,15 @@ public static class MoveQueryEndpoint
             }
 
             logger.LogDebug(
-                "Move query matched {CharacterId}/{MoveId}: {CharacterName} {MoveName} in section {Section}.",
+                "Move query matched {CharacterId}/{MoveId}: {CharacterName} {MoveName} in section {Section}. MediaCount={MediaCount}.",
                 result.Move.CharacterId,
                 result.Move.Id,
                 result.Move.CharacterName,
                 result.Move.CanonicalName,
-                result.Move.Section);
+                result.Move.Section,
+                result.Move.Media.Count);
 
+            var media = ToMediaContract(result.Move.Media);
             return Results.Ok(new MoveQueryResponse
             {
                 Character = result.Move.CharacterName,
@@ -80,7 +82,7 @@ public static class MoveQueryEndpoint
                     OnBlock = result.Move.FrameData.OnBlock,
                     FrameAdvantage = result.Move.FrameData.FrameAdvantage
                 },
-                Media = ToMediaContract(result.Move.Media)
+                Media = media
             });
         });
     }
