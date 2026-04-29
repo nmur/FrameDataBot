@@ -90,8 +90,11 @@ public sealed class HitboxCanvasRenderer
             for (var x = 0; x < width; x++)
             {
                 var sourceOffset = ((y * sourceFrame.Width) + x) * BytesPerPixel;
+                var red = sourceFrame.Pixels[sourceOffset];
+                var green = sourceFrame.Pixels[sourceOffset + 1];
+                var blue = sourceFrame.Pixels[sourceOffset + 2];
                 var alpha = sourceFrame.Pixels[sourceOffset + 3];
-                if (alpha == 0)
+                if (alpha == 0 || IsSourceFrameTransparencyKey(red, green, blue))
                 {
                     continue;
                 }
@@ -99,20 +102,23 @@ public sealed class HitboxCanvasRenderer
                 var destinationOffset = ((y * CanvasWidth) + x) * BytesPerPixel;
                 if (alpha == 255)
                 {
-                    pixels[destinationOffset] = sourceFrame.Pixels[sourceOffset];
-                    pixels[destinationOffset + 1] = sourceFrame.Pixels[sourceOffset + 1];
-                    pixels[destinationOffset + 2] = sourceFrame.Pixels[sourceOffset + 2];
+                    pixels[destinationOffset] = red;
+                    pixels[destinationOffset + 1] = green;
+                    pixels[destinationOffset + 2] = blue;
                     pixels[destinationOffset + 3] = 255;
                     continue;
                 }
 
-                pixels[destinationOffset] = Blend(sourceFrame.Pixels[sourceOffset], alpha, pixels[destinationOffset]);
-                pixels[destinationOffset + 1] = Blend(sourceFrame.Pixels[sourceOffset + 1], alpha, pixels[destinationOffset + 1]);
-                pixels[destinationOffset + 2] = Blend(sourceFrame.Pixels[sourceOffset + 2], alpha, pixels[destinationOffset + 2]);
+                pixels[destinationOffset] = Blend(red, alpha, pixels[destinationOffset]);
+                pixels[destinationOffset + 1] = Blend(green, alpha, pixels[destinationOffset + 1]);
+                pixels[destinationOffset + 2] = Blend(blue, alpha, pixels[destinationOffset + 2]);
                 pixels[destinationOffset + 3] = 255;
             }
         }
     }
+
+    private static bool IsSourceFrameTransparencyKey(byte red, byte green, byte blue)
+        => red == 255 && green == 0 && blue == 255;
 
     private static byte Blend(byte source, byte alpha, byte destination)
         => (byte)(((source * alpha) + (destination * (255 - alpha))) / 255);
@@ -208,11 +214,11 @@ public sealed class HitboxCanvasRenderer
     {
         var color = HitboxOverlayTypes.Normalize(type) switch
         {
-            "P1_P" => new Rgba(255, 204, 0, 255),
-            "P1_V" => new Rgba(0, 0, 255, 255),
+            "P1_P" => new Rgba(0, 0, 160, 255),
+            "P1_V" => new Rgba(0, 255, 255, 255),
             "P1_A" => new Rgba(255, 0, 0, 255),
-            "P1_T" => new Rgba(0, 192, 0, 255),
-            "P1_TA" => new Rgba(192, 0, 255, 255),
+            "P1_T" => new Rgba(255, 128, 0, 255),
+            "P1_TA" => new Rgba(0, 192, 0, 255),
             _ => new Rgba(255, 0, 0, 255)
         };
 
