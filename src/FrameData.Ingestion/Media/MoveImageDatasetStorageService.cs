@@ -33,23 +33,83 @@ public sealed class MoveImageDatasetStorageService
     {
         if (!policy.IsMoveInScope(move.CharacterId, move.Id))
         {
+            _logger.LogDebug(
+                "Representative image capture skipped for {CharacterId}/{MoveId} because the move is outside the configured pilot scope.",
+                move.CharacterId,
+                move.Id);
             return null;
         }
 
+        _logger.LogDebug(
+            "Starting representative image capture for {CharacterId}/{MoveId}. SourceUrl={SourceUrl}; HasHitboxHtml={HasHitboxHtml}; HitboxHtmlBytes={HitboxHtmlBytes}; DefaultStrategy={DefaultStrategy}.",
+            move.CharacterId,
+            move.Id,
+            sourceUrl,
+            !string.IsNullOrWhiteSpace(hitboxDisplayHtml),
+            hitboxDisplayHtml?.Length ?? 0,
+            policy.DefaultStrategy);
+
         if (string.IsNullOrWhiteSpace(sourceUrl) || string.IsNullOrWhiteSpace(hitboxDisplayHtml))
         {
+            _logger.LogWarning(
+                "Representative image capture for {CharacterId}/{MoveId} cannot parse source data. SourceUrlMissing={SourceUrlMissing}; HitboxHtmlMissing={HitboxHtmlMissing}; creating dummy fallback.",
+                move.CharacterId,
+                move.Id,
+                string.IsNullOrWhiteSpace(sourceUrl),
+                string.IsNullOrWhiteSpace(hitboxDisplayHtml));
             return CreateDummyFallback(move, sourceUrl, policy, "Hitbox display page was not available.");
         }
 
         var frames = _parser.Parse(hitboxDisplayHtml);
-        var selection = _selector.Select(frames, policy, policy.FindOverride(move.CharacterId, move.Id));
+        var totalHitboxes = frames.Sum(frame => frame.Hitboxes.Count);
+        var activeFrameCount = frames.Count(frame => frame.Hitboxes.Any(hitbox => HitboxOverlayTypes.IsActiveAreaHitbox(hitbox.Type)));
+        _logger.LogInformation(
+            "Parsed hitbox display page for {CharacterId}/{MoveId}. Frames={FrameCount}; Hitboxes={HitboxCount}; FramesWithActiveHitboxes={ActiveFrameCount}.",
+            move.CharacterId,
+            move.Id,
+            frames.Count,
+            totalHitboxes,
+            activeFrameCount);
+
+        var moveOverride = policy.FindOverride(move.CharacterId, move.Id);
+        if (moveOverride is not null)
+        {
+            _logger.LogInformation(
+                "Applying representative frame override for {CharacterId}/{MoveId}. SelectedFrame={OverrideSelectedFrame}; SelectionStrategy={OverrideSelectionStrategy}.",
+                move.CharacterId,
+                move.Id,
+                moveOverride.SelectedFrame,
+                moveOverride.SelectionStrategy);
+        }
+
+        var selection = _selector.Select(frames, policy, moveOverride);
         if (selection is null)
         {
+            _logger.LogWarning(
+                "No representative active frame could be selected for {CharacterId}/{MoveId}. Frames={FrameCount}; FramesWithActiveHitboxes={ActiveFrameCount}; creating dummy fallback.",
+                move.CharacterId,
+                move.Id,
+                frames.Count,
+                activeFrameCount);
             return CreateDummyFallback(move, sourceUrl, policy, "Representative active frame could not be derived.");
         }
 
+        _logger.LogInformation(
+            "Selected representative frame {SelectedFrame} for {CharacterId}/{MoveId}. Strategy={SelectionStrategy}; ActiveHitboxArea={ActiveHitboxArea}; SourceFrameImageUrl={SourceFrameImageUrl}.",
+            selection.Frame.FrameId,
+            move.CharacterId,
+            move.Id,
+            selection.SelectionStrategy,
+            selection.ActiveHitboxArea,
+            selection.Frame.SourceFrameImageUrl);
+
         if (string.IsNullOrWhiteSpace(selection.Frame.SourceFrameImageUrl))
         {
+            _logger.LogWarning(
+                "Selected frame {SelectedFrame} for {CharacterId}/{MoveId} has no source frame image URL; creating dummy fallback.",
+                selection.Frame.FrameId,
+                move.CharacterId,
+                move.Id);
             return CreateDummyFallback(
                 move,
                 sourceUrl,
@@ -70,16 +130,28 @@ public sealed class MoveImageDatasetStorageService
             fallbackReason: null);
 
         _logger.LogInformation(
-            "Captured representative frame {SelectedFrame} for {CharacterId}/{MoveId} with active hitbox area {ActiveHitboxArea}.",
-            image.SelectedFrame,
+            "Rendering representative image for {CharacterId}/{MoveId}. SelectedFrame={SelectedFrame}; ActiveHitboxArea={ActiveHitboxArea}; OverlayHitboxes={OverlayHitboxes}; RenderableHitboxes={RenderableHitboxCount}; StoragePath={StoragePath}.",
             move.CharacterId,
             move.Id,
-            image.ActiveHitboxArea);
+            image.SelectedFrame,
+            image.ActiveHitboxArea,
+            image.OverlayHitboxes,
+            _renderer.GetRenderableHitboxes(selection.Frame, image.OverlayHitboxes).Count,
+            image.StoragePath);
+
+        var content = _renderer.RenderPng(selection.Frame, image.OverlayHitboxes);
+        _logger.LogInformation(
+            "Captured representative image for {CharacterId}/{MoveId}. SelectedFrame={SelectedFrame}; StoragePath={StoragePath}; Bytes={ByteCount}.",
+            move.CharacterId,
+            move.Id,
+            image.SelectedFrame,
+            image.StoragePath,
+            content.Length);
 
         return new MoveImageDatasetAsset
         {
             Image = image,
-            Content = _renderer.RenderPng(selection.Frame, image.OverlayHitboxes)
+            Content = content
         };
     }
 
@@ -96,6 +168,14 @@ public sealed class MoveImageDatasetStorageService
         var fullPath = ResolveDatasetPath(datasetDirectory, asset.Image.StoragePath);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         await File.WriteAllBytesAsync(fullPath, asset.Content, cancellationToken);
+
+        _logger.LogInformation(
+            "Wrote representative media asset for {MoveId} to {StoragePath} ({FullPath}); Status={CaptureStatus}; Bytes={ByteCount}.",
+            asset.Image.MoveId,
+            asset.Image.StoragePath,
+            fullPath,
+            asset.Image.CaptureStatus,
+            asset.Content.Length);
     }
 
     public static string BuildStoragePath(Move move)
@@ -124,15 +204,34 @@ public sealed class MoveImageDatasetStorageService
             activeHitboxArea: activeHitboxArea,
             fallbackReason: fallbackReason);
 
-        var content = !string.IsNullOrWhiteSpace(policy.DummyImagePath)
-            ? File.ReadAllBytes(policy.DummyImagePath)
-            : _renderer.RenderDummyPng();
+        byte[] content;
+        if (!string.IsNullOrWhiteSpace(policy.DummyImagePath))
+        {
+            _logger.LogInformation(
+                "Using configured dummy representative image for {CharacterId}/{MoveId} from {DummyImagePath}.",
+                move.CharacterId,
+                move.Id,
+                policy.DummyImagePath);
+            content = File.ReadAllBytes(policy.DummyImagePath);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Generating dummy representative image for {CharacterId}/{MoveId}.",
+                move.CharacterId,
+                move.Id);
+            content = _renderer.RenderDummyPng();
+        }
 
         _logger.LogInformation(
-            "Stored dummy representative image for {CharacterId}/{MoveId}: {FallbackReason}.",
+            "Stored dummy representative image for {CharacterId}/{MoveId}. FallbackReason={FallbackReason}; SelectedFrame={SelectedFrame}; ActiveHitboxArea={ActiveHitboxArea}; StoragePath={StoragePath}; Bytes={ByteCount}.",
             move.CharacterId,
             move.Id,
-            image.FallbackReason);
+            image.FallbackReason,
+            image.SelectedFrame,
+            image.ActiveHitboxArea,
+            image.StoragePath,
+            content.Length);
 
         return new MoveImageDatasetAsset
         {

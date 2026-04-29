@@ -1,5 +1,6 @@
 using FrameData.Domain.Characters;
 using FrameData.Domain.Ingestion;
+using FrameData.Domain.Media;
 using FrameData.Domain.Moves;
 using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Hosting;
@@ -129,7 +130,8 @@ public sealed class IngestionOrchestrator
                     sectionCounts);
 
                 var domainMoves = MapMoves(characterScope, parsedMoves);
-                mediaAssets.AddRange(await CaptureRepresentativeImagesAsync(domainMoves, cancellationToken));
+                var characterMediaAssets = await CaptureRepresentativeImagesAsync(run.Id, domainMoves, cancellationToken);
+                mediaAssets.AddRange(characterMediaAssets);
 
                 foreach (var move in domainMoves)
                 {
@@ -162,9 +164,10 @@ public sealed class IngestionOrchestrator
                 };
 
                 _logger.LogInformation(
-                    "Ingestion run {RunId}: staged {MoveCount} move(s) for {CharacterId}.",
+                    "Ingestion run {RunId}: staged {MoveCount} move(s) and {MediaAssetCount} representative media asset(s) for {CharacterId}.",
                     run.Id,
                     domainMoves.Count,
+                    characterMediaAssets.Count,
                     characterScope.CharacterId);
 
                 replacementCharacters.Add(character);
@@ -205,10 +208,11 @@ public sealed class IngestionOrchestrator
         if (run.CharactersProcessed > 0)
         {
             _logger.LogInformation(
-                "Ingestion run {RunId}: publishing static dataset with {CharacterCount} successful character scope(s) and {MoveCount} move(s).",
+                "Ingestion run {RunId}: publishing static dataset with {CharacterCount} successful character scope(s), {MoveCount} move(s), and {MediaAssetCount} representative media asset(s).",
                 run.Id,
                 replacementCharacters.Count,
-                replacementMoves.Count);
+                replacementMoves.Count,
+                mediaAssets.Count);
 
             await _datasetPublisher.PublishAsync(
                 replacementCharacters,
@@ -347,38 +351,91 @@ public sealed class IngestionOrchestrator
     }
 
     private async Task<IReadOnlyList<MoveImageDatasetAsset>> CaptureRepresentativeImagesAsync(
+        string runId,
         IReadOnlyList<Move> moves,
         CancellationToken cancellationToken)
     {
+        if (_options.RepresentativeFramePolicy.PilotMoveScope.Count == 0)
+        {
+            _logger.LogInformation(
+                "Ingestion run {RunId}: representative media ingestion skipped because no pilot move scope is configured.",
+                runId);
+            return [];
+        }
+
         if (_hitboxSourceClient is null || _moveImageStorageService is null)
         {
+            _logger.LogWarning(
+                "Ingestion run {RunId}: representative media ingestion skipped for {MoveCount} move(s) because media services are not configured. HasHitboxSourceClient={HasHitboxSourceClient}; HasMoveImageStorageService={HasMoveImageStorageService}.",
+                runId,
+                moves.Count,
+                _hitboxSourceClient is not null,
+                _moveImageStorageService is not null);
             return [];
         }
 
         var assets = new List<MoveImageDatasetAsset>();
+        var scopedMoveCount = 0;
+        _logger.LogInformation(
+            "Ingestion run {RunId}: evaluating representative media for {MoveCount} move(s) with {PilotScopeCount} configured pilot move key(s).",
+            runId,
+            moves.Count,
+            _options.RepresentativeFramePolicy.PilotMoveScope.Count);
+
         foreach (var move in moves)
         {
             if (!_options.RepresentativeFramePolicy.IsMoveInScope(move.CharacterId, move.Id))
             {
+                _logger.LogDebug(
+                    "Ingestion run {RunId}: skipping representative media for {CharacterId}/{MoveId} because it is outside the configured pilot scope.",
+                    runId,
+                    move.CharacterId,
+                    move.Id);
                 continue;
             }
 
+            scopedMoveCount++;
             string? hitboxHtml = null;
             var sourceUrl = ResolveSourceUrl(move.SourceHitboxPath);
             if (!string.IsNullOrWhiteSpace(move.SourceHitboxPath))
             {
                 try
                 {
+                    _logger.LogInformation(
+                        "Ingestion run {RunId}: fetching hitbox display page for {CharacterId}/{MoveId} from {SourceHitboxPath} ({ResolvedSourceUrl}).",
+                        runId,
+                        move.CharacterId,
+                        move.Id,
+                        move.SourceHitboxPath,
+                        sourceUrl);
+
                     hitboxHtml = await _hitboxSourceClient.GetHitboxDisplayPageAsync(move.SourceHitboxPath, cancellationToken);
+                    _logger.LogInformation(
+                        "Ingestion run {RunId}: fetched {ByteCount} byte(s) of hitbox display HTML for {CharacterId}/{MoveId}.",
+                        runId,
+                        hitboxHtml.Length,
+                        move.CharacterId,
+                        move.Id);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(
                         ex,
-                        "Could not fetch hitbox display page for {CharacterId}/{MoveId}; writing dummy media fallback.",
+                        "Ingestion run {RunId}: could not fetch hitbox display page for {CharacterId}/{MoveId} from {SourceHitboxPath} ({ResolvedSourceUrl}); writing dummy media fallback.",
+                        runId,
                         move.CharacterId,
-                        move.Id);
+                        move.Id,
+                        move.SourceHitboxPath,
+                        sourceUrl);
                 }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Ingestion run {RunId}: {CharacterId}/{MoveId} is in representative media scope but has no source hitbox path; writing dummy media fallback.",
+                    runId,
+                    move.CharacterId,
+                    move.Id);
             }
 
             var asset = _moveImageStorageService.CaptureRepresentativeImage(
@@ -390,8 +447,37 @@ public sealed class IngestionOrchestrator
             if (asset is not null)
             {
                 assets.Add(asset);
+                _logger.LogInformation(
+                    "Ingestion run {RunId}: staged representative media for {CharacterId}/{MoveId}. Status={CaptureStatus}; SelectedFrame={SelectedFrame}; ActiveHitboxArea={ActiveHitboxArea}; StoragePath={StoragePath}; Bytes={ByteCount}; FallbackReason={FallbackReason}.",
+                    runId,
+                    move.CharacterId,
+                    move.Id,
+                    asset.Image.CaptureStatus,
+                    asset.Image.SelectedFrame,
+                    asset.Image.ActiveHitboxArea,
+                    asset.Image.StoragePath,
+                    asset.Content.Length,
+                    asset.Image.FallbackReason);
+            }
+            else
+            {
+                _logger.LogDebug(
+                    "Ingestion run {RunId}: no representative media asset was produced for {CharacterId}/{MoveId}.",
+                    runId,
+                    move.CharacterId,
+                    move.Id);
             }
         }
+
+        var successCount = assets.Count(asset => asset.Image.CaptureStatus == MoveImageCaptureStatus.Success);
+        var fallbackCount = assets.Count(asset => asset.Image.CaptureStatus == MoveImageCaptureStatus.DummyFallback);
+        _logger.LogInformation(
+            "Ingestion run {RunId}: representative media evaluation complete. ScopedMoves={ScopedMoveCount}; StagedAssets={MediaAssetCount}; Successes={SuccessCount}; DummyFallbacks={FallbackCount}.",
+            runId,
+            scopedMoveCount,
+            assets.Count,
+            successCount,
+            fallbackCount);
 
         return assets;
     }

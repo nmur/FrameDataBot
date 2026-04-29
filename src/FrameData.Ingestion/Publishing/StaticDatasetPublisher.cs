@@ -113,9 +113,30 @@ public sealed class StaticDatasetPublisher
         Directory.CreateDirectory(charactersDirectory);
         Directory.CreateDirectory(Path.Combine(datasetDirectory, "media"));
 
+        if (mediaAssets.Count == 0)
+        {
+            _logger.LogInformation(
+                "Static dataset {DatasetId}: no representative media assets were provided for publishing.",
+                datasetId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Static dataset {DatasetId}: writing {MediaAssetCount} representative media asset(s) into the media tree.",
+                datasetId,
+                mediaAssets.Count);
+        }
+
         foreach (var asset in mediaAssets)
         {
             await WriteMediaAssetAsync(datasetDirectory, asset, cancellationToken);
+            _logger.LogInformation(
+                "Static dataset {DatasetId}: wrote representative media asset for {MoveId}. StoragePath={StoragePath}; Status={CaptureStatus}; Bytes={ByteCount}.",
+                datasetId,
+                asset.Image.MoveId,
+                asset.Image.StoragePath,
+                asset.Image.CaptureStatus,
+                asset.Content.Length);
         }
 
         var mediaByMoveId = mediaAssets
