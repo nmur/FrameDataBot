@@ -130,8 +130,10 @@ public sealed class HitboxCanvasRenderer
             return;
         }
 
-        FillRectangle(pixels, hitbox.X, hitbox.Y, hitbox.Width, hitbox.Height, style.Fill);
-        DrawBorder(pixels, hitbox.X, hitbox.Y, hitbox.Width, hitbox.Height, style.Border, thickness: 1);
+        var renderedWidth = hitbox.Width + 1;
+        var renderedHeight = hitbox.Height + 1;
+        FillRectangle(pixels, hitbox.X, hitbox.Y, renderedWidth, renderedHeight, style.Fill);
+        DrawBorder(pixels, hitbox.X, hitbox.Y, renderedWidth, renderedHeight, style.Border, thickness: 1);
     }
 
     private static void FillRectangle(byte[] pixels, int x, int y, int width, int height, Rgba color)

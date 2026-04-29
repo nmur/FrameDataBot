@@ -100,6 +100,8 @@ public sealed class MoveImageDatasetStorageTests
 
         AssertPixel(rendered, 10, 20, 255, 0, 0);
         AssertPixel(rendered, 12, 22, 96, 0, 0);
+        AssertPixel(rendered, 18, 28, 255, 0, 0);
+        AssertPixel(rendered, 19, 29, 0, 0, 0);
     }
 
     [Fact]
