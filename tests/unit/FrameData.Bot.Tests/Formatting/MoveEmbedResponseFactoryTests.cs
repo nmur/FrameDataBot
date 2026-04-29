@@ -69,6 +69,29 @@ public sealed class MoveEmbedResponseFactoryTests
         FieldValue(response, "Stun").ShouldBe("17");
     }
 
+    [Fact]
+    public void Create_WhenMoveHasLegacyButtonNames_DisplaysLiteralButtonNamesInTitleAndMotion()
+    {
+        var response = _factory.Create(new MoveQueryResponse
+        {
+            Character = "Alex",
+            MatchedMove = "Air Knee Smash (RH)",
+            Section = "Specials",
+            MatchedBy = "Exact",
+            Motion = "DP + jab / Strong / Fierce / short / Forward / Roundhouse",
+            FrameData = new FrameDataContract
+            {
+                Startup = "4",
+                Active = "2",
+                Recovery = "19",
+                OnHit = "KD",
+                OnBlock = "-10"
+            }
+        });
+
+        response.Embed!.Title.ShouldBe("Alex - Air Knee Smash (HK)");
+        FieldValue(response, "Motion").ShouldBe("DP + LP / MP / HP / LK / MK / HK");
+    }
 
     [Fact]
     public void Create_WhenMoveIsAmbiguous_BuildsCandidateEmbedWithoutMessageContent()
@@ -89,6 +112,23 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.Description.ShouldBe("Multiple moves matched. Try a more specific move name.");
         FieldValue(response, "Candidates").ShouldContain("1. 2hk (Normals, 100)");
         FieldValue(response, "Candidates").ShouldContain("2. 5hk (Normals, 94)");
+    }
+
+    [Fact]
+    public void Create_WhenMoveIsAmbiguous_FormatsCandidateMoveNames()
+    {
+        var response = _factory.Create(new MoveAmbiguousResponse
+        {
+            Message = "Multiple moves matched. Try a more specific move name.",
+            Candidates =
+            [
+                new MoveCandidate { MoveName = "Crouching Roundhouse", Section = "Normals", Score = 100 },
+                new MoveCandidate { MoveName = "Megaton Press (Fierce)", Section = "Super Arts", Score = 94 }
+            ]
+        });
+
+        FieldValue(response, "Candidates").ShouldContain("1. Crouching HK (Normals, 100)");
+        FieldValue(response, "Candidates").ShouldContain("2. Megaton Press (HP) (Super Arts, 94)");
     }
 
     [Fact]

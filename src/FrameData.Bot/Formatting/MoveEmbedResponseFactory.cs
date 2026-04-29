@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Discord;
 using FrameData.Shared.Contracts;
 
@@ -8,15 +9,29 @@ public sealed class MoveEmbedResponseFactory
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
+    private static readonly Regex ButtonNomenclatureRegex = new(
+        @"\b(?:jab|strong|fierce|short|forward|roundhouse|rh)\b",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly IReadOnlyDictionary<string, string> ButtonDisplayNames =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["jab"] = "LP",
+            ["strong"] = "MP",
+            ["fierce"] = "HP",
+            ["short"] = "LK",
+            ["forward"] = "MK",
+            ["roundhouse"] = "HK",
+            ["rh"] = "HK"
+        };
 
     public DiscordMoveResponse Create(MoveQueryResponse response)
     {
         var builder = new EmbedBuilder()
-            .WithTitle($"{response.Character} - {response.MatchedMove}")
+            .WithTitle($"{response.Character} - {DisplayButtonNomenclature(response.MatchedMove)}")
             .WithColor(SuccessColor)
             .AddField("Section", response.Section, inline: true);
 
-        AddOptionalField(builder, "Motion", response.Motion);
+        AddOptionalField(builder, "Motion", DisplayOptionalButtonNomenclature(response.Motion));
 
         builder
             .AddField("Damage", DisplayValue(response.Damage), inline: true)
@@ -41,7 +56,8 @@ public sealed class MoveEmbedResponseFactory
     public DiscordMoveResponse Create(MoveAmbiguousResponse response)
     {
         var candidates = response.Candidates
-            .Select((candidate, index) => $"{index + 1}. {candidate.MoveName} ({candidate.Section}, {candidate.Score:0})");
+            .Select((candidate, index) =>
+                $"{index + 1}. {DisplayButtonNomenclature(candidate.MoveName)} ({candidate.Section}, {candidate.Score:0})");
 
         var builder = new EmbedBuilder()
             .WithTitle("Multiple moves matched")
@@ -81,6 +97,16 @@ public sealed class MoveEmbedResponseFactory
     private static string DisplayValue(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "?" : value;
+    }
+
+    private static string DisplayButtonNomenclature(string value)
+    {
+        return ButtonNomenclatureRegex.Replace(value, match => ButtonDisplayNames[match.Value]);
+    }
+
+    private static string? DisplayOptionalButtonNomenclature(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? value : DisplayButtonNomenclature(value);
     }
 
     private static void AddOptionalField(EmbedBuilder builder, string name, string? value)
