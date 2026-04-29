@@ -6,5 +6,5 @@ public sealed class BotRuntimeOptions
     public required string BotGuildId { get; init; }
     public required ulong DiscordGuildId { get; init; }
     public required Uri BotApiBaseUrl { get; init; }
-    public string? ActiveDatasetPath { get; init; }
+    public required string ActiveDatasetPath { get; init; }
 }

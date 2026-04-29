@@ -17,7 +17,8 @@ public sealed class DiscordGatewayWiringTests
             DiscordBotToken = "token-value",
             BotGuildId = "123456789",
             DiscordGuildId = 123456789,
-            BotApiBaseUrl = new Uri("http://api:8080")
+            BotApiBaseUrl = new Uri("http://api:8080"),
+            ActiveDatasetPath = "/data/framedata/active"
         };
 
         services.AddFrameDataBotServices(options);

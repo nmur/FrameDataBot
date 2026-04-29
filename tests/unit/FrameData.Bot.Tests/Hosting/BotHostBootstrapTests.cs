@@ -24,6 +24,25 @@ public sealed class BotHostBootstrapTests
         options.BotGuildId.ShouldBe("123456789");
         options.DiscordGuildId.ShouldBe(123456789UL);
         options.BotApiBaseUrl.ShouldBe(new Uri("http://api:8080"));
+        options.ActiveDatasetPath.ShouldBe("/data/framedata/active");
+    }
+
+    [Fact]
+    public void Load_WhenDatasetRootPresent_DefaultsActiveDatasetPathUnderRoot()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["DISCORD_BOT_TOKEN"] = "token-value",
+                ["BOT_GUILD_ID"] = "123456789",
+                ["BOT_API_BASE_URL"] = "http://api:8080",
+                ["FRAMEDATA_DATASET_ROOT"] = "/mounted/framedata"
+            })
+            .Build();
+
+        var options = BotRuntimeOptionsLoader.Load(configuration);
+
+        options.ActiveDatasetPath.ShouldBe("/mounted/framedata/active");
     }
 
     [Fact]

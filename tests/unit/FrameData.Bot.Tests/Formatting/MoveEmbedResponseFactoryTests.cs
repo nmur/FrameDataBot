@@ -105,6 +105,27 @@ public sealed class MoveEmbedResponseFactoryTests
     }
 
     [Fact]
+    public void Create_WhenMoveHasRepresentativeMediaWithoutExplicitOptions_UsesDefaultContainerDatasetPath()
+    {
+        var response = _factory.Create(new MoveQueryResponse
+        {
+            Character = "Ken",
+            MatchedMove = "Jab",
+            Section = "Normals",
+            MatchedBy = "Exact",
+            FrameData = new FrameDataContract(),
+            Media = new MoveMediaContract
+            {
+                RepresentativeFrameImageUrl = "media/ken/ken-normals-jab/representative-active-frame.png",
+                CaptureStatus = "Success"
+            }
+        });
+
+        response.Attachment.ShouldNotBeNull();
+        response.Attachment.FilePath.ShouldBe("/data/framedata/active/media/ken/ken-normals-jab/representative-active-frame.png");
+    }
+
+    [Fact]
     public void Create_WhenMoveHasNoMedia_DoesNotAttachFile()
     {
         var response = _factory.Create(new MoveQueryResponse

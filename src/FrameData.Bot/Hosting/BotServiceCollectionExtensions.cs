@@ -12,7 +12,7 @@ public static class BotServiceCollectionExtensions
     public static IServiceCollection AddFrameDataBotServices(this IServiceCollection services, BotRuntimeOptions options)
     {
         services.AddSingleton(options);
-        services.AddSingleton<MoveEmbedResponseFactory>();
+        services.AddSingleton(sp => new MoveEmbedResponseFactory(sp.GetRequiredService<BotRuntimeOptions>()));
         services.AddSingleton<SlashCommandInteractionMapper>();
         services.AddSingleton<FramedataInteractionHandler>();
         services.AddSingleton(_ => new DiscordSocketClient(new DiscordSocketConfig

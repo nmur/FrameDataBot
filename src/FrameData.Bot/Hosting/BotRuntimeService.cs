@@ -30,9 +30,10 @@ public sealed class BotRuntimeService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation(
-            "Bot runtime started with API base URL {ApiBaseUrl} for guild {GuildId}.",
+            "Bot runtime started with API base URL {ApiBaseUrl} for guild {GuildId}. ActiveDatasetPath={ActiveDatasetPath}.",
             _options.BotApiBaseUrl,
-            _options.BotGuildId);
+            _options.BotGuildId,
+            _options.ActiveDatasetPath);
 
         _gatewayClient.Ready += RegisterCommandsAsync;
         _gatewayClient.InteractionCreated += HandleInteractionAsync;

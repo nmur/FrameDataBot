@@ -24,11 +24,21 @@ public sealed class MoveEmbedResponseFactory
             ["roundhouse"] = "HK",
             ["rh"] = "HK"
         };
-    private readonly string? _activeDatasetPath;
+    private readonly string _activeDatasetPath;
 
-    public MoveEmbedResponseFactory(BotRuntimeOptions? options = null)
+    public MoveEmbedResponseFactory()
+        : this("/data/framedata/active")
     {
-        _activeDatasetPath = options?.ActiveDatasetPath;
+    }
+
+    public MoveEmbedResponseFactory(BotRuntimeOptions options)
+        : this(options.ActiveDatasetPath)
+    {
+    }
+
+    private MoveEmbedResponseFactory(string activeDatasetPath)
+    {
+        _activeDatasetPath = activeDatasetPath;
     }
 
     public DiscordMoveResponse Create(MoveQueryResponse response)
@@ -174,7 +184,7 @@ public sealed class MoveEmbedResponseFactory
         }
 
         var relativePath = media.RepresentativeFrameImageUrl.Replace('/', Path.DirectorySeparatorChar);
-        var filePath = Path.IsPathRooted(relativePath) || string.IsNullOrWhiteSpace(_activeDatasetPath)
+        var filePath = Path.IsPathRooted(relativePath)
             ? relativePath
             : Path.Combine(_activeDatasetPath, relativePath);
         var fileName = Path.GetFileName(relativePath);

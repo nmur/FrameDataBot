@@ -35,14 +35,20 @@ public static class BotRuntimeOptionsLoader
             throw new InvalidOperationException("BOT_API_BASE_URL must be an absolute URL.");
         }
 
+        var datasetRoot = configuration["FRAMEDATA_DATASET_ROOT"]
+            ?? configuration["FrameData:DatasetRoot"]
+            ?? "/data/framedata";
+        var activeDatasetPath = configuration["FRAMEDATA_ACTIVE_DATASET_PATH"]
+            ?? configuration["FrameData:ActiveDatasetPath"]
+            ?? Path.Combine(datasetRoot, "active");
+
         return new BotRuntimeOptions
         {
             DiscordBotToken = token,
             BotGuildId = guildId,
             DiscordGuildId = discordGuildId,
             BotApiBaseUrl = apiBaseUrl,
-            ActiveDatasetPath = configuration["FRAMEDATA_ACTIVE_DATASET_PATH"]
-                ?? configuration["FrameData:ActiveDatasetPath"]
+            ActiveDatasetPath = activeDatasetPath
         };
     }
 }
