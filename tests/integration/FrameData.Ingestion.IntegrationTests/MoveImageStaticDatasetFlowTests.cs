@@ -37,7 +37,7 @@ public sealed class MoveImageStaticDatasetFlowTests
                 }),
                 options,
                 hitboxSourceClient: source,
-                moveImageStorageService: new MoveImageDatasetStorageService());
+                moveImageStorageService: new MoveImageDatasetStorageService(sourceClient: source));
 
             var run = await orchestrator.RunAsync(
             [
@@ -125,5 +125,8 @@ public sealed class MoveImageStaticDatasetFlowTests
                 </div>
                 """);
         }
+
+        public Task<byte[]> GetBinaryAssetAsync(string sourcePathOrUrl, CancellationToken cancellationToken = default)
+            => Task.FromResult(new HitboxCanvasRenderer().RenderDummyPng());
     }
 }

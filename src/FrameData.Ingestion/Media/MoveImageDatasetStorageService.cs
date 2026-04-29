@@ -1,6 +1,7 @@
 using FrameData.Domain.Media;
 using FrameData.Domain.Moves;
 using FrameData.Scraper.Parsing;
+using FrameData.Scraper.Source;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -11,17 +12,20 @@ public sealed class MoveImageDatasetStorageService
     private readonly HitboxDisplayParser _parser;
     private readonly RepresentativeFrameSelector _selector;
     private readonly HitboxCanvasRenderer _renderer;
+    private readonly IHitboxSourceClient? _sourceClient;
     private readonly ILogger<MoveImageDatasetStorageService> _logger;
 
     public MoveImageDatasetStorageService(
         HitboxDisplayParser? parser = null,
         RepresentativeFrameSelector? selector = null,
         HitboxCanvasRenderer? renderer = null,
+        IHitboxSourceClient? sourceClient = null,
         ILogger<MoveImageDatasetStorageService>? logger = null)
     {
         _parser = parser ?? new HitboxDisplayParser();
         _selector = selector ?? new RepresentativeFrameSelector();
         _renderer = renderer ?? new HitboxCanvasRenderer();
+        _sourceClient = sourceClient;
         _logger = logger ?? NullLogger<MoveImageDatasetStorageService>.Instance;
     }
 
@@ -30,6 +34,37 @@ public sealed class MoveImageDatasetStorageService
         string? sourceUrl,
         string? hitboxDisplayHtml,
         RepresentativeFrameSelectionPolicy policy)
+        => CaptureRepresentativeImageAsync(
+                move,
+                sourceUrl,
+                hitboxDisplayHtml,
+                policy,
+                fetchSourceFrameImage: false,
+                CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
+
+    public Task<MoveImageDatasetAsset?> CaptureRepresentativeImageAsync(
+        Move move,
+        string? sourceUrl,
+        string? hitboxDisplayHtml,
+        RepresentativeFrameSelectionPolicy policy,
+        CancellationToken cancellationToken = default)
+        => CaptureRepresentativeImageAsync(
+            move,
+            sourceUrl,
+            hitboxDisplayHtml,
+            policy,
+            fetchSourceFrameImage: true,
+            cancellationToken);
+
+    private async Task<MoveImageDatasetAsset?> CaptureRepresentativeImageAsync(
+        Move move,
+        string? sourceUrl,
+        string? hitboxDisplayHtml,
+        RepresentativeFrameSelectionPolicy policy,
+        bool fetchSourceFrameImage,
+        CancellationToken cancellationToken)
     {
         if (!policy.IsMoveInScope(move.CharacterId, move.Id))
         {
@@ -139,7 +174,20 @@ public sealed class MoveImageDatasetStorageService
             _renderer.GetRenderableHitboxes(selection.Frame, image.OverlayHitboxes).Count,
             image.StoragePath);
 
-        var content = _renderer.RenderPng(selection.Frame, image.OverlayHitboxes);
+        var sourceFrame = fetchSourceFrameImage
+            ? await TryLoadSourceFrameImageAsync(move, selection.Frame, cancellationToken)
+            : null;
+        if (sourceFrame is null)
+        {
+            _logger.LogWarning(
+                "Rendering representative image for {CharacterId}/{MoveId} without the source frame sprite layer; using blank canvas background. SourceFrameImageUrl={SourceFrameImageUrl}; FetchSourceFrameImage={FetchSourceFrameImage}.",
+                move.CharacterId,
+                move.Id,
+                selection.Frame.SourceFrameImageUrl,
+                fetchSourceFrameImage);
+        }
+
+        var content = _renderer.RenderPng(selection.Frame, image.OverlayHitboxes, sourceFrame);
         _logger.LogInformation(
             "Captured representative image for {CharacterId}/{MoveId}. SelectedFrame={SelectedFrame}; StoragePath={StoragePath}; Bytes={ByteCount}.",
             move.CharacterId,
@@ -153,6 +201,82 @@ public sealed class MoveImageDatasetStorageService
             Image = image,
             Content = content
         };
+    }
+
+    private async Task<DecodedPngImage?> TryLoadSourceFrameImageAsync(
+        Move move,
+        HitboxFrame frame,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(frame.SourceFrameImageUrl))
+        {
+            return null;
+        }
+
+        if (_sourceClient is null)
+        {
+            _logger.LogWarning(
+                "Cannot fetch source frame image for {CharacterId}/{MoveId} frame {SelectedFrame} because no hitbox source client is configured. SourceFrameImageUrl={SourceFrameImageUrl}.",
+                move.CharacterId,
+                move.Id,
+                frame.FrameId,
+                frame.SourceFrameImageUrl);
+            return null;
+        }
+
+        byte[] content;
+        try
+        {
+            _logger.LogInformation(
+                "Fetching source frame image for {CharacterId}/{MoveId} frame {SelectedFrame} from {SourceFrameImageUrl}.",
+                move.CharacterId,
+                move.Id,
+                frame.FrameId,
+                frame.SourceFrameImageUrl);
+            content = await _sourceClient.GetBinaryAssetAsync(frame.SourceFrameImageUrl, cancellationToken);
+            _logger.LogInformation(
+                "Fetched source frame image for {CharacterId}/{MoveId} frame {SelectedFrame}. SourceFrameImageUrl={SourceFrameImageUrl}; Bytes={ByteCount}.",
+                move.CharacterId,
+                move.Id,
+                frame.FrameId,
+                frame.SourceFrameImageUrl,
+                content.Length);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Could not fetch source frame image for {CharacterId}/{MoveId} frame {SelectedFrame} from {SourceFrameImageUrl}; rendering hitboxes over blank canvas.",
+                move.CharacterId,
+                move.Id,
+                frame.FrameId,
+                frame.SourceFrameImageUrl);
+            return null;
+        }
+
+        if (!_renderer.TryDecodePng(content, out var sourceFrame, out var decodeError) || sourceFrame is null)
+        {
+            _logger.LogWarning(
+                "Could not decode source frame image for {CharacterId}/{MoveId} frame {SelectedFrame}; rendering hitboxes over blank canvas. SourceFrameImageUrl={SourceFrameImageUrl}; DecodeError={DecodeError}.",
+                move.CharacterId,
+                move.Id,
+                frame.FrameId,
+                frame.SourceFrameImageUrl,
+                decodeError);
+            return null;
+        }
+
+        _logger.LogInformation(
+            "Decoded source frame image for {CharacterId}/{MoveId} frame {SelectedFrame}. SourceFrameImageUrl={SourceFrameImageUrl}; Width={Width}; Height={Height}; ColorType={ColorType}; BitDepth={BitDepth}.",
+            move.CharacterId,
+            move.Id,
+            frame.FrameId,
+            frame.SourceFrameImageUrl,
+            sourceFrame.Width,
+            sourceFrame.Height,
+            sourceFrame.ColorType,
+            sourceFrame.BitDepth);
+        return sourceFrame;
     }
 
     public async Task SaveAsync(

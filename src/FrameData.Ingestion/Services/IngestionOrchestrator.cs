@@ -464,11 +464,12 @@ public sealed class IngestionOrchestrator
                     move.Id);
             }
 
-            var asset = _moveImageStorageService.CaptureRepresentativeImage(
+            var asset = await _moveImageStorageService.CaptureRepresentativeImageAsync(
                 move,
                 sourceUrl,
                 hitboxHtml,
-                _options.RepresentativeFramePolicy);
+                _options.RepresentativeFramePolicy,
+                cancellationToken);
 
             if (asset is not null)
             {

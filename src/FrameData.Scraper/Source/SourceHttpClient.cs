@@ -57,6 +57,20 @@ public sealed class SourceHttpClient : ISourceHttpClient, IHitboxSourceClient
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
+    public async Task<byte[]> GetBinaryAssetAsync(
+        string sourcePathOrUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePathOrUrl))
+        {
+            throw new ArgumentException("Binary asset source path is required.", nameof(sourcePathOrUrl));
+        }
+
+        using var response = await _httpClient.GetAsync(ResolveSourceUri(sourcePathOrUrl), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     private async Task<string> GetLoadedCharacterContentAsync(int sourceCharacterId, CancellationToken cancellationToken)
     {
         var html = new StringBuilder("<html><body><div id=\"");
