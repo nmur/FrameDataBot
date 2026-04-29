@@ -126,4 +126,41 @@ public sealed class ExactMoveLookupServiceTests
         result.IsAmbiguous.ShouldBeTrue();
         result.Candidates.Select(candidate => candidate.CanonicalName).ShouldBe(new[] { "2hk", "5hk" });
     }
+
+    [Fact]
+    public async Task LookupAsync_WhenExShortNameMatchesVariant_ReturnsFoundMove()
+    {
+        _repository.SupportsCharacterAsync("dudley", Arg.Any<CancellationToken>()).Returns(true);
+        _repository.FindExactMoveAsync("dudley", "ex mgb", Arg.Any<CancellationToken>()).Returns((Move?)null);
+        _repository.GetMovesForCharacterAsync("dudley", Arg.Any<CancellationToken>()).Returns(new[]
+        {
+            CreateMove("dudley-machine-gun-blow-jab", "Machine Gun Blow (Jab)", 1),
+            CreateMove("dudley-machine-gun-blow-strong", "Machine Gun Blow (Strong)", 2),
+            CreateMove("dudley-machine-gun-blow-fierce", "Machine Gun Blow (Fierce)", 3),
+            CreateMove("dudley-machine-gun-blow-ex", "Machine Gun Blow (EX)", 4)
+        });
+
+        var result = await _service.LookupAsync("dudley", "ex mgb");
+
+        result.IsFound.ShouldBeTrue();
+        result.IsAmbiguous.ShouldBeFalse();
+        result.Move.ShouldNotBeNull();
+        result.Move.CanonicalName.ShouldBe("Machine Gun Blow (EX)");
+        result.MatchedBy.ShouldBe("Alias");
+    }
+
+    private static Move CreateMove(string id, string canonicalName, int displayOrder)
+    {
+        return new Move
+        {
+            Id = id,
+            CharacterId = "dudley",
+            Game = "sf3_3s",
+            CharacterName = "Dudley",
+            Section = "Specials",
+            CanonicalName = canonicalName,
+            DisplayOrder = displayOrder,
+            FrameData = new MoveFrameData { Startup = "11" }
+        };
+    }
 }

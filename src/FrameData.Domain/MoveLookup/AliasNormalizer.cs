@@ -84,7 +84,8 @@ public sealed partial class AliasNormalizer
         ["lk"] = new StrengthAlias("light", "lk"),
         ["mk"] = new StrengthAlias("medium", "mk"),
         ["hk"] = new StrengthAlias("heavy", "hk"),
-        ["rh"] = new StrengthAlias("heavy", "hk")
+        ["rh"] = new StrengthAlias("heavy", "hk"),
+        ["ex"] = new StrengthAlias("ex", "ex")
     };
 
     private static readonly IReadOnlyDictionary<string, string> AttackTermAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

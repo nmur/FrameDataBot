@@ -376,6 +376,17 @@ public sealed class FuzzyMatcherTests
         candidates[0].Score.ShouldBe(100);
     }
 
+    [Fact]
+    public void Rank_WhenInputUsesExShortName_RanksExVariantWithoutAmbiguity()
+    {
+        var candidates = _matcher.Rank("ex mgb", CreateSpecialMoveStrengthVariants());
+
+        candidates[0].CanonicalName.ShouldBe("Machine Gun Blow (EX)");
+        candidates[0].MatchedAlias.ShouldBe("exmgb");
+        candidates[0].Score.ShouldBe(100);
+        _matcher.IsAmbiguous(candidates).ShouldBeFalse();
+    }
+
     [Theory]
     [InlineData("shipu")]
     [InlineData("shippu")]
@@ -1169,6 +1180,17 @@ public sealed class FuzzyMatcherTests
                 DisplayOrder = 4,
                 FrameData = new MoveFrameData { Startup = "6" }
             }
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateSpecialMoveStrengthVariants()
+    {
+        return
+        [
+            CreateTestMove("dudley-machine-gun-blow-jab", "dudley", "Dudley", "Specials", "Machine Gun Blow (Jab)", 1),
+            CreateTestMove("dudley-machine-gun-blow-strong", "dudley", "Dudley", "Specials", "Machine Gun Blow (Strong)", 2),
+            CreateTestMove("dudley-machine-gun-blow-fierce", "dudley", "Dudley", "Specials", "Machine Gun Blow (Fierce)", 3),
+            CreateTestMove("dudley-machine-gun-blow-ex", "dudley", "Dudley", "Specials", "Machine Gun Blow (EX)", 4)
         ];
     }
 
