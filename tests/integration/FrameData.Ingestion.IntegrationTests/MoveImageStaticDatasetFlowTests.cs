@@ -11,7 +11,7 @@ namespace FrameData.Ingestion.IntegrationTests;
 public sealed class MoveImageStaticDatasetFlowTests
 {
     [Fact]
-    public async Task RunAsync_WhenDefaultKenMediaScopeHasHitboxDisplay_WritesMediaFilesAndMetadata()
+    public async Task RunAsync_WhenMediaScopeIsUnrestricted_WritesMediaFilesAndMetadata()
     {
         var root = CreateTempDirectory();
         try

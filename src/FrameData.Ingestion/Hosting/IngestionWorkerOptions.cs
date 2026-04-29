@@ -6,14 +6,12 @@ namespace FrameData.Ingestion.Hosting;
 
 public sealed class IngestionWorkerOptions
 {
-    public const string DefaultRepresentativeFrameCharacterScope = "ken";
-
     public IngestionWorkerMode Mode { get; init; } = IngestionWorkerMode.Ingest;
     public string SourceBaseUrl { get; init; } = "http://ensabahnur.free.fr/BastonNew/index.php";
     public string DatasetRoot { get; init; } = Path.Combine("data", "framedata");
     public string ActiveDatasetPath { get; init; } = Path.Combine("data", "framedata", "active");
     public IReadOnlyList<string> CharacterIds { get; init; } = [];
-    public RepresentativeFrameSelectionPolicy RepresentativeFramePolicy { get; init; } = CreateDefaultRepresentativeFramePolicy();
+    public RepresentativeFrameSelectionPolicy RepresentativeFramePolicy { get; init; } = new();
 
     public static IngestionWorkerOptions FromConfiguration(IConfiguration configuration)
         => FromConfiguration(configuration, new IngestionWorkerCommand());
@@ -37,7 +35,6 @@ public sealed class IngestionWorkerOptions
             CharacterIds = ParseCharacterIds(characterScope),
             RepresentativeFramePolicy = new RepresentativeFrameSelectionPolicy
             {
-                PilotMoveScope = [DefaultRepresentativeFrameCharacterScope],
                 DummyImagePath = configuration["Ingestion:Media:DummyImagePath"]
                     ?? configuration["INGESTION_MEDIA_DUMMY_IMAGE_PATH"]
             }
@@ -79,10 +76,4 @@ public sealed class IngestionWorkerOptions
             .Where(characterId => !string.IsNullOrWhiteSpace(characterId))
             .ToArray();
     }
-
-    private static RepresentativeFrameSelectionPolicy CreateDefaultRepresentativeFramePolicy()
-        => new()
-        {
-            PilotMoveScope = [DefaultRepresentativeFrameCharacterScope]
-        };
 }

@@ -14,7 +14,7 @@ public sealed class RepresentativeFrameSelectionPolicy
     {
         if (PilotMoveScope.Count == 0)
         {
-            return false;
+            return true;
         }
 
         return PilotMoveScope.Any(scope => MoveKeyMatches(scope, characterId, moveId));
@@ -53,7 +53,7 @@ public sealed class RepresentativeFrameSelectionPolicy
             var normalizedScope = NormalizeMoveKey(scopedMove);
             if (!known.Contains(normalizedScope) && !CharacterScopeMatchesKnownCharacter(normalizedScope, knownCharacters))
             {
-                errors.Add($"Representative frame pilot move does not resolve to a known move: {scopedMove}.");
+                errors.Add($"Representative frame media scope does not resolve to a known move or character: {scopedMove}.");
             }
         }
 

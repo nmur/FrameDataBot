@@ -381,14 +381,6 @@ public sealed class IngestionOrchestrator
         IReadOnlyList<Move> moves,
         CancellationToken cancellationToken)
     {
-        if (_options.RepresentativeFramePolicy.PilotMoveScope.Count == 0)
-        {
-            _logger.LogInformation(
-                "Ingestion run {RunId}: representative media ingestion skipped because no media scope is configured.",
-                runId);
-            return [];
-        }
-
         if (_hitboxSourceClient is null || _moveImageStorageService is null)
         {
             _logger.LogWarning(
@@ -401,12 +393,22 @@ public sealed class IngestionOrchestrator
         }
 
         var assets = new List<MoveImageDatasetAsset>();
-        var scopedMoveCount = 0;
-        _logger.LogInformation(
-            "Ingestion run {RunId}: evaluating representative media for {MoveCount} move(s) with {MediaScopeCount} configured media scope key(s).",
-            runId,
-            moves.Count,
-            _options.RepresentativeFramePolicy.PilotMoveScope.Count);
+        var eligibleMoveCount = 0;
+        if (_options.RepresentativeFramePolicy.PilotMoveScope.Count == 0)
+        {
+            _logger.LogInformation(
+                "Ingestion run {RunId}: evaluating representative media for all {MoveCount} move(s).",
+                runId,
+                moves.Count);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Ingestion run {RunId}: evaluating representative media for {MoveCount} move(s) with {MediaScopeCount} configured media scope key(s).",
+                runId,
+                moves.Count,
+                _options.RepresentativeFramePolicy.PilotMoveScope.Count);
+        }
 
         foreach (var move in moves)
         {
@@ -420,7 +422,7 @@ public sealed class IngestionOrchestrator
                 continue;
             }
 
-            scopedMoveCount++;
+            eligibleMoveCount++;
             string? hitboxHtml = null;
             var sourceUrl = ResolveSourceUrl(move.SourceHitboxPath);
             if (!string.IsNullOrWhiteSpace(move.SourceHitboxPath))
@@ -458,7 +460,7 @@ public sealed class IngestionOrchestrator
             else
             {
                 _logger.LogWarning(
-                    "Ingestion run {RunId}: {CharacterId}/{MoveId} is in representative media scope but has no source hitbox path; writing dummy media fallback.",
+                    "Ingestion run {RunId}: {CharacterId}/{MoveId} is eligible for representative media but has no source hitbox path; writing dummy media fallback.",
                     runId,
                     move.CharacterId,
                     move.Id);
@@ -499,9 +501,9 @@ public sealed class IngestionOrchestrator
         var successCount = assets.Count(asset => asset.Image.CaptureStatus == MoveImageCaptureStatus.Success);
         var fallbackCount = assets.Count(asset => asset.Image.CaptureStatus == MoveImageCaptureStatus.DummyFallback);
         _logger.LogInformation(
-            "Ingestion run {RunId}: representative media evaluation complete. ScopedMoves={ScopedMoveCount}; StagedAssets={MediaAssetCount}; Successes={SuccessCount}; DummyFallbacks={FallbackCount}.",
+            "Ingestion run {RunId}: representative media evaluation complete. EligibleMoves={EligibleMoveCount}; StagedAssets={MediaAssetCount}; Successes={SuccessCount}; DummyFallbacks={FallbackCount}.",
             runId,
-            scopedMoveCount,
+            eligibleMoveCount,
             assets.Count,
             successCount,
             fallbackCount);

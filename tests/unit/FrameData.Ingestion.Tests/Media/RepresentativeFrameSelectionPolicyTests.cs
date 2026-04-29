@@ -6,6 +6,15 @@ namespace FrameData.Ingestion.Tests.Media;
 public sealed class RepresentativeFrameSelectionPolicyTests
 {
     [Fact]
+    public void IsMoveInScope_WhenScopeIsEmpty_IncludesAllMoves()
+    {
+        var policy = new RepresentativeFrameSelectionPolicy();
+
+        policy.IsMoveInScope("ken", "ken-normals-jab").ShouldBeTrue();
+        policy.IsMoveInScope("makoto", "makoto-specials-hayate--jab-").ShouldBeTrue();
+    }
+
+    [Fact]
     public void IsMoveInScope_AcceptsFullMoveKeyOrMoveId()
     {
         var policy = new RepresentativeFrameSelectionPolicy
