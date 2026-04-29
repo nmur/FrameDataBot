@@ -214,8 +214,8 @@ public sealed class HitboxCanvasRenderer
     {
         var color = HitboxOverlayTypes.Normalize(type) switch
         {
-            "P1_P" => new Rgba(0, 0, 160, 255),
-            "P1_V" => new Rgba(0, 255, 255, 255),
+            "P1_P" => new Rgba(0, 0, 255, 255),
+            "P1_V" => new Rgba(96, 192, 255, 255),
             "P1_A" => new Rgba(255, 0, 0, 255),
             "P1_T" => new Rgba(255, 128, 0, 255),
             "P1_TA" => new Rgba(0, 192, 0, 255),

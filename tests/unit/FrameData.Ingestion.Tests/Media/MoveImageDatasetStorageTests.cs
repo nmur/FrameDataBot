@@ -147,8 +147,8 @@ public sealed class MoveImageDatasetStorageTests
         renderer.TryDecodePng(content, out var rendered, out var decodeError).ShouldBeTrue(decodeError);
         rendered.ShouldNotBeNull();
 
-        AssertPixel(rendered, 10, 20, 0, 0, 160);
-        AssertPixel(rendered, 20, 20, 0, 255, 255);
+        AssertPixel(rendered, 10, 20, 0, 0, 255);
+        AssertPixel(rendered, 20, 20, 96, 192, 255);
         AssertPixel(rendered, 30, 20, 255, 0, 0);
         AssertPixel(rendered, 40, 20, 255, 128, 0);
         AssertPixel(rendered, 50, 20, 0, 192, 0);
