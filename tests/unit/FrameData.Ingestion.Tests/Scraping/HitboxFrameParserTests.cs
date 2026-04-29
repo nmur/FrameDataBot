@@ -30,6 +30,54 @@ public sealed class HitboxFrameParserTests
     }
 
     [Fact]
+    public void Parse_WhenSourceFramesScriptExists_ReadsFrameImagesAndDrawBoxes()
+    {
+        const string html = """
+            <script>
+            var sBaseUrl = 'http://example.test/repo/11/fd_normals/001/';
+            aFramesInfos = {
+              "004": {
+                "frame": "004",
+                "pngFileName": "004_canvas.png",
+                "P1": {
+                  "hitboxes": {
+                    "p_hb_to_draw": [[1, 4, 2, 6]],
+                    "v_hb_to_draw": [],
+                    "a_hb_to_draw": [[150, 136, 109, 131]],
+                    "t_hb_to_draw": [],
+                    "ta_hb_to_draw": []
+                  }
+                },
+                "P2": {
+                  "hitboxes": {
+                    "p_hb_to_draw": [],
+                    "v_hb_to_draw": [],
+                    "a_hb_to_draw": [[0, 100, 0, 100]],
+                    "t_hb_to_draw": [],
+                    "ta_hb_to_draw": []
+                  }
+                }
+              }
+            };
+            </script>
+            """;
+
+        var frames = _parser.Parse(html);
+
+        frames.Count.ShouldBe(1);
+        frames[0].FrameId.ShouldBe("004");
+        frames[0].SourceFrameImageUrl.ShouldBe("http://example.test/repo/11/fd_normals/001/004_canvas.png");
+
+        var p1ActiveHitbox = frames[0].Hitboxes.Single(hitbox => hitbox.Type == "P1_A");
+        p1ActiveHitbox.X.ShouldBe(136);
+        p1ActiveHitbox.Y.ShouldBe(109);
+        p1ActiveHitbox.Width.ShouldBe(14);
+        p1ActiveHitbox.Height.ShouldBe(22);
+
+        frames[0].Hitboxes.ShouldContain(hitbox => hitbox.Type == "P2_A");
+    }
+
+    [Fact]
     public void Parse_WhenJsonPayloadExists_ReadsFrames()
     {
         const string html = """

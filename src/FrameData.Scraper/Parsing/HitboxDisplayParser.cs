@@ -24,6 +24,12 @@ public sealed partial class HitboxDisplayParser
             return jsonFrames;
         }
 
+        var sourceScriptFrames = ParseSourceScriptFrames(document).ToArray();
+        if (sourceScriptFrames.Length > 0)
+        {
+            return sourceScriptFrames;
+        }
+
         var dataFrameElements = document.QuerySelectorAll("[data-frame], [data-frame-id]")
             .Where(element => !string.IsNullOrWhiteSpace(ReadAttribute(element, "data-frame", "data-frame-id")))
             .ToArray();
@@ -61,6 +67,29 @@ public sealed partial class HitboxDisplayParser
         }
     }
 
+    private static IEnumerable<HitboxFrame> ParseSourceScriptFrames(IDocument document)
+    {
+        foreach (var script in document.QuerySelectorAll("script"))
+        {
+            var text = script.TextContent;
+            if (string.IsNullOrWhiteSpace(text) || !text.Contains("aFramesInfos", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var framesJson = ExtractObjectLiteral(text, "aFramesInfos");
+            if (string.IsNullOrWhiteSpace(framesJson))
+            {
+                continue;
+            }
+
+            foreach (var frame in ParseSourceFramePayload(framesJson, ReadJavaScriptStringVariable(text, "sBaseUrl")))
+            {
+                yield return frame;
+            }
+        }
+    }
+
     private static IEnumerable<HitboxFrame> ParseJsonFramePayload(string json)
     {
         using var document = JsonDocument.Parse(json);
@@ -71,6 +100,14 @@ public sealed partial class HitboxDisplayParser
 
         if (framesElement.ValueKind != JsonValueKind.Array)
         {
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var frame in ParseFrameObjectProperties(root, sourceFrameBaseUrl: null))
+                {
+                    yield return frame;
+                }
+            }
+
             yield break;
         }
 
@@ -110,6 +147,98 @@ public sealed partial class HitboxDisplayParser
                 SourceFrameImageUrl = ReadString(frameElement, "imageUrl", "sourceFrameImageUrl", "src"),
                 Hitboxes = hitboxes
             };
+        }
+    }
+
+    private static IEnumerable<HitboxFrame> ParseSourceFramePayload(string json, string? sourceFrameBaseUrl)
+    {
+        using var document = JsonDocument.Parse(json);
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            yield break;
+        }
+
+        foreach (var frame in ParseFrameObjectProperties(document.RootElement, sourceFrameBaseUrl))
+        {
+            yield return frame;
+        }
+    }
+
+    private static IEnumerable<HitboxFrame> ParseFrameObjectProperties(JsonElement framesObject, string? sourceFrameBaseUrl)
+    {
+        foreach (var frameProperty in framesObject.EnumerateObject())
+        {
+            var frameElement = frameProperty.Value;
+            if (frameElement.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var frameId = ReadString(frameElement, "frame", "frameId", "id") ?? frameProperty.Name;
+            var hitboxes = new List<HitboxRectangle>();
+            AddSourceDrawBoxes(frameElement, "P1", "p_hb_to_draw", "P1_P", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P1", "v_hb_to_draw", "P1_V", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P1", "a_hb_to_draw", "P1_A", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P1", "t_hb_to_draw", "P1_T", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P1", "ta_hb_to_draw", "P1_TA", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P2", "p_hb_to_draw", "P2_P", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P2", "v_hb_to_draw", "P2_V", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P2", "a_hb_to_draw", "P2_A", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P2", "t_hb_to_draw", "P2_T", hitboxes);
+            AddSourceDrawBoxes(frameElement, "P2", "ta_hb_to_draw", "P2_TA", hitboxes);
+
+            yield return new HitboxFrame
+            {
+                FrameId = frameId,
+                SourceFrameImageUrl = BuildSourceFrameImageUrl(sourceFrameBaseUrl, ReadString(frameElement, "pngFileName")),
+                Hitboxes = hitboxes
+            };
+        }
+    }
+
+    private static void AddSourceDrawBoxes(
+        JsonElement frameElement,
+        string actorKey,
+        string drawBoxesKey,
+        string hitboxType,
+        ICollection<HitboxRectangle> hitboxes)
+    {
+        if (!TryGetProperty(frameElement, actorKey, out var actorElement)
+            || actorElement.ValueKind != JsonValueKind.Object
+            || !TryGetProperty(actorElement, "hitboxes", out var hitboxesElement)
+            || hitboxesElement.ValueKind != JsonValueKind.Object
+            || !TryGetProperty(hitboxesElement, drawBoxesKey, out var drawBoxesElement)
+            || drawBoxesElement.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (var drawBox in drawBoxesElement.EnumerateArray())
+        {
+            if (drawBox.ValueKind != JsonValueKind.Array || drawBox.GetArrayLength() < 4)
+            {
+                continue;
+            }
+
+            var x1 = ReadArrayInt(drawBox, 0);
+            var x2 = ReadArrayInt(drawBox, 1);
+            var y1 = ReadArrayInt(drawBox, 2);
+            var y2 = ReadArrayInt(drawBox, 3);
+            var width = Math.Abs(x2 - x1);
+            var height = Math.Abs(y2 - y1);
+            if (width <= 0 || height <= 0)
+            {
+                continue;
+            }
+
+            hitboxes.Add(new HitboxRectangle
+            {
+                Type = hitboxType,
+                X = Math.Min(x1, x2),
+                Y = Math.Min(y1, y2),
+                Width = width,
+                Height = height
+            });
         }
     }
 
@@ -305,6 +434,135 @@ public sealed partial class HitboxDisplayParser
         }
 
         return 0;
+    }
+
+    private static int ReadArrayInt(JsonElement array, int index)
+    {
+        var value = array[index];
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var parsedNumber))
+        {
+            return parsedNumber;
+        }
+
+        if (value.ValueKind == JsonValueKind.String
+            && int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedString))
+        {
+            return parsedString;
+        }
+
+        return 0;
+    }
+
+    private static string? BuildSourceFrameImageUrl(string? sourceFrameBaseUrl, string? pngFileName)
+    {
+        if (string.IsNullOrWhiteSpace(pngFileName))
+        {
+            return null;
+        }
+
+        var trimmedFileName = pngFileName.Trim();
+        if (Uri.TryCreate(trimmedFileName, UriKind.Absolute, out var absoluteFrameUrl))
+        {
+            return absoluteFrameUrl.ToString();
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceFrameBaseUrl))
+        {
+            return trimmedFileName;
+        }
+
+        var trimmedBaseUrl = sourceFrameBaseUrl.Trim();
+        if (Uri.TryCreate(trimmedBaseUrl, UriKind.Absolute, out var absoluteBaseUrl)
+            && Uri.TryCreate(absoluteBaseUrl, trimmedFileName, out var resolvedFrameUrl))
+        {
+            return resolvedFrameUrl.ToString();
+        }
+
+        return $"{trimmedBaseUrl.TrimEnd('/')}/{trimmedFileName.TrimStart('/')}";
+    }
+
+    private static string? ReadJavaScriptStringVariable(string script, string variableName)
+    {
+        var match = Regex.Match(
+            script,
+            $@"(?:\bvar\s+|\b){Regex.Escape(variableName)}\s*=\s*(?<quote>['""])(?<value>.*?)(\k<quote>)",
+            RegexOptions.Singleline);
+
+        return match.Success ? match.Groups["value"].Value : null;
+    }
+
+    private static string? ExtractObjectLiteral(string script, string variableName)
+    {
+        var variableIndex = script.IndexOf(variableName, StringComparison.Ordinal);
+        if (variableIndex < 0)
+        {
+            return null;
+        }
+
+        var assignmentIndex = script.IndexOf('=', variableIndex + variableName.Length);
+        if (assignmentIndex < 0)
+        {
+            return null;
+        }
+
+        var objectStartIndex = script.IndexOf('{', assignmentIndex + 1);
+        if (objectStartIndex < 0)
+        {
+            return null;
+        }
+
+        var depth = 0;
+        var inString = false;
+        var escaped = false;
+        var stringQuote = '\0';
+
+        for (var index = objectStartIndex; index < script.Length; index++)
+        {
+            var ch = script[index];
+            if (inString)
+            {
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (ch == '\\')
+                {
+                    escaped = true;
+                    continue;
+                }
+
+                if (ch == stringQuote)
+                {
+                    inString = false;
+                }
+
+                continue;
+            }
+
+            if (ch is '"' or '\'')
+            {
+                inString = true;
+                stringQuote = ch;
+                continue;
+            }
+
+            if (ch == '{')
+            {
+                depth++;
+            }
+            else if (ch == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return script[objectStartIndex..(index + 1)];
+                }
+            }
+        }
+
+        return null;
     }
 
     private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement property)

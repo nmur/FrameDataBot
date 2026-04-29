@@ -86,11 +86,13 @@ public sealed class CharacterSectionParser
             }
 
             var hitboxDisplayPath = FindHitboxDisplayPath(row, cells[moveIndex]);
+            var sourceMoveId = ReadQueryParameter(hitboxDisplayPath, "iMove")
+                ?? FindSourceMoveId(row);
             yield return new ParsedMoveEntry
             {
                 Section = section,
                 CanonicalName = moveName,
-                SourceMoveId = ReadQueryParameter(hitboxDisplayPath, "iMove"),
+                SourceMoveId = sourceMoveId,
                 SourceHitboxPath = hitboxDisplayPath,
                 Startup = GetCellValue(cells, startupIndex),
                 Active = GetCellValue(cells, activeIndex),
@@ -154,6 +156,26 @@ public sealed class CharacterSectionParser
 
         var href = link?.GetAttribute("href")?.Trim();
         return string.IsNullOrWhiteSpace(href) ? null : href;
+    }
+
+    private static string? FindSourceMoveId(AngleSharp.Dom.IElement row)
+    {
+        var hitboxLink = row.QuerySelector(".linkHitboxes");
+        var linkId = hitboxLink?.GetAttribute("id");
+        if (!string.IsNullOrWhiteSpace(linkId) && linkId.StartsWith("load_", StringComparison.OrdinalIgnoreCase))
+        {
+            return linkId["load_".Length..].Trim();
+        }
+
+        var firstCell = row.QuerySelector("td");
+        var title = firstCell?.GetAttribute("title");
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            return title.Trim();
+        }
+
+        var hiddenValue = hitboxLink?.QuerySelector(".none")?.TextContent.Trim();
+        return string.IsNullOrWhiteSpace(hiddenValue) ? null : hiddenValue;
     }
 
     private static string? ReadQueryParameter(string? url, string name)

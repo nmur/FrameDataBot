@@ -288,7 +288,8 @@ public sealed class IngestionOrchestrator
             CanonicalName = parsed.CanonicalName,
             DisplayOrder = displayOrder,
             SourceMoveId = parsed.SourceMoveId,
-            SourceHitboxPath = parsed.SourceHitboxPath,
+            SourceHitboxPath = parsed.SourceHitboxPath
+                ?? BuildHitboxDisplayPath(scope.SourceCharacterId, section, parsed.SourceMoveId),
             Motion = parsed.Motion,
             Damage = parsed.Damage,
             Stun = parsed.Stun,
@@ -310,6 +311,31 @@ public sealed class IngestionOrchestrator
         var normalizedName = NormalizeIdPart(moveName);
         return $"{characterId}-{normalizedSection}-{normalizedName}".ToLowerInvariant();
     }
+
+    private static string? BuildHitboxDisplayPath(int sourceCharacterId, string section, string? sourceMoveId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceMoveId))
+        {
+            return null;
+        }
+
+        var sourceMoveType = ToHitboxSourceMoveType(section);
+        if (sourceMoveType is null)
+        {
+            return null;
+        }
+
+        return $"hitboxesDisplay.php?sMode=f&iChar={sourceCharacterId}&sMoveType={sourceMoveType}&sAction=w&iMove={Uri.EscapeDataString(sourceMoveId.Trim())}";
+    }
+
+    private static string? ToHitboxSourceMoveType(string section)
+        => section switch
+        {
+            "Normals" => "fd_normals",
+            "Specials" => "fd_specials",
+            "SuperArts" => "fd_supers",
+            _ => null
+        };
 
     private static string EnsureUniqueMoveId(string baseMoveId, ISet<string> usedMoveIds)
     {

@@ -119,6 +119,31 @@ public sealed class CharacterSectionParserTests
     }
 
     [Fact]
+    public void Parse_WhenSourceUsesHitboxMetadata_CapturesSourceMoveId()
+    {
+        const string html = """
+            <html><body>
+              <h2>Normals</h2>
+              <table>
+                <tr><th></th><th>Name</th><th>Startup</th><th>Hit</th><th>Recovery</th></tr>
+                <tr>
+                  <td title="1"><div class="linkHitboxes" id="load_1"><div class="none">00001</div></div></td>
+                  <td>Jab</td>
+                  <td>3</td><td>3</td><td>5</td>
+                </tr>
+              </table>
+            </body></html>
+            """;
+
+        var parsed = _parser.Parse(html);
+
+        parsed.Count.ShouldBe(1);
+        parsed[0].CanonicalName.ShouldBe("Jab");
+        parsed[0].SourceMoveId.ShouldBe("1");
+        parsed[0].SourceHitboxPath.ShouldBeNull();
+    }
+
+    [Fact]
     public void Parse_WhenMoveLinksToHitboxDisplay_CapturesSourceMoveIdAndPath()
     {
         const string html = """

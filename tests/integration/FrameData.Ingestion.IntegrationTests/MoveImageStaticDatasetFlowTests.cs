@@ -89,13 +89,15 @@ public sealed class MoveImageStaticDatasetFlowTests
                 <html><body>
                   <h2>Normals</h2>
                   <table>
-                    <tr><th>Name</th><th>Startup</th><th>Hit</th><th>Recovery</th></tr>
+                    <tr><th></th><th>Name</th><th>Startup</th><th>Hit</th><th>Recovery</th></tr>
                     <tr>
-                      <td><a href="hitboxesDisplay.php?iChar=14&sMoveType=fd_normals&iMove=001">Jab</a></td>
+                      <td title="1"><div class="linkHitboxes" id="load_1"><div class="none">00001</div></div></td>
+                      <td>Jab</td>
                       <td>4</td><td>2</td><td>9</td>
                     </tr>
                     <tr>
-                      <td><a href="hitboxesDisplay.php?iChar=14&sMoveType=fd_normals&iMove=002">Strong</a></td>
+                      <td title="2"><div class="linkHitboxes" id="load_2"><div class="none">00002</div></div></td>
+                      <td>Strong</td>
                       <td>5</td><td>3</td><td>12</td>
                     </tr>
                   </table>
@@ -104,7 +106,7 @@ public sealed class MoveImageStaticDatasetFlowTests
 
         public Task<string> GetHitboxDisplayPageAsync(string sourcePathOrUrl, CancellationToken cancellationToken = default)
         {
-            if (sourcePathOrUrl.Contains("iMove=002", StringComparison.Ordinal))
+            if (sourcePathOrUrl.Contains("iMove=2", StringComparison.Ordinal))
             {
                 return Task.FromResult("""
                     <div data-frame="003">
