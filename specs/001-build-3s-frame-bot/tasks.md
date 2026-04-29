@@ -48,9 +48,8 @@ description: "Task list for implementing Discord 3s frame data bot"
 4. Historical note: the Postgres persistence follow-up (`T101-T118`) and JSON backup/restore follow-up (`T119-T125`) were completed, but are superseded by the static dataset storage refactor (`T136-T150`).
 5. Deliver Seq centralized logging follow-up (`T126-T135`) before storage/media refactors so production diagnostics are available.
 6. Deliver static dataset storage refactor (`T136-T150`) and source column expansion (`T151-T156`) before US4 image work so move data and media share one persistent dataset bundle with all currently required source columns.
-7. Deliver refinements in order: US3 -> static dataset refactor/source column expansion -> US4 representative active-frame media -> US5 -> US6 advanced metadata. Embed response formatting is part of the US1 live Discord response path.
-8. Complete polish tasks (`T065-T070`) after desired story set is done.
-9. At each step, consult the reference list above for requirements and contracts.
+7. Completed refinement scope: US3 alias/fuzzy lookup, static dataset refactor/source column expansion, and US4 representative active-frame media. Embed response formatting is part of the US1 live Discord response path.
+8. At each step, consult the reference list above for requirements and contracts.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -362,62 +361,6 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ---
 
-## Phase 7: User Story 5 - Full Frame-Image Expansion Decision (Priority: P3)
-
-**Goal**: Produce a storage-impact assessment before any full per-frame image archival.
-
-**Independent Test**: Generate report with per-move/per-character/full-roster storage estimates and a recommended retention policy.
-
-### Tests for User Story 5 (MANDATORY) ⚠️
-
-- [ ] T054 [P] [US5] Add unit tests for storage estimation calculations in `tests/unit/FrameData.Domain.Tests/Media/StorageAssessmentServiceTests.cs`
-- [ ] T055 [P] [US5] Add integration test for storage assessment report generation in `tests/integration/FrameData.Ingestion.IntegrationTests/StorageAssessmentReportTests.cs`
-
-### Implementation for User Story 5
-
-- [ ] T056 [P] [US5] Implement StorageAssessment domain model in `src/FrameData.Domain/Media/StorageAssessment.cs`
-- [ ] T057 [US5] Implement storage assessment service in `src/FrameData.Ingestion/Services/StorageAssessmentService.cs`
-- [ ] T058 [US5] Implement assessment report exporter in `src/FrameData.Ingestion/Reporting/StorageAssessmentReportWriter.cs`
-
-**Checkpoint**: US5 enables evidence-based decision on full-frame archival.
-
----
-
-## Phase 8: User Story 6 - Expanded Move Details and Media (Priority: P3)
-
-**Goal**: Support advanced move metadata in responses without regressing MVP fields.
-
-**Independent Test**: Enriched moves return advanced properties; non-enriched moves still return valid baseline frame data.
-
-### Tests for User Story 6 (MANDATORY) ⚠️
-
-- [ ] T059 [P] [US6] Add unit tests for metadata mapping and optionality in `tests/unit/FrameData.Domain.Tests/Moves/MoveMetadataMappingTests.cs`
-- [ ] T060 [P] [US6] Add integration tests for enriched query responses in `tests/integration/FrameData.Api.IntegrationTests/MoveMetadataResponseTests.cs`
-- [ ] T061 [P] [US6] Add contract tests for advanced metadata schema in `tests/contract/FrameData.Contracts.Tests/MoveMetadataContractTests.cs`
-
-### Implementation for User Story 6
-
-- [ ] T062 [P] [US6] Implement MoveMetadata domain model in `src/FrameData.Domain/Moves/MoveMetadata.cs`
-- [ ] T063 [US6] Implement metadata ingestion mapper in `src/FrameData.Ingestion/Mapping/MoveMetadataMapper.cs`
-- [ ] T064 [US6] Integrate metadata serialization in API and bot formatters in `src/FrameData.Api/Responses/MoveQueryResponseFactory.cs` and `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`
-
-**Checkpoint**: US6 delivers advanced detail extension while preserving backward compatibility with the US1 embed response contract.
-
----
-
-## Final Phase: Polish & Cross-Cutting Concerns
-
-**Purpose**: Hardening, documentation, and release readiness across all stories.
-
-- [ ] T065 [P] Add structured logging and correlation IDs in `src/FrameData.Api/Observability/RequestCorrelationMiddleware.cs` and `src/FrameData.Ingestion/Observability/IngestionLogScope.cs`
-- [ ] T066 [P] Add fixed-sample performance validation script for API and bot latency in `scripts/perf/run-benchmarks.sh`
-- [ ] T067 Add mandatory pre-production security gate workflow (dependency, image, secrets, least-privilege checks) in `.github/workflows/security-gate.yml` and `scripts/security/`
-- [ ] T068 Add deployment workflow for self-hosted Docker via GitHub Actions in `.github/workflows/deploy-selfhosted.yml`
-- [ ] T069 [P] Update quickstart and operations runbook with security/performance gate execution in `specs/001-build-3s-frame-bot/quickstart.md` and `docs/operations.md`
-- [ ] T070 Execute full test suite and document validation outcomes in `specs/001-build-3s-frame-bot/implementation-validation.md`
-
----
-
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -426,15 +369,13 @@ description: "Task list for implementing Discord 3s frame data bot"
 - Foundational (Phase 2): depends on Setup and blocks all user stories.
 - User Stories:
   - US1 (Phase 3) and US2 (Phase 4) start after Foundational.
-  - US1 deployment parity follow-up (`T075-T082`) completes before cross-story polish tasks.
+  - US1 deployment parity follow-up (`T075-T082`) was completed before live Discord gateway work.
   - US1 Discord gateway follow-up (`T083-T095`) and embed response follow-up (`T096-T100`) complete before US3 response disambiguation work, because US3 changes the live command response path.
   - US2 real persistence follow-up (`T101-T118`) was completed as the first production persistence slice, but is superseded by the static dataset storage refactor.
-  - Static dataset storage refactor (`T136-T150`) plus source column expansion (`T151-T156`) must complete before US4, US5, US6, or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL and must retain all currently required source columns.
+  - Static dataset storage refactor (`T136-T150`) plus source column expansion (`T151-T156`) must complete before US4 or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL and must retain all currently required source columns.
   - US3 (Phase 5) depends on US1 baseline lookup behavior and a query repository implementation; its completed matcher work must be preserved when the static repository replaces the Postgres repository.
   - US4 (Phase 6) depends on static dataset storage so representative image metadata and files can be published beside move JSON. Full media ingestion remains gated behind successful scoped Ken pilot validation.
-  - US5 (Phase 7) depends on US4 image-capture data.
-  - US6 (Phase 8) depends on static dataset storage and US1 live Discord embed response pipeline.
-- Final Phase: depends on all desired stories being complete.
+- Current plan closure: all retained story tasks are complete.
 
 ### User Story Completion Order
 
@@ -443,8 +384,6 @@ description: "Task list for implementing Discord 3s frame data bot"
 3. US3 (fuzzy/alias usability)
 4. Static dataset storage refactor (`T136-T150`)
 5. US4 (representative active-frame image in the static media dataset)
-6. US5 (storage impact decision)
-7. US6 (advanced metadata)
 
 ### Within Each User Story
 
@@ -497,24 +436,6 @@ T046, T047, T048, T049
 T050, T051
 ```
 
-### User Story 5
-
-```bash
-# Run in parallel:
-T054, T055
-T056
-```
-
-### User Story 6
-
-```bash
-# Run in parallel:
-T059, T060, T061
-T062
-```
-
----
-
 ## Implementation Strategy
 
 ### MVP First (US1 + US2)
@@ -531,14 +452,11 @@ T062
 
 1. Preserve US3 fuzzy/alias support while swapping the query repository to static dataset loading.
 2. Complete the static dataset storage refactor (`T136-T150`) and source column expansion (`T151-T156`).
-3. Add US4 representative active-frame image support inside the static media dataset, starting with the scoped Ken pilot media run.
-4. Add US5 storage assessment before any full-frame archival.
-5. Add US6 advanced metadata support to the existing embed response format.
+3. Complete US4 representative active-frame image support inside the static media dataset, starting with the scoped Ken pilot media run.
 
 ### Quality Gates
 
 1. Every story requires passing unit + integration + contract tests.
 2. No story closes without independent test criteria passing.
 3. Preserve backward compatibility for previously delivered story behavior.
-4. Production deployment requires passing mandatory security gate checks.
-5. SC-001 validation must use fixed-size representative samples for both API and bot latency.
+4. SC-001 validation must use fixed-size representative samples for both API and bot latency.
