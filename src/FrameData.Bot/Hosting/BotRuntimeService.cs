@@ -1,4 +1,5 @@
 using Discord.WebSocket;
+using FrameData.Bot.Diagnostics;
 using FrameData.Bot.Discord;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -34,6 +35,9 @@ public sealed class BotRuntimeService : BackgroundService
             _options.BotApiBaseUrl,
             _options.BotGuildId,
             _options.ActiveDatasetPath);
+        _logger.LogInformation(
+            "Bot dataset mount diagnostics at startup: {@DatasetDiagnostics}",
+            DatasetMountDiagnostics.Capture(_options.ActiveDatasetPath));
 
         _gatewayClient.Ready += RegisterCommandsAsync;
         _gatewayClient.InteractionCreated += HandleInteractionAsync;

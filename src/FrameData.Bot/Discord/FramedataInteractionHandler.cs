@@ -1,6 +1,7 @@
 using Discord;
 using Discord.WebSocket;
 using FrameData.Bot.Api;
+using FrameData.Bot.Diagnostics;
 using FrameData.Bot.Formatting;
 using FrameData.Shared.Contracts;
 using Microsoft.Extensions.Logging;
@@ -118,23 +119,27 @@ public sealed class FramedataInteractionHandler
 
         if (File.Exists(attachment.FilePath))
         {
+            var fileInfo = new FileInfo(attachment.FilePath);
             _logger.LogInformation(
-                "Prepared Discord media attachment for {Character}/{Move}. FilePath={FilePath}; FileName={FileName}; RepresentativeFrameImageUrl={RepresentativeFrameImageUrl}; CaptureStatus={CaptureStatus}.",
+                "Prepared Discord media attachment for {Character}/{Move}. FilePath={FilePath}; FileName={FileName}; Bytes={ByteCount}; RepresentativeFrameImageUrl={RepresentativeFrameImageUrl}; CaptureStatus={CaptureStatus}.",
                 response.Character,
                 response.MatchedMove,
                 attachment.FilePath,
                 attachment.FileName,
+                fileInfo.Length,
                 response.Media.RepresentativeFrameImageUrl,
                 response.Media.CaptureStatus);
             return;
         }
 
+        var diagnostics = DatasetMountDiagnostics.Capture(activeDatasetPath: null, attachment.FilePath);
         _logger.LogWarning(
-            "Discord media attachment for {Character}/{Move} was prepared but the file does not exist at {FilePath}. RepresentativeFrameImageUrl={RepresentativeFrameImageUrl}; CaptureStatus={CaptureStatus}. Check the bot dataset volume mount and FRAMEDATA_ACTIVE_DATASET_PATH.",
+            "Discord media attachment for {Character}/{Move} was prepared but the file does not exist at {FilePath}. RepresentativeFrameImageUrl={RepresentativeFrameImageUrl}; CaptureStatus={CaptureStatus}. Check the bot dataset volume mount and FRAMEDATA_ACTIVE_DATASET_PATH. DatasetDiagnostics={@DatasetDiagnostics}",
             response.Character,
             response.MatchedMove,
             attachment.FilePath,
             response.Media.RepresentativeFrameImageUrl,
-            response.Media.CaptureStatus);
+            response.Media.CaptureStatus,
+            diagnostics);
     }
 }
