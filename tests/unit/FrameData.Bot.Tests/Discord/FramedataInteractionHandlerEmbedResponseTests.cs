@@ -49,7 +49,46 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
         followup.Content.ShouldBeNull();
         followup.Embed.ShouldNotBeNull();
         followup.Embed.Title.ShouldBe("Makoto - Hayate");
+        followup.Attachment.ShouldBeNull();
         followup.Ephemeral.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenMoveFoundWithMedia_SendsAttachmentFollowup()
+    {
+        _apiClient
+            .QueryMoveAsync("ken", "jab", Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<(MoveQueryResponse?, MoveAmbiguousResponse?, ErrorResponse?)>((new MoveQueryResponse
+            {
+                Character = "Ken",
+                MatchedMove = "Jab",
+                Section = "Normals",
+                MatchedBy = "Exact",
+                FrameData = new FrameDataContract(),
+                Media = new MoveMediaContract
+                {
+                    RepresentativeFrameImageUrl = "media/ken/ken-normals-jab/representative-active-frame.png",
+                    SelectedFrame = "004",
+                    SelectionStrategy = "largest-active-hitbox-area",
+                    CaptureStatus = "Success"
+                }
+            }, null, null)));
+        var responder = new TestDiscordInteractionResponder();
+        var handler = CreateHandler();
+
+        await handler.HandleAsync(
+            "framedata",
+            [
+                new SlashCommandOptionValue("character", "ken"),
+                new SlashCommandOptionValue("move", "jab")
+            ],
+            responder);
+
+        var followup = responder.Followups.Single();
+        followup.Content.ShouldBeNull();
+        followup.Embed.ShouldNotBeNull();
+        followup.Attachment.ShouldNotBeNull();
+        followup.Attachment.FileName.ShouldBe("representative-active-frame.png");
     }
 
     [Fact]
@@ -94,17 +133,17 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
+        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
         {
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
+        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
         {
-            Followups.Add(new SentInteractionResponse(content, embed, ephemeral));
+            Followups.Add(new SentInteractionResponse(content, embed, ephemeral, attachment));
             return Task.CompletedTask;
         }
     }
 
-    private sealed record SentInteractionResponse(string? Content, Embed? Embed, bool Ephemeral);
+    private sealed record SentInteractionResponse(string? Content, Embed? Embed, bool Ephemeral, DiscordMoveAttachment? Attachment);
 }

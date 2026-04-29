@@ -20,7 +20,26 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                 "chun-li",
                 "Chun-Li",
                 ["chun", "chun li"],
-                StaticDatasetFixtureWriter.Move("chun-li", "2mk", startup: "5"),
+                StaticDatasetFixtureWriter.Move(
+                    "chun-li",
+                    "2mk",
+                    startup: "5",
+                    media:
+                    [
+                        new StaticDatasetMoveMedia
+                        {
+                            Type = "RepresentativeActiveFrame",
+                            Path = "media/chun-li/chun-li-normals-2mk/representative-active-frame.png",
+                            SourceUrl = "http://example.test/hitboxesDisplay.php?iMove=20",
+                            SourceFrameImageUrl = "http://example.test/frames/006.png",
+                            SelectedFrame = "006",
+                            SelectionStrategy = "largest-active-hitbox-area",
+                            ActiveHitboxArea = 100,
+                            OverlayHitboxes = ["P1_P", "P1_V", "P1_A", "P1_T", "P1_TA"],
+                            CapturedAt = DateTimeOffset.UtcNow,
+                            CaptureStatus = "Success"
+                        }
+                    ]),
                 StaticDatasetFixtureWriter.Move(
                     "chun-li",
                     "Kikouken (Jab)",
@@ -80,5 +99,21 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("236P", payload.Motion);
         Assert.Equal("60", payload.Damage);
         Assert.Equal("7", payload.Stun);
+    }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenMoveHasRepresentativeMedia_ReturnsMediaFields()
+    {
+        var response = await _client.GetAsync("/v1/moves/query?character=chun&moveInput=2mk");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.NotNull(payload.Media);
+        Assert.Equal("media/chun-li/chun-li-normals-2mk/representative-active-frame.png", payload.Media.RepresentativeFrameImageUrl);
+        Assert.Equal("006", payload.Media.SelectedFrame);
+        Assert.Equal("largest-active-hitbox-area", payload.Media.SelectionStrategy);
+        Assert.Equal("Success", payload.Media.CaptureStatus);
+        Assert.Null(payload.Media.FallbackReason);
     }
 }

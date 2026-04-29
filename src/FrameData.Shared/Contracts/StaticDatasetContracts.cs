@@ -52,6 +52,7 @@ public sealed class StaticDatasetMove
     public string? Motion { get; init; }
     public string? Damage { get; init; }
     public string? Stun { get; init; }
+    public string? SourceHitboxPath { get; init; }
     public required StaticDatasetMoveFrameData FrameData { get; init; }
     public IReadOnlyList<StaticDatasetMoveMedia> Media { get; init; } = [];
 }
@@ -72,5 +73,12 @@ public sealed class StaticDatasetMoveMedia
     public required string Type { get; init; }
     public required string Path { get; init; }
     public string? SourceUrl { get; init; }
+    public string? SourceFrameImageUrl { get; init; }
+    public string? SelectedFrame { get; init; }
+    public string? SelectionStrategy { get; init; }
+    public int? ActiveHitboxArea { get; init; }
+    public IReadOnlyList<string> OverlayHitboxes { get; init; } = [];
+    public string? FallbackReason { get; init; }
     public DateTimeOffset? CapturedAt { get; init; }
+    public string? CaptureStatus { get; init; }
 }

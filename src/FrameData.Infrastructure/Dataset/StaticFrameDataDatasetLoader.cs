@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FrameData.Domain.Characters;
 using FrameData.Domain.Datasets;
+using FrameData.Domain.Media;
 using FrameData.Domain.Moves;
 using FrameData.Shared.Contracts;
 
@@ -157,6 +158,7 @@ public sealed class StaticFrameDataDatasetLoader
             CanonicalName = move.CanonicalName,
             DisplayOrder = move.DisplayOrder,
             SourceMoveId = move.SourceMoveId,
+            SourceHitboxPath = move.SourceHitboxPath,
             Motion = move.Motion,
             Damage = move.Damage,
             Stun = move.Stun,
@@ -169,8 +171,31 @@ public sealed class StaticFrameDataDatasetLoader
                 OnBlock = move.FrameData.OnBlock,
                 FrameAdvantage = move.FrameData.FrameAdvantage,
                 Notes = move.FrameData.Notes
-            }
+            },
+            Media = move.Media.Select(media => ToDomain(media, move.Id)).ToArray()
         };
+
+    private static MoveImage ToDomain(StaticDatasetMoveMedia media, string moveId)
+        => new()
+        {
+            Id = $"{moveId}:{media.Type}:{media.Path}",
+            MoveId = moveId,
+            ImageType = ParseEnum(media.Type, MoveImageType.RepresentativeActiveFrame),
+            StoragePath = media.Path,
+            SourceUrl = media.SourceUrl ?? string.Empty,
+            SourceFrameImageUrl = media.SourceFrameImageUrl,
+            SelectedFrame = media.SelectedFrame,
+            SelectionStrategy = media.SelectionStrategy ?? RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
+            ActiveHitboxArea = media.ActiveHitboxArea,
+            OverlayHitboxes = media.OverlayHitboxes,
+            FallbackReason = media.FallbackReason,
+            CapturedAt = media.CapturedAt ?? DateTimeOffset.MinValue,
+            CaptureStatus = ParseEnum(media.CaptureStatus, MoveImageCaptureStatus.Success)
+        };
+
+    private static T ParseEnum<T>(string? value, T fallback)
+        where T : struct
+        => Enum.TryParse<T>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
 
     private static async Task<T> ReadJsonAsync<T>(string path, CancellationToken cancellationToken)
     {

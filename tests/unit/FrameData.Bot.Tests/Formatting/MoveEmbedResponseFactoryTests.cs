@@ -1,4 +1,5 @@
 using FrameData.Bot.Formatting;
+using FrameData.Bot.Hosting;
 using FrameData.Shared.Contracts;
 using Shouldly;
 
@@ -67,6 +68,56 @@ public sealed class MoveEmbedResponseFactoryTests
         FieldValue(response, "Motion").ShouldBe("236P");
         FieldValue(response, "Damage").ShouldBe("120");
         FieldValue(response, "Stun").ShouldBe("17");
+    }
+
+    [Fact]
+    public void Create_WhenMoveHasRepresentativeMedia_AttachesLocalFileReference()
+    {
+        var factory = new MoveEmbedResponseFactory(new()
+        {
+            DiscordBotToken = "token",
+            BotGuildId = "123",
+            DiscordGuildId = 123,
+            BotApiBaseUrl = new Uri("http://api:8080"),
+            ActiveDatasetPath = "/data/framedata/active"
+        });
+
+        var response = factory.Create(new MoveQueryResponse
+        {
+            Character = "Ken",
+            MatchedMove = "Jab",
+            Section = "Normals",
+            MatchedBy = "Exact",
+            FrameData = new FrameDataContract(),
+            Media = new MoveMediaContract
+            {
+                RepresentativeFrameImageUrl = "media/ken/ken-normals-jab/representative-active-frame.png",
+                SelectedFrame = "006",
+                SelectionStrategy = "largest-active-hitbox-area",
+                CaptureStatus = "Success"
+            }
+        });
+
+        response.Attachment.ShouldNotBeNull();
+        response.Attachment.FilePath.ShouldBe("/data/framedata/active/media/ken/ken-normals-jab/representative-active-frame.png");
+        response.Attachment.FileName.ShouldBe("representative-active-frame.png");
+        response.Embed!.Image!.Value.Url.ShouldBe("attachment://representative-active-frame.png");
+    }
+
+    [Fact]
+    public void Create_WhenMoveHasNoMedia_DoesNotAttachFile()
+    {
+        var response = _factory.Create(new MoveQueryResponse
+        {
+            Character = "Makoto",
+            MatchedMove = "Hayate",
+            Section = "Specials",
+            MatchedBy = "Exact",
+            FrameData = new FrameDataContract()
+        });
+
+        response.Attachment.ShouldBeNull();
+        response.Embed!.Image.ShouldBeNull();
     }
 
     [Fact]

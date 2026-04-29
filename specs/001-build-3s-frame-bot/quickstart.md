@@ -106,8 +106,18 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 
 ## Media Attachment Follow-Up Validation
 
-1. Query a move with optional media once image ingestion exists.
-2. Confirm the existing embed sends local files as Discord attachments and references them with `attachment://...`.
+1. Run media ingestion with the configured pilot scope only, covering a few Ken normals,
+   a few Ken specials, and Ken SA3 before attempting full media capture.
+2. Confirm each pilot move writes a representative active-frame PNG under `media/`
+   with selection metadata, using the `largest-active-hitbox-area` default strategy
+   unless a move override is configured.
+3. Confirm rendered images include `P1_P`, `P1_V`, `P1_A`, `P1_T`, and `P1_TA`
+   overlays and do not include P2 hitboxes.
+4. Confirm moves with unavailable source frame images store the configured or generated
+   dummy PNG and fallback metadata instead of failing text dataset ingestion.
+5. Query a move with optional media once image ingestion exists.
+6. Confirm the existing embed sends local files as Discord attachments and references
+   them with `attachment://...`.
 
 ## Security Baseline
 

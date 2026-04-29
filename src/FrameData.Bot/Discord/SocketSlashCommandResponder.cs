@@ -1,5 +1,6 @@
 using Discord;
 using Discord.WebSocket;
+using FrameData.Bot.Formatting;
 
 namespace FrameData.Bot.Discord;
 
@@ -17,13 +18,33 @@ public sealed class SocketSlashCommandResponder : IDiscordInteractionResponder
         return _command.DeferAsync(ephemeral);
     }
 
-    public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
+    public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
     {
+        if (attachment is not null && File.Exists(attachment.FilePath))
+        {
+            return _command.RespondWithFileAsync(
+                attachment.FilePath,
+                attachment.FileName,
+                text: content,
+                embed: embed,
+                ephemeral: ephemeral);
+        }
+
         return _command.RespondAsync(content, embed: embed, ephemeral: ephemeral);
     }
 
-    public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
+    public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
     {
+        if (attachment is not null && File.Exists(attachment.FilePath))
+        {
+            return _command.FollowupWithFileAsync(
+                attachment.FilePath,
+                attachment.FileName,
+                text: content,
+                embed: embed,
+                ephemeral: ephemeral);
+        }
+
         return _command.FollowupAsync(content, embed: embed, ephemeral: ephemeral);
     }
 }

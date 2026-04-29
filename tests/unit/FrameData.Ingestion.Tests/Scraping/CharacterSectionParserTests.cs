@@ -117,4 +117,26 @@ public sealed class CharacterSectionParserTests
         parsed[1].Damage.ShouldBe("320");
         parsed[1].Stun.ShouldBe("0");
     }
+
+    [Fact]
+    public void Parse_WhenMoveLinksToHitboxDisplay_CapturesSourceMoveIdAndPath()
+    {
+        const string html = """
+            <html><body>
+              <h2>Normals</h2>
+              <table>
+                <tr><th>Name</th><th>Startup</th></tr>
+                <tr>
+                  <td><a href="hitboxesDisplay.php?iChar=14&amp;sMoveType=fd_normals&amp;iMove=027">Forward MP</a></td>
+                  <td>5</td>
+                </tr>
+              </table>
+            </body></html>
+            """;
+
+        var parsed = _parser.Parse(html);
+
+        parsed.Single().SourceMoveId.ShouldBe("027");
+        parsed.Single().SourceHitboxPath.ShouldBe("hitboxesDisplay.php?iChar=14&sMoveType=fd_normals&iMove=027");
+    }
 }

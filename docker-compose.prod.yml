@@ -36,6 +36,7 @@ services:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       BOT_GUILD_ID: ${BOT_GUILD_ID}
       BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
       SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
       SEQ_API_KEY: ${SEQ_API_KEY:-}
       SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
@@ -44,3 +45,5 @@ services:
         condition: service_started
       seq:
         condition: service_started
+    volumes:
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro

@@ -105,13 +105,46 @@
 - Fields:
   - `id` (string, required)
   - `moveId` (string, required)
-  - `imageType` (enum, required): `LastActiveFrame | Other`
+  - `imageType` (enum, required): `RepresentativeActiveFrame | Other`
   - `storagePath` (string, required)
   - `sourceUrl` (string, required)
+  - `sourceFrameImageUrl` (string, optional): source PNG URL for the selected frame
+    when an image was available.
+  - `selectedFrame` (string, optional): zero-padded source frame identifier selected
+    for capture, such as `006`.
+  - `selectionStrategy` (string, required): selector identifier, initially
+    `largest-active-hitbox-area`.
+  - `activeHitboxArea` (int, optional): summed active hitbox rectangle area used by
+    the default selector.
+  - `overlayHitboxes` (string[], required): rendered overlay set. Initial value is
+    `P1_P`, `P1_V`, `P1_A`, `P1_T`, and `P1_TA`.
+  - `fallbackReason` (string, optional): sanitized reason when a dummy image was stored.
   - `capturedAt` (datetime, required)
-  - `captureStatus` (enum, required): `Success | Failed | NotDerivable`
+  - `captureStatus` (enum, required): `Success | DummyFallback | Failed | NotDerivable`
 - Validation:
-  - One `LastActiveFrame` record per move.
+  - One `RepresentativeActiveFrame` record per move.
+  - `storagePath` is required even for `DummyFallback` so Discord responses can attach
+    a stable placeholder image.
+  - Successful representative captures require `selectedFrame` and `sourceFrameImageUrl`.
+  - `DummyFallback`, `Failed`, and `NotDerivable` statuses require `fallbackReason`.
+
+## RepresentativeFrameSelectionPolicy
+
+- Description: Configurable policy for selecting the frame to render for a move image.
+- Fields:
+  - `defaultStrategy` (string, required): initial value `largest-active-hitbox-area`.
+  - `pilotMoveScope` (string[], optional): explicit move keys enabled for early media
+    ingestion, such as selected Ken normals, selected Ken specials, and Ken SA3.
+  - `moveOverrides` (map, optional): per-move override entries by stable move key.
+  - `dummyImagePath` (string, optional): local PNG used when source frame images are
+    unavailable. When omitted, ingestion generates a blank 384x224 PNG placeholder.
+- Validation:
+  - `pilotMoveScope` entries must resolve to known `characterId + moveId` keys before
+    media capture starts.
+  - A per-move override may specify either an explicit `selectedFrame` or an alternate
+    selector strategy, but not both.
+  - If `dummyImagePath` is provided, it must exist or media capture must fail
+    validation before network calls begin.
 
 ## StorageAssessment
 
@@ -123,7 +156,7 @@
   - `estimatedBytesPerMove` (long, required)
   - `estimatedBytesPerCharacter` (long, required)
   - `estimatedBytesFullRoster` (long, required)
-  - `recommendedPolicy` (enum, required): `LastActiveOnly | FullFrames | Defer`
+  - `recommendedPolicy` (enum, required): `RepresentativeOnly | FullFrames | Defer`
   - `notes` (string, optional)
 
 ## IngestionRun
@@ -165,7 +198,8 @@
   - `Running -> PartiallySucceeded`
   - `Running -> Failed`
 - `MoveImage.captureStatus`:
-  - `NotDerivable`/`Failed` may transition to `Success` on later refresh.
+  - `NotDerivable`/`Failed`/`DummyFallback` may transition to `Success` on later
+    refresh.
 
 ## DiscordCommandInvocation
 

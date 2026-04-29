@@ -1,8 +1,10 @@
 using System.Text.Json;
 using FrameData.Domain.Characters;
 using FrameData.Domain.Datasets;
+using FrameData.Domain.Media;
 using FrameData.Domain.Moves;
 using FrameData.Infrastructure.Dataset;
+using FrameData.Ingestion.Media;
 using FrameData.Shared.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -35,6 +37,14 @@ public sealed class StaticDatasetPublisher
         IReadOnlyCollection<Move> moves,
         string? sourceBaseUrl = null,
         CancellationToken cancellationToken = default)
+        => await PublishAsync(characters, moves, [], sourceBaseUrl, cancellationToken);
+
+    public async Task<StaticDatasetManifest> PublishAsync(
+        IReadOnlyCollection<Character> characters,
+        IReadOnlyCollection<Move> moves,
+        IReadOnlyCollection<MoveImageDatasetAsset> mediaAssets,
+        string? sourceBaseUrl = null,
+        CancellationToken cancellationToken = default)
     {
         var validationErrors = _options.Validate();
         if (validationErrors.Count > 0)
@@ -62,6 +72,7 @@ public sealed class StaticDatasetPublisher
                 datasetId,
                 characters,
                 moves,
+                mediaAssets,
                 sourceBaseUrl,
                 cancellationToken);
 
@@ -94,12 +105,26 @@ public sealed class StaticDatasetPublisher
         string datasetId,
         IReadOnlyCollection<Character> characters,
         IReadOnlyCollection<Move> moves,
+        IReadOnlyCollection<MoveImageDatasetAsset> mediaAssets,
         string? sourceBaseUrl,
         CancellationToken cancellationToken)
     {
         var charactersDirectory = Path.Combine(datasetDirectory, "characters");
         Directory.CreateDirectory(charactersDirectory);
         Directory.CreateDirectory(Path.Combine(datasetDirectory, "media"));
+
+        foreach (var asset in mediaAssets)
+        {
+            await WriteMediaAssetAsync(datasetDirectory, asset, cancellationToken);
+        }
+
+        var mediaByMoveId = mediaAssets
+            .Select(asset => asset.Image)
+            .GroupBy(image => image.MoveId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<MoveImage>)group.ToArray(),
+                StringComparer.OrdinalIgnoreCase);
 
         var manifestCharacters = new List<StaticDatasetManifestCharacter>();
         foreach (var character in characters.OrderBy(character => character.DisplayOrder).ThenBy(character => character.Id))
@@ -115,7 +140,13 @@ public sealed class StaticDatasetPublisher
             var document = new StaticDatasetCharacterDocument
             {
                 Character = FromDomain(character),
-                Moves = characterMoves.Select(FromDomain).ToArray()
+                Moves = characterMoves
+                    .Select(move => FromDomain(
+                        move,
+                        mediaByMoveId.TryGetValue(move.Id, out var moveMedia)
+                            ? moveMedia
+                            : move.Media))
+                    .ToArray()
             };
 
             await WriteJsonAsync(Path.Combine(charactersDirectory, fileName), document, cancellationToken);
@@ -137,7 +168,7 @@ public sealed class StaticDatasetPublisher
             SourceBaseUrl = sourceBaseUrl,
             CharacterCount = characters.Count,
             MoveCount = moves.Count,
-            MediaCount = 0,
+            MediaCount = mediaAssets.Count > 0 ? mediaAssets.Count : moves.Sum(move => move.Media.Count),
             Characters = manifestCharacters
         };
 
@@ -240,7 +271,7 @@ public sealed class StaticDatasetPublisher
             Aliases = character.Aliases
         };
 
-    private static StaticDatasetMove FromDomain(Move move)
+    private static StaticDatasetMove FromDomain(Move move, IReadOnlyList<MoveImage> media)
         => new()
         {
             Id = move.Id,
@@ -249,6 +280,7 @@ public sealed class StaticDatasetPublisher
             CanonicalName = move.CanonicalName,
             DisplayOrder = move.DisplayOrder,
             SourceMoveId = move.SourceMoveId,
+            SourceHitboxPath = move.SourceHitboxPath,
             Motion = move.Motion,
             Damage = move.Damage,
             Stun = move.Stun,
@@ -261,8 +293,64 @@ public sealed class StaticDatasetPublisher
                 OnBlock = move.FrameData.OnBlock,
                 FrameAdvantage = move.FrameData.FrameAdvantage,
                 Notes = move.FrameData.Notes
-            }
+            },
+            Media = media.Select(FromDomain).ToArray()
         };
+
+    private static StaticDatasetMoveMedia FromDomain(MoveImage image)
+        => new()
+        {
+            Type = image.ImageType.ToString(),
+            Path = image.StoragePath,
+            SourceUrl = image.SourceUrl,
+            SourceFrameImageUrl = image.SourceFrameImageUrl,
+            SelectedFrame = image.SelectedFrame,
+            SelectionStrategy = image.SelectionStrategy,
+            ActiveHitboxArea = image.ActiveHitboxArea,
+            OverlayHitboxes = image.OverlayHitboxes,
+            FallbackReason = image.FallbackReason,
+            CapturedAt = image.CapturedAt,
+            CaptureStatus = image.CaptureStatus.ToString()
+        };
+
+    private static async Task WriteMediaAssetAsync(
+        string datasetDirectory,
+        MoveImageDatasetAsset asset,
+        CancellationToken cancellationToken)
+    {
+        var destination = ResolveMediaPath(datasetDirectory, asset.Image.StoragePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        await File.WriteAllBytesAsync(destination, asset.Content, cancellationToken);
+    }
+
+    private static string ResolveMediaPath(string datasetDirectory, string relativePath)
+    {
+        if (Path.IsPathRooted(relativePath))
+        {
+            throw new InvalidDataException($"Media path must be relative: {relativePath}");
+        }
+
+        var root = Path.GetFullPath(datasetDirectory);
+        var fullPath = Path.GetFullPath(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
+        var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+
+        if (!fullPath.StartsWith(rootWithSeparator, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException($"Media path escapes the dataset directory: {relativePath}");
+        }
+
+        if (!assetPathStartsWithMedia(relativePath))
+        {
+            throw new InvalidDataException($"Media path must be under media/: {relativePath}");
+        }
+
+        return fullPath;
+
+        static bool assetPathStartsWithMedia(string path)
+            => path.Replace('\\', '/').StartsWith("media/", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static async Task WriteJsonAsync<T>(string path, T payload, CancellationToken cancellationToken)
     {

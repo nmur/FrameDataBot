@@ -10,4 +10,8 @@
     <PackageReference Include="AngleSharp" Version="*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FrameData.Domain\FrameData.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

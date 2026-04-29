@@ -85,10 +85,13 @@ public sealed class CharacterSectionParser
                 continue;
             }
 
+            var hitboxDisplayPath = FindHitboxDisplayPath(row, cells[moveIndex]);
             yield return new ParsedMoveEntry
             {
                 Section = section,
                 CanonicalName = moveName,
+                SourceMoveId = ReadQueryParameter(hitboxDisplayPath, "iMove"),
+                SourceHitboxPath = hitboxDisplayPath,
                 Startup = GetCellValue(cells, startupIndex),
                 Active = GetCellValue(cells, activeIndex),
                 Recovery = GetCellValue(cells, recoveryIndex),
@@ -144,6 +147,45 @@ public sealed class CharacterSectionParser
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
+    private static string? FindHitboxDisplayPath(AngleSharp.Dom.IElement row, AngleSharp.Dom.IElement moveCell)
+    {
+        var link = row.QuerySelector("a[href*='hitboxesDisplay.php']")
+            ?? moveCell.QuerySelector("a[href]");
+
+        var href = link?.GetAttribute("href")?.Trim();
+        return string.IsNullOrWhiteSpace(href) ? null : href;
+    }
+
+    private static string? ReadQueryParameter(string? url, string name)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        var questionMarkIndex = url.IndexOf('?', StringComparison.Ordinal);
+        if (questionMarkIndex < 0 || questionMarkIndex == url.Length - 1)
+        {
+            return null;
+        }
+
+        var query = url[(questionMarkIndex + 1)..];
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var equalsIndex = pair.IndexOf('=', StringComparison.Ordinal);
+            var key = equalsIndex < 0 ? pair : pair[..equalsIndex];
+            if (!string.Equals(Uri.UnescapeDataString(key), name, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = equalsIndex < 0 ? string.Empty : pair[(equalsIndex + 1)..];
+            return Uri.UnescapeDataString(value.Replace('+', ' '));
+        }
+
+        return null;
+    }
+
     private static AngleSharp.Dom.IElement? FindNextTable(AngleSharp.Dom.IElement heading)
     {
         var current = heading.NextElementSibling;
@@ -171,6 +213,8 @@ public sealed class ParsedMoveEntry
 {
     public required string Section { get; init; }
     public required string CanonicalName { get; init; }
+    public string? SourceMoveId { get; init; }
+    public string? SourceHitboxPath { get; init; }
     public string? Startup { get; init; }
     public string? Active { get; init; }
     public string? Recovery { get; init; }

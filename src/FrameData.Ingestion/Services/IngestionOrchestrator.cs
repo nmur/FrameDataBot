@@ -3,6 +3,7 @@ using FrameData.Domain.Ingestion;
 using FrameData.Domain.Moves;
 using FrameData.Ingestion.Catalog;
 using FrameData.Ingestion.Hosting;
+using FrameData.Ingestion.Media;
 using FrameData.Ingestion.Publishing;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
@@ -19,7 +20,10 @@ public sealed class IngestionOrchestrator
     private readonly CharacterSectionParser _sectionParser;
     private readonly StaticDatasetPublisher _datasetPublisher;
     private readonly string _sourceBaseUrl;
+    private readonly IngestionWorkerOptions _options;
     private readonly ISupportedCharacterCatalog? _catalog;
+    private readonly IHitboxSourceClient? _hitboxSourceClient;
+    private readonly MoveImageDatasetStorageService? _moveImageStorageService;
     private readonly ILogger<IngestionOrchestrator> _logger;
 
     public IngestionOrchestrator(
@@ -28,13 +32,18 @@ public sealed class IngestionOrchestrator
         StaticDatasetPublisher datasetPublisher,
         IngestionWorkerOptions options,
         ISupportedCharacterCatalog? catalog = null,
+        IHitboxSourceClient? hitboxSourceClient = null,
+        MoveImageDatasetStorageService? moveImageStorageService = null,
         ILogger<IngestionOrchestrator>? logger = null)
     {
         _sourceClient = sourceClient;
         _sectionParser = sectionParser;
         _datasetPublisher = datasetPublisher;
         _sourceBaseUrl = options.SourceBaseUrl;
+        _options = options;
         _catalog = catalog;
+        _hitboxSourceClient = hitboxSourceClient;
+        _moveImageStorageService = moveImageStorageService;
         _logger = logger ?? NullLogger<IngestionOrchestrator>.Instance;
     }
 
@@ -86,6 +95,7 @@ public sealed class IngestionOrchestrator
 
         var replacementCharacters = new List<Character>();
         var replacementMoves = new List<Move>();
+        var mediaAssets = new List<MoveImageDatasetAsset>();
 
         foreach (var characterScope in scope)
         {
@@ -119,6 +129,7 @@ public sealed class IngestionOrchestrator
                     sectionCounts);
 
                 var domainMoves = MapMoves(characterScope, parsedMoves);
+                mediaAssets.AddRange(await CaptureRepresentativeImagesAsync(domainMoves, cancellationToken));
 
                 foreach (var move in domainMoves)
                 {
@@ -199,7 +210,12 @@ public sealed class IngestionOrchestrator
                 replacementCharacters.Count,
                 replacementMoves.Count);
 
-            await _datasetPublisher.PublishAsync(replacementCharacters, replacementMoves, _sourceBaseUrl, cancellationToken);
+            await _datasetPublisher.PublishAsync(
+                replacementCharacters,
+                replacementMoves,
+                mediaAssets,
+                _sourceBaseUrl,
+                cancellationToken);
         }
         else
         {
@@ -267,6 +283,8 @@ public sealed class IngestionOrchestrator
             Section = section,
             CanonicalName = parsed.CanonicalName,
             DisplayOrder = displayOrder,
+            SourceMoveId = parsed.SourceMoveId,
+            SourceHitboxPath = parsed.SourceHitboxPath,
             Motion = parsed.Motion,
             Damage = parsed.Damage,
             Stun = parsed.Stun,
@@ -326,5 +344,77 @@ public sealed class IngestionOrchestrator
         }
 
         return run.CharactersProcessed > 0 ? "PartiallySucceeded" : "Failed";
+    }
+
+    private async Task<IReadOnlyList<MoveImageDatasetAsset>> CaptureRepresentativeImagesAsync(
+        IReadOnlyList<Move> moves,
+        CancellationToken cancellationToken)
+    {
+        if (_hitboxSourceClient is null || _moveImageStorageService is null)
+        {
+            return [];
+        }
+
+        var assets = new List<MoveImageDatasetAsset>();
+        foreach (var move in moves)
+        {
+            if (!_options.RepresentativeFramePolicy.IsMoveInScope(move.CharacterId, move.Id))
+            {
+                continue;
+            }
+
+            string? hitboxHtml = null;
+            var sourceUrl = ResolveSourceUrl(move.SourceHitboxPath);
+            if (!string.IsNullOrWhiteSpace(move.SourceHitboxPath))
+            {
+                try
+                {
+                    hitboxHtml = await _hitboxSourceClient.GetHitboxDisplayPageAsync(move.SourceHitboxPath, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Could not fetch hitbox display page for {CharacterId}/{MoveId}; writing dummy media fallback.",
+                        move.CharacterId,
+                        move.Id);
+                }
+            }
+
+            var asset = _moveImageStorageService.CaptureRepresentativeImage(
+                move,
+                sourceUrl,
+                hitboxHtml,
+                _options.RepresentativeFramePolicy);
+
+            if (asset is not null)
+            {
+                assets.Add(asset);
+            }
+        }
+
+        return assets;
+    }
+
+    private string? ResolveSourceUrl(string? sourcePathOrUrl)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePathOrUrl))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(sourcePathOrUrl, UriKind.Absolute, out var absolute))
+        {
+            return absolute.ToString();
+        }
+
+        if (!Uri.TryCreate(_sourceBaseUrl, UriKind.Absolute, out var baseUri))
+        {
+            return sourcePathOrUrl;
+        }
+
+        return sourcePathOrUrl.StartsWith("?", StringComparison.Ordinal)
+            ? $"{baseUri.GetLeftPart(UriPartial.Path)}{sourcePathOrUrl}"
+            : new Uri(baseUri, sourcePathOrUrl).ToString();
     }
 }

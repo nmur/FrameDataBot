@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using FrameData.Domain.Media;
 using FrameData.Ingestion.Publishing;
 
 namespace FrameData.Ingestion.Hosting;
@@ -10,6 +11,7 @@ public sealed class IngestionWorkerOptions
     public string DatasetRoot { get; init; } = Path.Combine("data", "framedata");
     public string ActiveDatasetPath { get; init; } = Path.Combine("data", "framedata", "active");
     public IReadOnlyList<string> CharacterIds { get; init; } = [];
+    public RepresentativeFrameSelectionPolicy RepresentativeFramePolicy { get; init; } = new();
 
     public static IngestionWorkerOptions FromConfiguration(IConfiguration configuration)
         => FromConfiguration(configuration, new IngestionWorkerCommand());
@@ -30,7 +32,15 @@ public sealed class IngestionWorkerOptions
             ActiveDatasetPath = configuration["FrameData:ActiveDatasetPath"]
                 ?? configuration["FRAMEDATA_ACTIVE_DATASET_PATH"]
                 ?? Path.Combine("data", "framedata", "active"),
-            CharacterIds = ParseCharacterIds(characterScope)
+            CharacterIds = ParseCharacterIds(characterScope),
+            RepresentativeFramePolicy = new RepresentativeFrameSelectionPolicy
+            {
+                PilotMoveScope = ParseCharacterIds(
+                    configuration["Ingestion:Media:PilotMoveScope"]
+                    ?? configuration["INGESTION_MEDIA_PILOT_SCOPE"]),
+                DummyImagePath = configuration["Ingestion:Media:DummyImagePath"]
+                    ?? configuration["INGESTION_MEDIA_DUMMY_IMAGE_PATH"]
+            }
         };
     }
 
@@ -47,6 +57,12 @@ public sealed class IngestionWorkerOptions
             DatasetRoot = DatasetRoot,
             ActiveDatasetPath = ActiveDatasetPath
         }.Validate());
+
+        if (!string.IsNullOrWhiteSpace(RepresentativeFramePolicy.DummyImagePath)
+            && !File.Exists(RepresentativeFramePolicy.DummyImagePath))
+        {
+            errors.Add($"Representative frame dummy image was not found: {RepresentativeFramePolicy.DummyImagePath}.");
+        }
 
         return errors;
     }

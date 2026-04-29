@@ -32,6 +32,6 @@
 ## Notes
 
 - Validation re-run after splitting stories into smaller iterations and adding
-  last-active-frame image capture plus full-image storage assessment requirements;
-  no blocking issues found.
+  representative active-frame image capture plus full-image storage assessment
+  requirements; no blocking issues found.
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`

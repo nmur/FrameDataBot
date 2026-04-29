@@ -40,7 +40,9 @@ public static class BotRuntimeOptionsLoader
             DiscordBotToken = token,
             BotGuildId = guildId,
             DiscordGuildId = discordGuildId,
-            BotApiBaseUrl = apiBaseUrl
+            BotApiBaseUrl = apiBaseUrl,
+            ActiveDatasetPath = configuration["FRAMEDATA_ACTIVE_DATASET_PATH"]
+                ?? configuration["FrameData:ActiveDatasetPath"]
         };
     }
 }

@@ -1,7 +1,9 @@
 using FrameData.Infrastructure.Dataset;
 using FrameData.Ingestion.Catalog;
+using FrameData.Ingestion.Media;
 using FrameData.Ingestion.Publishing;
 using FrameData.Ingestion.Services;
+using FrameData.Domain.Media;
 using FrameData.Scraper.Parsing;
 using FrameData.Scraper.Source;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,10 +24,16 @@ public static class IngestionWorkerServiceCollectionExtensions
         services.AddSingleton<StaticFrameDataDatasetLoader>();
         services.AddSingleton<StaticDatasetPublisher>();
         services.AddSingleton<CharacterSectionParser>();
-        services.AddHttpClient<ISourceHttpClient, SourceHttpClient>(client =>
+        services.AddSingleton<HitboxDisplayParser>();
+        services.AddSingleton<RepresentativeFrameSelector>();
+        services.AddSingleton<HitboxCanvasRenderer>();
+        services.AddSingleton<MoveImageDatasetStorageService>();
+        services.AddHttpClient<SourceHttpClient>(client =>
         {
             client.BaseAddress = new Uri(options.SourceBaseUrl);
         });
+        services.AddTransient<ISourceHttpClient>(sp => sp.GetRequiredService<SourceHttpClient>());
+        services.AddTransient<IHitboxSourceClient>(sp => sp.GetRequiredService<SourceHttpClient>());
         services.AddTransient<IngestionOrchestrator>();
         services.AddTransient<IngestionWorker>();
         return services;

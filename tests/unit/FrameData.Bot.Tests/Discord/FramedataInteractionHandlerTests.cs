@@ -145,14 +145,14 @@ public sealed class FramedataInteractionHandlerTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
+        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
         {
             InitialResponses.Add(content);
             InitialResponseEmbeds.Add(embed);
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false)
+        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
         {
             Followups.Add(content);
             FollowupEmbeds.Add(embed);

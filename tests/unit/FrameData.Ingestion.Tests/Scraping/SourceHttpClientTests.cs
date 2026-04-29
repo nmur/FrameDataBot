@@ -33,9 +33,26 @@ public sealed class SourceHttpClientTests
         handler.PostBodies.Any(body => body.Contains("id=misc")).ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task GetHitboxDisplayPageAsync_ResolvesRelativeSourcePath()
+    {
+        var handler = new AjaxFrameDataHandler();
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("http://example.test/index.php")
+        };
+        var sourceClient = new SourceHttpClient(httpClient);
+
+        var html = await sourceClient.GetHitboxDisplayPageAsync("hitboxesDisplay.php?iMove=001");
+
+        html.ShouldContain("data-frame=\"004\"");
+        handler.RequestPaths.ShouldContain("/hitboxesDisplay.php?iMove=001");
+    }
+
     private sealed class AjaxFrameDataHandler : HttpMessageHandler
     {
         public List<string> PostBodies { get; } = [];
+        public List<string> RequestPaths { get; } = [];
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
@@ -43,6 +60,16 @@ public sealed class SourceHttpClientTests
         {
             if (request.Method == HttpMethod.Get)
             {
+                RequestPaths.Add(request.RequestUri!.PathAndQuery);
+                if (request.RequestUri!.AbsolutePath.EndsWith("hitboxesDisplay.php", StringComparison.Ordinal))
+                {
+                    return CreateResponse("""
+                        <div data-frame="004" data-frame-image-url="/frames/004.png">
+                          <span data-hitbox-type="P1_A" data-x="10" data-y="20" data-width="30" data-height="2"></span>
+                        </div>
+                        """);
+                }
+
                 return CreateResponse("""
                     <html><body>
                       <div id="content_char"></div>

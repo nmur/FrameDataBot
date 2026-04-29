@@ -103,26 +103,31 @@ canonical move when confidence is sufficient.
 
 ---
 
-### User Story 4 - Last Active-Frame Hitbox Image (Priority: P2)
+### User Story 4 - Representative Active-Frame Hitbox Image (Priority: P2)
 
-As a Discord user, I want an image for the move's last active frame when available so I
-can visually confirm the hitbox state.
+As a Discord user, I want an image for a representative active frame when available so
+I can visually confirm the hitbox state.
 
 **Why this priority**: Adds immediate visual value while keeping storage requirements
 manageable.
 
 **Independent Test**: For a move with a hitbox display page, the service stores and can
-return the last active-frame image including hitbox boxes.
+return a representative active-frame image including configured P1 hitbox boxes.
 
 **Acceptance Scenarios**:
 
 1. **Given** a move with an accessible hitbox display page, **When** image ingestion
-   runs, **Then** the system captures and stores the last active-frame image when
-   derivable.
+   runs, **Then** the system captures and stores the representative active-frame image
+   selected by the configured selector when derivable.
 2. **Given** image data exists for the requested move, **When** the bot returns frame
    data, **Then** the response includes the stored image reference.
-3. **Given** the last active frame cannot be determined, **When** ingestion runs,
-   **Then** the system records the failure and preserves text frame-data functionality.
+3. **Given** the representative frame cannot be determined or the frame image is
+   unavailable, **When** ingestion runs, **Then** the system stores a configured or
+   generated dummy image reference, records the fallback reason, and preserves text
+   frame-data functionality.
+4. **Given** image ingestion is first enabled, **When** an operator runs the worker,
+   **Then** the image scope can be limited to a small pilot set such as selected Ken
+   normals, selected Ken specials, and Ken SA3 before full-catalog media capture.
 
 ---
 
@@ -183,8 +188,10 @@ properties without breaking MVP fields.
 - Character or move names contain inconsistent punctuation/casing.
 - User input matches multiple moves with similar confidence.
 - User input does not match any move above minimum confidence.
-- Hitbox display page exists but last active frame cannot be identified.
+- Hitbox display page exists but no representative active frame can be identified.
 - Hitbox display page references missing or broken image assets.
+- Representative-frame selector produces a tie; the earliest tied frame is used unless
+  a move-specific override exists.
 - Duplicate refresh runs are triggered concurrently.
 - Partial ingestion failures for some characters/sections still store successful updates from that run, while failed scopes are explicitly marked for retry.
 
@@ -216,10 +223,19 @@ properties without breaking MVP fields.
   aliases with scored best-guess matching.
 - **FR-011**: The system MUST return disambiguation options when no single match exceeds
   the ambiguity threshold.
-- **FR-012**: The system MUST ingest move hitbox-display data and attempt to capture the
-  last active-frame image (including displayed hitbox boxes) when available.
+- **FR-012**: The system MUST ingest move hitbox-display data and attempt to capture a
+  representative active-frame image when available. The default selector MUST choose
+  the earliest frame with the largest summed active hitbox rectangle area.
 - **FR-013**: The system MUST store a reference to captured move images so responses can
   include image data when present.
+- **FR-013a**: Rendered hitbox images MUST include `P1_P`, `P1_V`, `P1_A`, `P1_T`,
+  and `P1_TA` overlays and MUST exclude all P2 hitboxes.
+- **FR-013b**: Image ingestion MUST support a scoped pilot move list so maintainers can
+  validate selected Ken normals, selected Ken specials, and Ken SA3 before full media
+  ingestion.
+- **FR-013c**: Image ingestion MUST store a configured or generated empty/dummy image
+  when the representative frame image is unavailable, while retaining structured
+  fallback metadata.
 - **FR-014**: The system MUST produce a storage-impact report for full per-frame image
   archival before enabling that archival behavior.
 - **FR-015**: Deployment MUST support secure containerized hosting on a cloud platform
@@ -265,9 +281,10 @@ properties without breaking MVP fields.
   candidate move, confidence score, and rank.
 - **MoveFrameData**: Structured timing and advantage attributes for a move.
 - **MoveImage**: Stored artifact for move visuals, including image location, source
-  reference, and captured frame designation.
+  reference, selected representative frame designation, selection strategy, rendered
+  overlay set, and fallback status.
 - **StorageAssessment**: Periodic estimate of disk requirements for image archival
-  scopes (last-active-only vs full per-frame capture).
+  scopes (representative-frame-only vs full per-frame capture).
 - **IngestionRun**: A refresh event record containing run time, source scope, outcome,
   and per-character status.
 
@@ -280,8 +297,11 @@ properties without breaking MVP fields.
   not expose a game-selection parameter in bot or API query interfaces.
 - Basic frame-data fields are authoritative from source unless explicitly overridden by
   maintainers.
-- Last active-frame image capture is attempted only when frame sequencing is available
-  and derivable from source data.
+- Representative active-frame image capture is attempted only when frame sequencing and
+  active hitbox rectangles are available and derivable from source data.
+- The default representative selector uses summed active hitbox rectangle area; future
+  selectors and per-move overrides may replace the selected frame without changing the
+  stored media contract.
 - Full per-frame image capture remains disabled until storage impact is evaluated and
   explicitly approved.
 - Cloud deployment security includes least-privilege defaults, controlled secrets, and
@@ -307,9 +327,10 @@ properties without breaking MVP fields.
   stratified samples per run.
 - **SC-006**: 100% of ambiguous fuzzy matches return disambiguation options rather than
   low-confidence silent final matches.
-- **SC-007**: For moves with derivable hitbox frame data, at least 90% have a stored
-  last active-frame image reference after image ingestion, measured on at least 100
-  stratified samples per run.
+- **SC-007**: For moves with derivable hitbox frame data in the enabled image-ingestion
+  scope, at least 90% have a stored representative active-frame image reference after
+  image ingestion, measured first against the configured pilot scope and later against
+  at least 100 stratified samples per full media run.
 - **SC-008**: A storage-impact report for full per-frame image archival is produced and
   approved or rejected before full-image archival is enabled.
 - **SC-009**: Before production use, all security checklist categories (dependency scan,

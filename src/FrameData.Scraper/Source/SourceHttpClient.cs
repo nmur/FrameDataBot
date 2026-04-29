@@ -4,7 +4,7 @@ using System.Text;
 
 namespace FrameData.Scraper.Source;
 
-public sealed class SourceHttpClient : ISourceHttpClient
+public sealed class SourceHttpClient : ISourceHttpClient, IHitboxSourceClient
 {
     private const string ContentContainerId = "content_char";
     private const int MaxSectionLoadAttempts = 5;
@@ -41,6 +41,20 @@ public sealed class SourceHttpClient : ISourceHttpClient
         }
 
         return await GetLoadedCharacterContentAsync(sourceCharacterId, cancellationToken);
+    }
+
+    public async Task<string> GetHitboxDisplayPageAsync(
+        string sourcePathOrUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePathOrUrl))
+        {
+            throw new ArgumentException("Hitbox display source path is required.", nameof(sourcePathOrUrl));
+        }
+
+        using var response = await _httpClient.GetAsync(ResolveSourceUri(sourcePathOrUrl), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     private async Task<string> GetLoadedCharacterContentAsync(int sourceCharacterId, CancellationToken cancellationToken)
@@ -120,6 +134,27 @@ public sealed class SourceHttpClient : ISourceHttpClient
             || html.Contains("<table", StringComparison.OrdinalIgnoreCase)
             || html.Contains("id=\"fd_table\"", StringComparison.OrdinalIgnoreCase)
             || html.Contains("id='fd_table'", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Uri ResolveSourceUri(string sourcePathOrUrl)
+    {
+        if (Uri.TryCreate(sourcePathOrUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri;
+        }
+
+        if (_httpClient.BaseAddress is null)
+        {
+            return new Uri(sourcePathOrUrl, UriKind.Relative);
+        }
+
+        var baseUri = _httpClient.BaseAddress;
+        if (sourcePathOrUrl.StartsWith("?", StringComparison.Ordinal))
+        {
+            return new Uri($"{baseUri.GetLeftPart(UriPartial.Path)}{sourcePathOrUrl}");
+        }
+
+        return new Uri(baseUri, sourcePathOrUrl);
     }
 
     private sealed record FrameDataSectionRequest(string Heading, string SourceId, bool RequiresFrameTable);

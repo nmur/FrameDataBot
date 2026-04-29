@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Discord;
+using FrameData.Bot.Hosting;
 using FrameData.Shared.Contracts;
 
 namespace FrameData.Bot.Formatting;
@@ -23,6 +24,12 @@ public sealed class MoveEmbedResponseFactory
             ["roundhouse"] = "HK",
             ["rh"] = "HK"
         };
+    private readonly string? _activeDatasetPath;
+
+    public MoveEmbedResponseFactory(BotRuntimeOptions? options = null)
+    {
+        _activeDatasetPath = options?.ActiveDatasetPath;
+    }
 
     public DiscordMoveResponse Create(MoveQueryResponse response)
     {
@@ -47,9 +54,16 @@ public sealed class MoveEmbedResponseFactory
             builder.AddField("Frame Advantage", response.FrameData.FrameAdvantage, inline: true);
         }
 
+        var attachment = CreateAttachment(response.Media);
+        if (attachment is not null)
+        {
+            builder.WithImageUrl($"attachment://{attachment.FileName}");
+        }
+
         return new DiscordMoveResponse
         {
-            Embed = builder.Build()
+            Embed = builder.Build(),
+            Attachment = attachment
         };
     }
 
@@ -150,5 +164,23 @@ public sealed class MoveEmbedResponseFactory
         }
 
         return value[..(maxLength - 3)] + "...";
+    }
+
+    private DiscordMoveAttachment? CreateAttachment(MoveMediaContract? media)
+    {
+        if (string.IsNullOrWhiteSpace(media?.RepresentativeFrameImageUrl))
+        {
+            return null;
+        }
+
+        var relativePath = media.RepresentativeFrameImageUrl.Replace('/', Path.DirectorySeparatorChar);
+        var filePath = Path.IsPathRooted(relativePath) || string.IsNullOrWhiteSpace(_activeDatasetPath)
+            ? relativePath
+            : Path.Combine(_activeDatasetPath, relativePath);
+        var fileName = Path.GetFileName(relativePath);
+
+        return string.IsNullOrWhiteSpace(fileName)
+            ? null
+            : new DiscordMoveAttachment(filePath, fileName);
     }
 }

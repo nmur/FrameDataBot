@@ -69,7 +69,11 @@ public sealed class FramedataInteractionHandler
                 invocation.Move,
                 result.Response is not null ? "ok" : result.Ambiguous is not null ? "ambiguous" : result.Error?.Code ?? "error");
 
-            await responder.FollowupAsync(moveResponse.Content, moveResponse.Embed, moveResponse.IsEphemeral);
+            await responder.FollowupAsync(
+                moveResponse.Content,
+                moveResponse.Embed,
+                moveResponse.IsEphemeral,
+                moveResponse.Attachment);
         }
         catch (Exception exception)
         {

@@ -10,6 +10,7 @@ public sealed class MoveQueryResponse
     public string? Damage { get; init; }
     public string? Stun { get; init; }
     public required FrameDataContract FrameData { get; init; }
+    public MoveMediaContract? Media { get; init; }
 }
 
 public sealed class MoveAmbiguousResponse

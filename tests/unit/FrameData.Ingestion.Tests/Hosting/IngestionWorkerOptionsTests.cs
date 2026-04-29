@@ -17,7 +17,8 @@ public sealed class IngestionWorkerOptionsTests
                 ["INGESTION_SOURCE_BASE_URL"] = "http://example.test/source.php",
                 ["FRAMEDATA_DATASET_ROOT"] = root,
                 ["FRAMEDATA_ACTIVE_DATASET_PATH"] = Path.Combine(root, "active"),
-                ["characters"] = "makoto,chun-li"
+                ["characters"] = "makoto,chun-li",
+                ["INGESTION_MEDIA_PILOT_SCOPE"] = "ken/ken-normals-jab,ken/ken-specials-hadouken"
             })
             .Build();
 
@@ -27,6 +28,7 @@ public sealed class IngestionWorkerOptionsTests
         options.DatasetRoot.ShouldBe(root);
         options.ActiveDatasetPath.ShouldBe(Path.Combine(root, "active"));
         options.CharacterIds.ShouldBe(["makoto", "chun-li"]);
+        options.RepresentativeFramePolicy.PilotMoveScope.ShouldBe(["ken/ken-normals-jab", "ken/ken-specials-hadouken"]);
         options.Validate().ShouldBeEmpty();
     }
 

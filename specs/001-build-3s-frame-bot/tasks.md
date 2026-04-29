@@ -48,7 +48,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 4. Historical note: the Postgres persistence follow-up (`T101-T118`) and JSON backup/restore follow-up (`T119-T125`) were completed, but are superseded by the static dataset storage refactor (`T136-T150`).
 5. Deliver Seq centralized logging follow-up (`T126-T135`) before storage/media refactors so production diagnostics are available.
 6. Deliver static dataset storage refactor (`T136-T150`) and source column expansion (`T151-T156`) before US4 image work so move data and media share one persistent dataset bundle with all currently required source columns.
-7. Deliver refinements in order: US3 -> static dataset refactor/source column expansion -> US4 -> US5 -> US6 advanced metadata. Embed response formatting is part of the US1 live Discord response path.
+7. Deliver refinements in order: US3 -> static dataset refactor/source column expansion -> US4 representative active-frame media -> US5 -> US6 advanced metadata. Embed response formatting is part of the US1 live Discord response path.
 8. Complete polish tasks (`T065-T070`) after desired story set is done.
 9. At each step, consult the reference list above for requirements and contracts.
 
@@ -338,25 +338,25 @@ description: "Task list for implementing Discord 3s frame data bot"
 
 ---
 
-## Phase 6: User Story 4 - Last Active-Frame Hitbox Image (Priority: P2)
+## Phase 6: User Story 4 - Representative Active-Frame Hitbox Image (Priority: P2)
 
-**Goal**: Capture and serve last active-frame hitbox image references when derivable.
+**Goal**: Capture and serve representative active-frame hitbox image references when derivable.
 
-**Independent Test**: For moves with supported hitbox display pages, last-active PNG files and media metadata are stored inside the static dataset `media/` tree and returned with query responses as relative media references.
+**Independent Test**: For scoped pilot moves with supported hitbox display pages, representative active-frame PNG files and media metadata are stored inside the static dataset `media/` tree and returned with query responses as relative media references. The default selector chooses the earliest frame with the largest summed active hitbox rectangle area, rendered images include `P1_P`, `P1_V`, `P1_A`, `P1_T`, and `P1_TA`, P2 hitboxes are excluded, and unavailable frame images store a dummy fallback image plus fallback metadata.
 
 ### Tests for User Story 4 (MANDATORY) ⚠️
 
-- [ ] T046 [P] [US4] Add unit tests for hitbox display parsing and frame detection in `tests/unit/FrameData.Ingestion.Tests/Scraping/HitboxFrameParserTests.cs`
-- [ ] T047 [P] [US4] Add unit tests for static dataset move image pathing and media metadata persistence in `tests/unit/FrameData.Ingestion.Tests/Media/MoveImageDatasetStorageTests.cs`
-- [ ] T048 [P] [US4] Add integration tests for image capture, static dataset media publish, and API media retrieval in `tests/integration/FrameData.Ingestion.IntegrationTests/MoveImageStaticDatasetFlowTests.cs`
-- [ ] T049 [P] [US4] Add contract tests for media field in query response in `tests/contract/FrameData.Contracts.Tests/MoveMediaContractTests.cs`
+- [X] T046 [P] [US4] Add unit tests for hitbox display parsing, active rectangle area scoring, earliest-frame tie breaking, object active hitbox inclusion, and P2 exclusion in `tests/unit/FrameData.Ingestion.Tests/Scraping/HitboxFrameParserTests.cs` and `tests/unit/FrameData.Domain.Tests/Media/RepresentativeFrameSelectorTests.cs`
+- [X] T047 [P] [US4] Add unit tests for static dataset move image pathing, representative media metadata, scoped pilot policy, per-move overrides, and dummy fallback persistence in `tests/unit/FrameData.Ingestion.Tests/Media/MoveImageDatasetStorageTests.cs` and `tests/unit/FrameData.Ingestion.Tests/Media/RepresentativeFrameSelectionPolicyTests.cs`
+- [X] T048 [P] [US4] Add integration tests for scoped Ken pilot image capture, configured P1-only overlay rendering, dummy fallback behavior, static dataset media publish, and API media retrieval in `tests/integration/FrameData.Ingestion.IntegrationTests/MoveImageStaticDatasetFlowTests.cs`
+- [X] T049 [P] [US4] Add contract tests for representative media fields in query responses, including `representativeFrameImageUrl`, `selectedFrame`, `selectionStrategy`, `captureStatus`, and `fallbackReason` in `tests/contract/FrameData.Contracts.Tests/MoveMediaContractTests.cs`
 
 ### Implementation for User Story 4
 
-- [ ] T050 [P] [US4] Implement MoveImage domain model in `src/FrameData.Domain/Media/MoveImage.cs`
-- [ ] T051 [P] [US4] Implement hitbox display scraper for last active frame in `src/FrameData.Scraper/Parsing/HitboxDisplayParser.cs`
-- [ ] T052 [US4] Implement static dataset image storage and media metadata writing in `src/FrameData.Ingestion/Media/MoveImageDatasetStorageService.cs` and `src/FrameData.Shared/Contracts/MoveMediaContracts.cs`
-- [ ] T053 [US4] Integrate static media references into dataset loading and move query responses in `src/FrameData.Infrastructure/Dataset/StaticFrameDataDatasetLoader.cs` and `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`
+- [X] T050 [P] [US4] Implement MoveImage and representative-frame selection policy domain models in `src/FrameData.Domain/Media/MoveImage.cs` and `src/FrameData.Domain/Media/RepresentativeFrameSelectionPolicy.cs`
+- [X] T051 [P] [US4] Implement hitbox display parsing and largest-active-hitbox-area representative frame selection in `src/FrameData.Scraper/Parsing/HitboxDisplayParser.cs` and `src/FrameData.Domain/Media/RepresentativeFrameSelector.cs`
+- [X] T052 [US4] Implement canvas/image capture, P1-only hitbox overlay rendering, scoped pilot move filtering, per-move override handling, generated/configured dummy fallback images, and media metadata writing in `src/FrameData.Ingestion/Media/HitboxCanvasRenderer.cs`, `src/FrameData.Ingestion/Media/MoveImageDatasetStorageService.cs`, `src/FrameData.Ingestion/Hosting/IngestionWorkerOptions.cs`, and `src/FrameData.Shared/Contracts/MoveMediaContracts.cs`
+- [X] T053 [US4] Integrate representative media references into static dataset loading, move query responses, ingestion configuration examples, and Discord media attachment flow in `src/FrameData.Infrastructure/Dataset/StaticFrameDataDatasetLoader.cs`, `src/FrameData.Api/Endpoints/MoveQueryEndpoint.cs`, `src/FrameData.Bot/Formatting/MoveEmbedResponseFactory.cs`, `.env.ingestion.example`, and `docker-compose.ingestion.yml`
 
 **Checkpoint**: US4 adds optional visual data while preserving text-only functionality.
 
@@ -431,7 +431,7 @@ description: "Task list for implementing Discord 3s frame data bot"
   - US2 real persistence follow-up (`T101-T118`) was completed as the first production persistence slice, but is superseded by the static dataset storage refactor.
   - Static dataset storage refactor (`T136-T150`) plus source column expansion (`T151-T156`) must complete before US4, US5, US6, or final MVP validation, because move data and media should share a portable JSON/media dataset instead of PostgreSQL and must retain all currently required source columns.
   - US3 (Phase 5) depends on US1 baseline lookup behavior and a query repository implementation; its completed matcher work must be preserved when the static repository replaces the Postgres repository.
-  - US4 (Phase 6) depends on static dataset storage so image metadata and files can be published beside move JSON.
+  - US4 (Phase 6) depends on static dataset storage so representative image metadata and files can be published beside move JSON. Full media ingestion remains gated behind successful scoped Ken pilot validation.
   - US5 (Phase 7) depends on US4 image-capture data.
   - US6 (Phase 8) depends on static dataset storage and US1 live Discord embed response pipeline.
 - Final Phase: depends on all desired stories being complete.
@@ -442,7 +442,7 @@ description: "Task list for implementing Discord 3s frame data bot"
 2. Historical US2 Postgres persistence/worker follow-up (`T101-T118`) and backup/restore follow-up (`T119-T125`)
 3. US3 (fuzzy/alias usability)
 4. Static dataset storage refactor (`T136-T150`)
-5. US4 (last active-frame image in the static media dataset)
+5. US4 (representative active-frame image in the static media dataset)
 6. US5 (storage impact decision)
 7. US6 (advanced metadata)
 
@@ -531,7 +531,7 @@ T062
 
 1. Preserve US3 fuzzy/alias support while swapping the query repository to static dataset loading.
 2. Complete the static dataset storage refactor (`T136-T150`) and source column expansion (`T151-T156`).
-3. Add US4 last active-frame image support inside the static media dataset.
+3. Add US4 representative active-frame image support inside the static media dataset, starting with the scoped Ken pilot media run.
 4. Add US5 storage assessment before any full-frame archival.
 5. Add US6 advanced metadata support to the existing embed response format.
 

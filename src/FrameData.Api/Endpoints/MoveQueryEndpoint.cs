@@ -1,4 +1,5 @@
 using FrameData.Domain.MoveLookup;
+using FrameData.Domain.Media;
 using FrameData.Api.Responses;
 using FrameData.Shared.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -78,8 +79,27 @@ public static class MoveQueryEndpoint
                     OnHit = result.Move.FrameData.OnHit,
                     OnBlock = result.Move.FrameData.OnBlock,
                     FrameAdvantage = result.Move.FrameData.FrameAdvantage
-                }
+                },
+                Media = ToMediaContract(result.Move.Media)
             });
         });
+    }
+
+    private static MoveMediaContract? ToMediaContract(IReadOnlyList<MoveImage> media)
+    {
+        var representative = media.FirstOrDefault(image => image.ImageType == MoveImageType.RepresentativeActiveFrame);
+        if (representative is null)
+        {
+            return null;
+        }
+
+        return new MoveMediaContract
+        {
+            RepresentativeFrameImageUrl = representative.StoragePath,
+            SelectedFrame = representative.SelectedFrame,
+            SelectionStrategy = representative.SelectionStrategy,
+            CaptureStatus = representative.CaptureStatus.ToString(),
+            FallbackReason = representative.FallbackReason
+        };
     }
 }

@@ -40,7 +40,7 @@ internal static class StaticDatasetFixtureWriter
             SourceBaseUrl = "http://example.test/source.php",
             CharacterCount = characterDocuments.Length,
             MoveCount = characterDocuments.Sum(document => document.Moves.Count),
-            MediaCount = 0,
+            MediaCount = characterDocuments.Sum(document => document.Moves.Sum(move => move.Media.Count)),
             Characters = manifestCharacters
         });
 
@@ -74,7 +74,8 @@ internal static class StaticDatasetFixtureWriter
         string startup = "6",
         string? motion = null,
         string? damage = null,
-        string? stun = null)
+        string? stun = null,
+        IReadOnlyList<StaticDatasetMoveMedia>? media = null)
         => new()
         {
             Id = $"{characterId}-normals-{canonicalName}",
@@ -92,7 +93,8 @@ internal static class StaticDatasetFixtureWriter
                 Recovery = "17",
                 OnHit = "+1",
                 OnBlock = "-2"
-            }
+            },
+            Media = media ?? []
         };
 
     public static void Delete(string root)

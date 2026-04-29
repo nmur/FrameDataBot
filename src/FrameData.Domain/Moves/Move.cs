@@ -1,3 +1,5 @@
+using FrameData.Domain.Media;
+
 namespace FrameData.Domain.Moves;
 
 public sealed class Move
@@ -10,8 +12,10 @@ public sealed class Move
     public required string CanonicalName { get; init; }
     public int? DisplayOrder { get; init; }
     public string? SourceMoveId { get; init; }
+    public string? SourceHitboxPath { get; init; }
     public string? Motion { get; init; }
     public string? Damage { get; init; }
     public string? Stun { get; init; }
     public required MoveFrameData FrameData { get; init; }
+    public IReadOnlyList<MoveImage> Media { get; init; } = [];
 }

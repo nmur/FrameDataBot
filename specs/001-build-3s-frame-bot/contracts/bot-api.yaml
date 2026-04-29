@@ -148,7 +148,18 @@ components:
     MoveMedia:
       type: object
       properties:
-        lastActiveFrameImageUrl:
+        representativeFrameImageUrl:
+          type: string
+        selectedFrame:
+          type: string
+          description: Zero-padded source frame identifier selected for capture.
+        selectionStrategy:
+          type: string
+          description: Strategy used to choose the representative frame.
+        captureStatus:
+          type: string
+          enum: [Success, DummyFallback, Failed, NotDerivable]
+        fallbackReason:
           type: string
     IngestionRunRequest:
       type: object
