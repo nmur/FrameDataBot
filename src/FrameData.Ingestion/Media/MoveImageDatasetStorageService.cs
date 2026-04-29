@@ -69,7 +69,7 @@ public sealed class MoveImageDatasetStorageService
         if (!policy.IsMoveInScope(move.CharacterId, move.Id))
         {
             _logger.LogDebug(
-                "Representative image capture skipped for {CharacterId}/{MoveId} because the move is outside the configured pilot scope.",
+                "Representative image capture skipped for {CharacterId}/{MoveId} because the move is outside the configured media scope.",
                 move.CharacterId,
                 move.Id);
             return null;

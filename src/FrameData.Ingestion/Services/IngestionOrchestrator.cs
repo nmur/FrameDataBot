@@ -384,7 +384,7 @@ public sealed class IngestionOrchestrator
         if (_options.RepresentativeFramePolicy.PilotMoveScope.Count == 0)
         {
             _logger.LogInformation(
-                "Ingestion run {RunId}: representative media ingestion skipped because no pilot move scope is configured.",
+                "Ingestion run {RunId}: representative media ingestion skipped because no media scope is configured.",
                 runId);
             return [];
         }
@@ -403,7 +403,7 @@ public sealed class IngestionOrchestrator
         var assets = new List<MoveImageDatasetAsset>();
         var scopedMoveCount = 0;
         _logger.LogInformation(
-            "Ingestion run {RunId}: evaluating representative media for {MoveCount} move(s) with {PilotScopeCount} configured pilot move key(s).",
+            "Ingestion run {RunId}: evaluating representative media for {MoveCount} move(s) with {MediaScopeCount} configured media scope key(s).",
             runId,
             moves.Count,
             _options.RepresentativeFramePolicy.PilotMoveScope.Count);
@@ -413,7 +413,7 @@ public sealed class IngestionOrchestrator
             if (!_options.RepresentativeFramePolicy.IsMoveInScope(move.CharacterId, move.Id))
             {
                 _logger.LogDebug(
-                    "Ingestion run {RunId}: skipping representative media for {CharacterId}/{MoveId} because it is outside the configured pilot scope.",
+                    "Ingestion run {RunId}: skipping representative media for {CharacterId}/{MoveId} because it is outside the configured media scope.",
                     runId,
                     move.CharacterId,
                     move.Id);

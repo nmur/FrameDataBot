@@ -11,7 +11,7 @@ namespace FrameData.Ingestion.IntegrationTests;
 public sealed class MoveImageStaticDatasetFlowTests
 {
     [Fact]
-    public async Task RunAsync_WhenPilotMoveHasHitboxDisplay_WritesMediaFilesAndMetadata()
+    public async Task RunAsync_WhenDefaultKenMediaScopeHasHitboxDisplay_WritesMediaFilesAndMetadata()
     {
         var root = CreateTempDirectory();
         try
@@ -20,11 +20,7 @@ public sealed class MoveImageStaticDatasetFlowTests
             {
                 SourceBaseUrl = "http://example.test/index.php",
                 DatasetRoot = root,
-                ActiveDatasetPath = Path.Combine(root, "active"),
-                RepresentativeFramePolicy = new()
-                {
-                    PilotMoveScope = ["ken/ken-normals-jab", "ken/ken-normals-strong"]
-                }
+                ActiveDatasetPath = Path.Combine(root, "active")
             };
             var source = new FakeSourceHttpClient();
             var orchestrator = new IngestionOrchestrator(

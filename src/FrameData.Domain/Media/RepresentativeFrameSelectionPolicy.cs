@@ -42,9 +42,16 @@ public sealed class RepresentativeFrameSelectionPolicy
         }
 
         var known = new HashSet<string>(knownMoveKeys.Select(NormalizeMoveKey), StringComparer.OrdinalIgnoreCase);
+        var knownCharacters = new HashSet<string>(
+            known
+                .Select(GetCharacterScope)
+                .Where(character => !string.IsNullOrWhiteSpace(character))
+                .Select(character => character!),
+            StringComparer.OrdinalIgnoreCase);
         foreach (var scopedMove in PilotMoveScope)
         {
-            if (!known.Contains(NormalizeMoveKey(scopedMove)))
+            var normalizedScope = NormalizeMoveKey(scopedMove);
+            if (!known.Contains(normalizedScope) && !CharacterScopeMatchesKnownCharacter(normalizedScope, knownCharacters))
             {
                 errors.Add($"Representative frame pilot move does not resolve to a known move: {scopedMove}.");
             }
@@ -81,11 +88,29 @@ public sealed class RepresentativeFrameSelectionPolicy
     private static bool MoveKeyMatches(string configuredMoveKey, string characterId, string moveId)
     {
         var normalizedConfigured = NormalizeMoveKey(configuredMoveKey);
+        var normalizedCharacterId = characterId.Trim().ToLowerInvariant();
         var normalizedMoveId = moveId.Trim().ToLowerInvariant();
         var normalizedFullKey = NormalizeMoveKey(BuildMoveKey(characterId, moveId));
 
-        return string.Equals(normalizedConfigured, normalizedMoveId, StringComparison.OrdinalIgnoreCase)
+        return string.Equals(normalizedConfigured, normalizedCharacterId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalizedConfigured, $"{normalizedCharacterId}/*", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalizedConfigured, normalizedMoveId, StringComparison.OrdinalIgnoreCase)
             || string.Equals(normalizedConfigured, normalizedFullKey, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool CharacterScopeMatchesKnownCharacter(string normalizedScope, IReadOnlySet<string> knownCharacters)
+    {
+        var characterScope = normalizedScope.EndsWith("/*", StringComparison.Ordinal)
+            ? normalizedScope[..^2]
+            : normalizedScope;
+
+        return knownCharacters.Contains(characterScope);
+    }
+
+    private static string? GetCharacterScope(string normalizedMoveKey)
+    {
+        var separatorIndex = normalizedMoveKey.IndexOf('/');
+        return separatorIndex <= 0 ? null : normalizedMoveKey[..separatorIndex];
     }
 }
 

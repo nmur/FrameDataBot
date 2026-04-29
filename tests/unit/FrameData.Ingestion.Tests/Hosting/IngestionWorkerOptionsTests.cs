@@ -8,7 +8,7 @@ namespace FrameData.Ingestion.Tests.Hosting;
 public sealed class IngestionWorkerOptionsTests
 {
     [Fact]
-    public void FromConfiguration_ReadsEnvironmentStyleKeysAndCharacters()
+    public void FromConfiguration_ReadsEnvironmentStyleKeysAndCharactersAndUsesHardcodedKenMediaScope()
     {
         var root = Path.Combine(Path.GetTempPath(), $"framedata-dataset-{Guid.NewGuid():N}");
         var configuration = new ConfigurationBuilder()
@@ -28,7 +28,7 @@ public sealed class IngestionWorkerOptionsTests
         options.DatasetRoot.ShouldBe(root);
         options.ActiveDatasetPath.ShouldBe(Path.Combine(root, "active"));
         options.CharacterIds.ShouldBe(["makoto", "chun-li"]);
-        options.RepresentativeFramePolicy.PilotMoveScope.ShouldBe(["ken/ken-normals-jab", "ken/ken-specials-hadouken"]);
+        options.RepresentativeFramePolicy.PilotMoveScope.ShouldBe([IngestionWorkerOptions.DefaultRepresentativeFrameCharacterScope]);
         options.Validate().ShouldBeEmpty();
     }
 
