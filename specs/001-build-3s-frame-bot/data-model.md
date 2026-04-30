@@ -36,6 +36,43 @@
   - `sourceCharacterId` unique across enabled entries.
   - `displayOrder` unique across enabled entries.
 
+## StaticDatasetManifest
+
+- Description: Metadata stored at `manifest.json` for a published static dataset
+  version.
+- Fields:
+  - `schemaVersion` (string, required): dataset contract version.
+  - `generatedAt` (datetime, required): publish timestamp.
+  - `sourceBaseUrl` (string, required): source-site base URL used for ingestion.
+  - `sourcePageIds` (map, required): character IDs mapped to source page IDs.
+  - `characterCount` (int, required)
+  - `moveCount` (int, required)
+  - `mediaCount` (int, required)
+  - `charactersPath` (string, required): relative path to the character JSON
+    directory, initially `characters/`.
+  - `mediaPath` (string, required): relative path to the media directory, initially
+    `media/`.
+- Relationships:
+  - References all `StaticCharacterFile` documents in the same dataset version.
+- Validation:
+  - Counts must match files loaded from the dataset directory.
+  - Referenced paths must stay within the dataset root.
+
+## StaticCharacterFile
+
+- Description: Per-character JSON document stored under `characters/{characterId}.json`
+  and loaded by the API at startup.
+- Fields:
+  - `character` (Character, required)
+  - `moves` (Move[], required)
+  - `exportedAt` (datetime, required)
+- Relationships:
+  - Belongs to exactly one `StaticDatasetManifest`.
+- Validation:
+  - File name must match `character.id`.
+  - Every move `characterId` must match the containing character.
+  - Move IDs must be stable so media paths remain valid across refreshes.
+
 ## Move
 
 - Description: Canonical move record for a character and section.
@@ -51,7 +88,6 @@
   - `damage` (string, optional): source damage column value preserved as text.
   - `stun` (string, optional): source stun column value preserved as text.
   - `frameData` (MoveFrameData, required)
-  - `metadata` (MoveMetadata, optional)
 - Relationships:
   - Many-to-one with `Character`.
   - One-to-many with `MoveAlias` and `MoveImage`.
@@ -145,19 +181,6 @@
     selector strategy, but not both.
   - If `dummyImagePath` is provided, it must exist or media capture must fail
     validation before network calls begin.
-
-## StorageAssessment
-
-- Description: Capacity planning output for image archival choices.
-- Fields:
-  - `id` (string, required)
-  - `createdAt` (datetime, required)
-  - `sampleSize` (int, required)
-  - `estimatedBytesPerMove` (long, required)
-  - `estimatedBytesPerCharacter` (long, required)
-  - `estimatedBytesFullRoster` (long, required)
-  - `recommendedPolicy` (enum, required): `RepresentativeOnly | FullFrames | Defer`
-  - `notes` (string, optional)
 
 ## IngestionRun
 

@@ -459,4 +459,5 @@ T050, T051
 1. Every story requires passing unit + integration + contract tests.
 2. No story closes without independent test criteria passing.
 3. Preserve backward compatibility for previously delivered story behavior.
-4. SC-001 validation must use fixed-size representative samples for both API and bot latency.
+4. Formal sample-based performance benchmark evidence and security-gate automation are
+   deferred to future plans by maintainer-approved closeout exception.

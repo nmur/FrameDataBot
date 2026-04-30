@@ -22,21 +22,20 @@
   - Python sidecar scraper: rejected because multi-runtime support is out of scope for
     this approved feature iteration.
 
-## Decision 3: Database Choice
+## Decision 3: Runtime Storage Choice
 
-Recommended database options:
-1. PostgreSQL with JSONB (Recommended)
-2. SQLite with JSON columns
-3. LiteDB (stable v5 line)
-
-- Decision: Use PostgreSQL for v1, with JSONB columns for nested move/frame structures.
-- Rationale: Suitable for current requirements, production-proven, strong .NET support,
-  and aligned with goal of gaining practical PostgreSQL experience.
+- Decision: Use versioned static dataset directories as the runtime source of truth.
+  Each dataset contains `manifest.json`, per-character JSON files under `characters/`,
+  and optional media files under `media/`. The API loads the active dataset at startup.
+- Rationale: The current closed plan prioritizes a portable dataset artifact that works
+  cleanly on local Docker and Unraid without a long-running database dependency.
 - Alternatives considered:
-  - SQLite JSON: lightweight, but weaker concurrency and migration ergonomics for future
-    service growth.
-  - LiteDB: still viable for small deployments, but not selected due to preference for
-    PostgreSQL experience and stronger managed-host ecosystem support.
+  - PostgreSQL with JSONB: implemented as an intermediate persistence slice, then
+    superseded by the static dataset refactor to reduce runtime operational overhead.
+  - SQLite JSON: lightweight, but less directly useful once the dataset directory is the
+    portable artifact.
+  - LiteDB: viable for small deployments, but unnecessary for the finalized runtime
+    architecture.
 
 ## Decision 4: Testing Stack and Licensing Constraints
 
@@ -88,21 +87,25 @@ Security baseline controls:
 
 ## Decision 8: Performance Validation Strategy
 
-- Decision: Validate SC-001 with fixed-size samples on a representative dataset, and
-  measure both API query latency and bot end-to-end latency each run.
-- Rationale: Makes performance outcomes reproducible and auditable across releases.
+- Decision: Defer formal sample-based API/bot latency benchmark evidence to a future
+  plan by maintainer-approved closeout exception.
+- Rationale: The current plan closes after completed functional, dataset, contract,
+  Compose, and Discord/media work. A later operational hardening plan can define and
+  preserve benchmark tooling without reopening this feature.
 - Alternatives considered:
-  - No explicit performance checks in early phases: rejected by constitution.
+  - Reopen the current plan for benchmark automation: rejected because the maintainer
+    requested plan closeout and a fresh plan for future work.
 
 ## Decision 9: Security Release Gate
 
-- Decision: Require a mandatory pre-production security checklist gate including
-  dependency scan, container image scan, secrets scan, and manual least-privilege
-  review. All categories must have zero critical findings before production use.
-- Rationale: Converts security intent into objective release criteria aligned with
-  approved specification success criteria.
+- Decision: Defer automated pre-production security gate workflow and evidence to a
+  future operational hardening plan by maintainer-approved closeout exception.
+- Rationale: The current plan keeps secure-containerization guidance and Compose
+  topology work, while leaving formal dependency/image/secrets/least-privilege gate
+  automation for the next plan.
 - Alternatives considered:
-  - Informal qualitative review only: rejected due to ambiguous acceptance standards.
+  - Reopen the current plan for security-gate automation: rejected because the
+    maintainer requested closing this plan and starting future work separately.
   - External penetration testing as mandatory gate: deferred for later scale.
 
 ## Decision 10: Command Namespace and Single-Game Scope
@@ -237,77 +240,55 @@ Rationale:
   - Unit tests only: rejected because host-level wiring and lifecycle registration still
     need integration coverage.
 
-## Decision 18: Postgres-Backed Repositories Are the Runtime Default
+## Decision 18: Static Dataset Repository Is the Runtime Default
 
-- Decision: Replace in-memory `CharacterRepository`, `MoveRepository`, and
-  `IngestionRunRepository` runtime behavior with Npgsql/PostgreSQL implementations.
-  Tests may still use fakes where useful, but production API and ingestion hosts must
-  resolve the Postgres-backed services.
-- Rationale: FR-008 requires a persistent queryable store used by the bot service. The
-  current in-memory repository scaffold proves service contracts but does not survive
-  process restarts, does not share data between API and ingestion containers, and cannot
-  satisfy production ingestion.
+- Decision: The production API resolves a static dataset loader/query repository rather
+  than a database-backed repository. Ingestion publishes the versioned dataset directory,
+  and Bot continues to query the API.
+- Rationale: This preserves the Bot/API boundary while removing database lifecycle,
+  schema bootstrap, and connection-string requirements from the always-running stack.
 - Alternatives considered:
-  - Keep in-memory repositories with JSON exports as the source of truth: rejected
-    because API/bot reads would not use PostgreSQL.
-  - Maintain separate API and ingestion persistence implementations: rejected because it
-    creates drift between write and read behavior.
+  - Keep the intermediate database-backed runtime path: superseded because the dataset
+    directory is already the portable artifact operators need.
+  - Maintain separate database and static-file query paths: rejected because it creates
+    drift between refresh and runtime behavior.
 
-## Decision 19: Shared Schema Bootstrap
+## Decision 19: One-Shot Dataset Publisher
 
-- Decision: Add a small idempotent schema bootstrap that applies the current SQL schema
-  from `src/FrameData.Infrastructure/Persistence/Migrations/0001_Initial.sql` before
-  API or ingestion work touches repositories. Do not track migration history for the
-  v1 dataset.
-- Rationale: Both API and ingestion containers need the same schema, and Testcontainers
-  integration tests must create a real database from the same bootstrap path used in
-  production. The upstream data changes rarely, so replacing the dataset on refresh is
-  simpler than supporting incremental data migrations.
-- Alternatives considered:
-  - Manual schema provisioning outside the app: rejected for local/Unraid ergonomics and
-    repeatable tests.
-  - Full migration tracking: rejected for this slice because current SQL schema is small
-    and the dataset can be refreshed wholesale.
-
-## Decision 20: One-Shot Ingestion Worker
-
-- Decision: `FrameData.Ingestion` runs as a one-shot worker: load configuration,
-  bootstrap the schema, run the orchestrator for a requested scope or full catalog,
-  replace the persisted character/move dataset, write JSON
-  exports, log run status, and exit with an explicit success/partial/failure code.
-- Rationale: This fits Unraid/Compose scheduling, avoids an always-on scheduler before
-  it is needed, and makes manual refresh/retry behavior easy to observe.
+- Decision: `FrameData.Ingestion` runs as a one-shot worker that loads configuration,
+  scrapes the requested scope or full catalog, writes a staged static dataset, validates
+  the output, atomically publishes it, logs status, and exits.
+- Rationale: This fits Unraid/Compose scheduling, avoids an always-on scheduler, and
+  keeps the refresh artifact directly inspectable on disk.
 - Alternatives considered:
   - Always-on background scheduler: rejected for this slice because scheduling policy is
     host-specific and can be handled by Unraid/cron/Compose initially.
-  - API-only ingestion trigger: rejected as the only path because the separate ingestion
-    container already exists and should be deployable as a controlled refresh job.
+  - API-triggered ingestion in the runtime stack: rejected because ingestion is now a
+    separate controlled refresh job.
 
-## Decision 21: Full Character Catalog as Runtime Data
+## Decision 20: Full Character Catalog as Worker Data
 
 - Decision: Define a single supported-character catalog containing internal id,
   display name, source character id, aliases, enabled flag, and display order. Full
   catalog ingestion is the default; scoped ingestion is available for tests and manual
   retries.
-- Rationale: Hardcoding only Makoto in API endpoints does not satisfy US2. A catalog
-  makes source scope explicit, testable, and reusable by both worker and API-triggered
-  ingestion.
+- Rationale: A catalog makes source scope explicit, testable, and reusable by dataset
+  publishing and media capture.
 - Alternatives considered:
-  - Inline default scopes in API/worker code: rejected because it duplicates source-id
+  - Inline default scopes in worker code: rejected because it duplicates source-id
     knowledge and makes full-roster validation harder.
-  - Store the catalog only in PostgreSQL before ingestion: rejected for the first slice
-    because bootstrap would need seed management before the ingestion path can run.
+  - Store the catalog in a runtime database: rejected because the closed plan removes
+    runtime database dependency.
 
-## Decision 22: Persistent Integration Tests Must Assert Database Rows
+## Decision 21: Static Dataset Integration Tests Must Assert Files
 
-- Decision: Add Testcontainers tests that query PostgreSQL directly after repository,
-  orchestrator, worker-host, and API operations. In-memory assertions alone are not
-  sufficient to close US2.
-- Rationale: The current tests pass while the worker still prints `Hello, World!` and
-  repositories are in-memory. Direct row assertions prove the production persistence
-  boundary.
+- Decision: Integration tests prove `manifest.json`, `characters/*.json`, media files,
+  active dataset preservation on failed publish, and API query behavior against fixture
+  datasets.
+- Rationale: The production boundary is now the file-system dataset plus API startup
+  load, so file assertions provide the relevant completion evidence.
 - Alternatives considered:
-  - Keep current fake-source/in-memory tests: retained as unit-level coverage only, but
-    rejected as completion evidence for real ingestion.
+  - Keep database-row assertions as completion evidence: retained only as historical
+    coverage for the superseded intermediate slice.
   - Live source-site integration tests in CI: rejected because external network/content
     availability would make CI nondeterministic.

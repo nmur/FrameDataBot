@@ -21,7 +21,9 @@ Ingestion also preserves source move columns that are not part of the classic fr
 - **Testing**: xUnit + Shouldly + NSubstitute for unit tests; file-system integration tests for dataset publish/load/query behavior; deterministic Discord boundary tests stay separate from live Discord. Testcontainers PostgreSQL coverage becomes obsolete once the static dataset migration is complete.
 - **Target Platform**: Linux Docker containers on local Compose and Unraid/self-hosted Docker; Bot/API/Seq run in the main stack; ingestion runs only as an explicit one-shot container from a separate Compose file sharing the same host dataset root.
 - **Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)
-- **Performance Goals**: SC-001 remains: >=95% valid exact-name queries complete in <3 seconds across API latency and bot end-to-end latency on a fixed representative sample
+- **Performance Goals**: Formal sample-based API/bot latency benchmarking is deferred
+  to a future plan by maintainer-approved closeout exception. Current validation
+  focuses on completed functional, integration, contract, Compose, and dataset checks.
 - **Constraints**: .NET-only scraper scope; no Moq/FluentAssertions; no live Discord in CI; ingestion must publish static datasets atomically, preserve the prior active dataset if a full refresh fails, support resumable media capture by skipping already-successful media files, support scoped pilot media runs to reduce slow source-site calls, and fall back to a configured or generated dummy image when selected frame assets are unavailable.
 - **Scale/Scope**: Single-game Street Fighter III: 3rd Strike scope; full supported-roster source catalog for frame data; Normals/Specials/Super Arts/Misc ingestion plus static dataset publishing; Motion/Damage/Stun source columns are retained as optional move attributes; rich Discord embed responses for baseline frame data; representative active-frame hitbox image capture writes local media files in a later slice and initially runs only for a small pilot set; no public CDN is required for Discord embeds because the Bot can upload local files as embed attachments.
 
@@ -36,6 +38,9 @@ Pre-Phase 0 gate:
 - [x] Comprehensive automated testing: file-system integration tests are required to prove static datasets are published atomically, loaded by the API, and queryable without PostgreSQL.
 - [x] Reproducible integration testing: source HTML is supplied by deterministic fixtures/fake HTTP handlers in automated tests; live source scraping is covered by manual smoke validation.
 - [x] Focused scope/performance: the slice replaces the runtime storage substrate with static files while preserving the existing Discord/API command surface.
+- [x] Closeout exception: formal sample-based performance benchmark evidence and
+  production security-gate automation are deferred to future plans by maintainer
+  approval on 2026-04-29.
 
 Post-Phase 1 re-check:
 - [x] Research resolves the static dataset, worker execution, catalog, media storage, and API query-load strategy.
@@ -102,6 +107,13 @@ Post-Phase 1 re-check:
 - Default application categories to Debug-level logging while keeping noisy framework categories at safer levels, with `SEQ_MINIMUM_LEVEL` available for operational overrides.
 - Add request and interaction logging for Discord command handling, Bot-to-API calls, API move queries, dataset load events, and ingestion worker runs.
 - Add detailed ingestion run logs for source page fetches, per-character parse/export status, per-section move counts, per-move frame data at Debug level, dataset publish/replacement, media capture, and failures.
+
+### Deferred Follow-Up Scope
+
+- Full per-frame storage assessment and archival approval workflow.
+- Expanded advanced move metadata beyond Motion, Damage, and Stun source columns.
+- Formal sample-based API/bot latency benchmark evidence.
+- Automated pre-production security gate workflow and evidence.
 
 ## Project Structure
 

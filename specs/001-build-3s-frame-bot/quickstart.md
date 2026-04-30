@@ -128,7 +128,10 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 - Use isolated Docker networks for internal service communication.
 - Keep the dataset root writable only for ingestion; mount it read-only for API runtime.
 
-## Performance Validation Protocol
+## Deferred Performance Validation Protocol
+
+Formal sample-based performance evidence is deferred to a future plan by the
+2026-04-29 closeout decision. The intended future protocol is:
 
 1. Use a fixed representative dataset and fixed sample size for each run.
 2. Run and record API query latency measurements and bot end-to-end latency measurements.

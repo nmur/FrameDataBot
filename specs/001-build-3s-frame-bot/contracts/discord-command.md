@@ -30,7 +30,7 @@
 ## Lookup Behavior
 
 - Exact canonical move-name lookup is required for MVP.
-- Later phases enable alias/notation/fuzzy matching.
+- Alias, notation, and fuzzy matching are supported after the lookup refinement.
 - Ambiguous fuzzy matches return candidate options for user confirmation.
 - Input validation errors are limited to character/move correctness and format.
 
@@ -45,8 +45,8 @@ The default successful `/framedata` response uses a Discord embed with:
 - Section field
 - Startup / Active / Recovery fields
 - On-Hit / On-Block fields
-- Optional notes or advanced properties section when metadata exists
-- Optional image/media attachment when available in a later media slice
+- Optional source Motion, Damage, Stun, and notes fields when present
+- Optional image/media attachment when representative media exists
 - No duplicate plain-text message content for formatted move results
 
 ### Ambiguous Match
@@ -70,5 +70,5 @@ The default successful `/framedata` response uses a Discord embed with:
 - Formatted move, ambiguous, and query-error results should send the embed by itself
   with no duplicate message `content`.
 - Validation failures may remain content-only if no move query result exists.
-- Future media responses attach local files and reference them from the embed with
+- Media responses attach local files and reference them from the embed with
   `attachment://...`; they do not require a public CDN.

@@ -2,15 +2,16 @@
 
 **Feature Branch**: `001-build-3s-frame-bot`  
 **Created**: 2026-03-21  
-**Status**: Approved  
+**Status**: Closed
+
 **Input**: User description: "Create a Discord bot which fetches and displays Street Fighter III: 3rd Strike (3s) frame data, along with other associate information. The Discord user should be able to call the bot with a command and a parameter for the desired character and the name of the move, and the bot should return a rich display of the moves frame data. First iterations of the bot will return just simple frame data numbers (ie active frames, frame advantages), but later iterations should be able to return more advanced details (ie special cancellable?) and also display an image of the move (potentially an animated gif of the move). The data will be sourced from http://ensabahnur.free.fr/BastonNew/index.php. Each characters frame data is located in URLs such as http://ensabahnur.free.fr/BastonNew/index.php?id=1. Create a tool which will scrape the data directly from the each characters page, specifically the Normals, Specials, Super Arts, and Misc sections. The data should be pulled into json files (one per character), but should also be made available in a database for our bot service to access. Ideally I would like to run the bots backend service(s) locally on my Unraid home server in Docker container(s), but only if I can do this in a secure way."
 
 ## Clarifications
 
 ### Session 2026-03-31
 
-- Q: Which security validation gate should define "secure containerized hosting" readiness? → A: Mandatory pre-production checklist gate: dependency scan + container image scan + secrets scan + manual least-privilege review, all with zero critical findings.
-- Q: How should SC-001 performance be validated? → A: Measure both API query latency and bot end-to-end latency using a fixed representative dataset and fixed sample size per run.
+- Q: Which security validation gate should define "secure containerized hosting" readiness? → A: Mandatory pre-production checklist gate: dependency scan + container image scan + secrets scan + manual least-privilege review, all with zero critical findings. Superseded for this closed plan by the 2026-04-29 deferral.
+- Q: How should performance be validated? → A: Measure both API query latency and bot end-to-end latency using a fixed representative dataset and fixed sample size per run. Superseded for this closed plan by the 2026-04-29 deferral.
 - Q: What sampling standard should be used for sampled success criteria? → A: Minimum 100 samples per criterion, stratified across characters and move categories, with consistent methodology each run.
 - Q: What should ingestion do when some characters/sections fail? → A: Allow partial success; replace the stored dataset with successful character scopes from the run and mark failed characters/sections with explicit run status indicating retry is needed.
 - Q: What is the scraper implementation scope for this feature? → A: .NET-only scraper scope for this feature, with no Python fallback included.
@@ -19,13 +20,18 @@
 ### Session 2026-04-25
 
 - Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command for the configured guild, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. The original first pass allowed primitive text; the 2026-04-28 clarification supersedes that response-format direction.
-- Q: Does US2 completion require a real ingestion worker and persistent PostgreSQL read/write path, not only parser/orchestrator scaffolding? → A: Yes. The ingestion service must run as a deployable worker, ingest the full supported character/source-id catalog by default, insert/update character, move, and ingestion run records in PostgreSQL, export one JSON file per character, and API/bot move lookup must read from that same persistent store.
+- Q: Does US2 completion require a real ingestion worker and persistent PostgreSQL read/write path, not only parser/orchestrator scaffolding? → A: Yes for the 2026-04-25 intermediate slice. This was superseded by the completed static dataset refactor, where ingestion publishes versioned JSON/media datasets and API/bot lookup reads the active dataset.
 
 ### Session 2026-04-28
 
 - Q: Should the next Discord response implementation continue with primitive text before rich formatting? → A: No. The bot should use Discord embeds as the default `/framedata` response format for move results now; the later 2026-04-28 clarification removes duplicate basic text from normal embed responses.
 - Q: Should ingestion preserve non-frame source columns such as Specials/Super Arts Motion plus Damage and Stun? → A: Yes. These values should be optional move attributes that are parsed from source tables when present and retained through the stored dataset and lookup response path.
 - Q: Should normal embed responses keep the old basic text response as message content? → A: No. Formatted move, ambiguous, and query-error results should be sent as embed-only Discord responses; content-only text remains acceptable for validation or operational failures where no embed result exists.
+
+### Session 2026-04-29 Closeout
+
+- Q: Which remaining analysis findings should block closing this plan? → A: None. The maintainer approved deferring the full-frame storage assessment, expanded advanced metadata, formal sample-based performance benchmark evidence, and mandatory pre-production security gate automation to future plans.
+- Q: What is the closing scope for this plan? → A: US1-US4 plus the static dataset, source-column, Discord gateway/embed, representative-media, and Seq logging follow-ups already marked complete in `tasks.md`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -64,15 +70,15 @@ backed by current stored data.
 
 **Why this priority**: Lookup quality depends on data quality and refreshability.
 
-**Independent Test**: Running ingestion creates one JSON export per character and updates
-persistent records for Normals, Specials, Super Arts, and Misc.
+**Independent Test**: Running ingestion creates one JSON file per character, publishes
+an active static dataset, and makes Normals, Specials, Super Arts, and Misc queryable.
 
 **Acceptance Scenarios**:
 
 1. **Given** source pages are reachable, **When** ingestion runs, **Then** all supported
    characters are ingested from the designated sections.
 2. **Given** ingestion completes successfully, **When** data is checked, **Then** one
-   JSON file exists per character and persistent records are queryable by character and
+   JSON file exists per character and the active dataset is queryable by character and
    move.
 3. **Given** a source value changes, **When** the next ingestion completes, **Then**
    stored values are updated accordingly.
@@ -131,47 +137,6 @@ return a representative active-frame image including configured P1 hitbox boxes.
 
 ---
 
-### User Story 5 - Full Frame-Image Expansion Decision (Priority: P3)
-
-As a maintainer, I want a storage impact evaluation for saving all move frame images so
-I can decide whether full image archival is viable.
-
-**Why this priority**: Prevents uncontrolled disk growth before enabling full-image
-capture.
-
-**Independent Test**: A report exists estimating storage requirements and operational
-impact for full per-frame image retention across all characters and moves.
-
-**Acceptance Scenarios**:
-
-1. **Given** representative image samples, **When** storage analysis runs, **Then** the
-   system produces estimated per-move, per-character, and full-roster storage needs.
-2. **Given** the storage estimate, **When** maintainers review deployment limits,
-   **Then** they can approve or reject full-image archival based on defined thresholds.
-
----
-
-### User Story 6 - Expanded Move Details and Media (Priority: P3)
-
-As an advanced player, I want extra move properties and optional media references so I
-can access deeper move context beyond basic numbers.
-
-**Why this priority**: Useful enhancement after core lookup, ingestion, and image
-foundations are stable.
-
-**Independent Test**: For moves with enriched metadata, responses include advanced
-properties without breaking MVP fields.
-
-**Acceptance Scenarios**:
-
-1. **Given** enriched metadata exists, **When** a move is requested, **Then** the
-   response includes advanced properties in a dedicated section.
-2. **Given** enriched metadata is unavailable, **When** a move is requested, **Then**
-   basic frame data still returns successfully.
-3. **Given** response enrichment is enabled, **When** a move response is sent to
-   Discord, **Then** the bot uses a rich structured embed without duplicate plain-text
-   message content.
-
 ## Out of Scope *(mandatory)*
 
 - Matchup advice, combo recommendations, and strategy coaching.
@@ -180,6 +145,12 @@ properties without breaking MVP fields.
 - Full video hosting.
 - Automatic capture of all frame images for all moves before storage analysis and
   approval.
+- Full-frame storage impact reporting and approval workflow; this is deferred to a
+  future plan before any full-frame archival is enabled.
+- Expanded advanced move metadata beyond the retained source Motion, Damage, and Stun
+  attributes; this is deferred to a future plan.
+- Formal sample-based performance benchmark evidence and security-gate automation for
+  production readiness; these are deferred to future operational hardening plans.
 
 ### Edge Cases
 
@@ -212,8 +183,8 @@ properties without breaking MVP fields.
   per character.
 - **FR-007**: The system MUST produce one JSON export file per character after
   successful ingestion.
-- **FR-008**: The system MUST store ingested move data in a persistent queryable store
-  used by the bot service.
+- **FR-008**: The system MUST store ingested move data in a persistent static dataset
+  that is queryable through the API used by the bot service.
 - **FR-009**: The system MUST provide a repeatable refresh process that updates stored
   data without manual row-level edits; each refresh replaces the stored dataset with
   successfully ingested character scopes from that run, failures MUST be recorded
@@ -236,27 +207,21 @@ properties without breaking MVP fields.
 - **FR-013c**: Image ingestion MUST store a configured or generated empty/dummy image
   when the representative frame image is unavailable, while retaining structured
   fallback metadata.
-- **FR-014**: The system MUST produce a storage-impact report for full per-frame image
-  archival before enabling that archival behavior.
-- **FR-015**: Deployment MUST support secure containerized hosting on a cloud platform
-  with CI/CD integration, including a mandatory pre-production security checklist gate
-  (dependency scan, container image scan, secrets scan, and manual least-privilege
-  review) with zero critical findings.
-- **FR-016**: The bot MUST return a clear and actionable response when character, move,
+- **FR-014**: The bot MUST return a clear and actionable response when character, move,
   or requested data is unavailable.
-- **FR-017**: Implementation MUST use small, single-responsibility functions with
+- **FR-015**: Implementation MUST use small, single-responsibility functions with
   descriptive names.
-- **FR-018**: Comments in production code MUST explain why decisions were made, not
+- **FR-016**: Comments in production code MUST explain why decisions were made, not
   restate behavior.
-- **FR-019**: The bot runtime MUST connect to Discord, register the `/framedata` slash
+- **FR-017**: The bot runtime MUST connect to Discord, register the `/framedata` slash
   command for the configured guild, receive slash-command interactions, and route them
   through the move query flow.
-- **FR-020**: The bot MUST use a rich Discord embed as the default move lookup response,
+- **FR-018**: The bot MUST use a rich Discord embed as the default move lookup response,
   including matched character, matched move, section, and frame-data fields, without
   sending duplicate plain-text message content for formatted move, ambiguous, or
   query-error results. Validation or operational failures where no embed result exists
   MAY remain content-only.
-- **FR-021**: Ingestion MUST preserve optional source table values for Motion, Damage,
+- **FR-019**: Ingestion MUST preserve optional source table values for Motion, Damage,
   and Stun as move attributes when those columns are present, including Motion values
   on Specials and Super Arts.
 
@@ -283,8 +248,11 @@ properties without breaking MVP fields.
 - **MoveImage**: Stored artifact for move visuals, including image location, source
   reference, selected representative frame designation, selection strategy, rendered
   overlay set, and fallback status.
-- **StorageAssessment**: Periodic estimate of disk requirements for image archival
-  scopes (representative-frame-only vs full per-frame capture).
+- **StaticDatasetManifest**: Metadata for a versioned static dataset directory,
+  including schema version, generated timestamp, source metadata, character count,
+  move count, and media count.
+- **StaticCharacterFile**: Per-character JSON file containing character metadata and
+  the move records loaded by the API at startup.
 - **IngestionRun**: A refresh event record containing run time, source scope, outcome,
   and per-character status.
 
@@ -302,10 +270,9 @@ properties without breaking MVP fields.
 - The default representative selector uses summed active hitbox rectangle area; future
   selectors and per-move overrides may replace the selected frame without changing the
   stored media contract.
-- Full per-frame image capture remains disabled until storage impact is evaluated and
-  explicitly approved.
-- Cloud deployment security includes least-privilege defaults, controlled secrets, and
-  restricted service exposure to only necessary ports.
+- Full per-frame image capture remains disabled and outside this closing plan.
+- Production security gate automation and formal benchmark evidence are deferred by
+  maintainer-approved closeout exception on 2026-04-29.
 - Scraper implementation scope for this feature is .NET-only; alternate runtime
   fallbacks are out of scope for this feature iteration.
 
@@ -313,26 +280,18 @@ properties without breaking MVP fields.
 
 ### Measurable Outcomes
 
-- **SC-001**: At least 95% of valid exact-name move queries return a complete response
-  in under 3 seconds, validated each run using fixed-size samples across both API query
-  latency and bot end-to-end latency on a representative dataset.
-- **SC-002**: At least 99% of sampled exact canonical move-name queries resolve to the
+- **SC-001**: At least 99% of sampled exact canonical move-name queries resolve to the
   intended move, measured on at least 100 stratified samples per run.
-- **SC-003**: 100% of supported characters have exactly one exported JSON file after a
+- **SC-002**: 100% of supported characters have exactly one exported JSON file after a
   successful refresh.
-- **SC-004**: 99% of sampled stored move entries match latest ingested source values
+- **SC-003**: 99% of sampled stored move entries match latest ingested source values
   after each refresh, measured on at least 100 stratified samples per run.
-- **SC-005**: At least 95% of sampled shorthand/notation/colloquial inputs resolve to
+- **SC-004**: At least 95% of sampled shorthand/notation/colloquial inputs resolve to
   the intended canonical move after alias/fuzzy release, measured on at least 100
   stratified samples per run.
-- **SC-006**: 100% of ambiguous fuzzy matches return disambiguation options rather than
+- **SC-005**: 100% of ambiguous fuzzy matches return disambiguation options rather than
   low-confidence silent final matches.
-- **SC-007**: For moves with derivable hitbox frame data in the enabled image-ingestion
+- **SC-006**: For moves with derivable hitbox frame data in the enabled image-ingestion
   scope, at least 90% have a stored representative active-frame image reference after
   image ingestion, measured first against the configured pilot scope and later against
   at least 100 stratified samples per full media run.
-- **SC-008**: A storage-impact report for full per-frame image archival is produced and
-  approved or rejected before full-image archival is enabled.
-- **SC-009**: Before production use, all security checklist categories (dependency scan,
-  container image scan, secrets scan, manual least-privilege review) complete with zero
-  critical findings.

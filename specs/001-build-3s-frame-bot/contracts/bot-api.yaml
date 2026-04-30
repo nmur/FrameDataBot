@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: 3s Frame Data Bot Service API
   version: 0.1.0
-  description: Internal API contract for move lookup and ingestion operations.
+  description: Internal API contract for move lookup from the active static dataset.
 servers:
   - url: http://localhost:8080
 paths:
@@ -36,47 +36,6 @@ paths:
                 $ref: '#/components/schemas/MoveAmbiguousResponse'
         '404':
           description: No suitable match
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /v1/ingestion/runs:
-    post:
-      summary: Trigger ingestion run
-      operationId: triggerIngestion
-      description: Omit the request body or provide an empty characterIds list to ingest the full enabled character catalog.
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IngestionRunRequest'
-      responses:
-        '202':
-          description: Ingestion accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IngestionAcceptedResponse'
-  /v1/ingestion/runs/{runId}:
-    get:
-      summary: Get ingestion run status
-      operationId: getIngestionRun
-      parameters:
-        - in: path
-          name: runId
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Run status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IngestionRunResponse'
-        '404':
-          description: Run not found
           content:
             application/json:
               schema:
@@ -160,70 +119,6 @@ components:
           type: string
           enum: [Success, DummyFallback, Failed, NotDerivable]
         fallbackReason:
-          type: string
-    IngestionRunRequest:
-      type: object
-      properties:
-        characterIds:
-          type: array
-          description: Optional scoped retry list. Missing or empty means full enabled catalog.
-          items:
-            type: string
-    IngestionAcceptedResponse:
-      type: object
-      required: [runId, status, scope, charactersQueued]
-      properties:
-        runId:
-          type: string
-        status:
-          type: string
-          enum: [Running]
-        scope:
-          type: string
-          enum: [FullCatalog, Scoped]
-        charactersQueued:
-          type: integer
-    IngestionRunResponse:
-      type: object
-      required: [runId, status, startedAt]
-      properties:
-        runId:
-          type: string
-        status:
-          type: string
-          enum: [Running, Succeeded, PartiallySucceeded, Failed]
-        startedAt:
-          type: string
-          format: date-time
-        completedAt:
-          type: string
-          format: date-time
-        charactersProcessed:
-          type: integer
-        movesProcessed:
-          type: integer
-        errors:
-          type: array
-          items:
-            type: string
-        characterStatuses:
-          type: array
-          items:
-            $ref: '#/components/schemas/IngestionRunCharacterStatus'
-    IngestionRunCharacterStatus:
-      type: object
-      required: [characterId, sourceCharacterId, status, movesProcessed]
-      properties:
-        characterId:
-          type: string
-        sourceCharacterId:
-          type: integer
-        status:
-          type: string
-          enum: [Succeeded, Failed]
-        movesProcessed:
-          type: integer
-        error:
           type: string
     ErrorResponse:
       type: object
