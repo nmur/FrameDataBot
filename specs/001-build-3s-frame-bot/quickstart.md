@@ -18,8 +18,10 @@
    - `FRAMEDATA_DATASET_HOST_ROOT` host path shared by runtime and ingestion
    - `FRAMEDATA_DATASET_ROOT` container path, usually `/data/framedata`
    - `FRAMEDATA_ACTIVE_DATASET_PATH` container path read by the API, usually `/data/framedata/active`
+   - `FRAMEDATA_DOCKER_NETWORK` shared Docker network name used by runtime and ingestion Compose files
    - `SEQ_*` settings for local structured logs
 2. Create `.env.ingestion` from `.env.ingestion.example` for one-shot ingestion runs.
+   - Keep `FRAMEDATA_DOCKER_NETWORK` aligned with the runtime `.env`/`.env.prod` value so ingestion can resolve `http://seq`.
 3. Keep the host dataset root on persistent local storage. On Unraid, a practical default is a share such as `/mnt/user/appdata/framedatabot/dataset` mapped to `/data/framedata` in both Compose files.
 
 ## Discord Application Setup
@@ -34,17 +36,18 @@
 
 ## Static Dataset Flow
 
-1. Run ingestion when you want to refresh data:
+1. Start the runtime stack at least once so Compose creates the shared Docker network and Seq service.
+2. Run ingestion when you want to refresh data:
    - Full catalog: `docker compose --env-file .env.ingestion -f docker-compose.ingestion.yml run --rm ingestion`
    - Scoped retry: `docker compose --env-file .env.ingestion -f docker-compose.ingestion.yml run --rm ingestion --characters=makoto,chun-li`
-2. Ingestion writes a versioned dataset under the mounted dataset root `versions/` directory and updates `active`.
-3. Confirm the active dataset has:
+3. Ingestion writes a versioned dataset under the mounted dataset root `versions/` directory and updates `active`.
+4. Confirm the active dataset has:
    - `manifest.json`
    - `characters/*.json`
    - `media/` for later local attachment assets
-4. Start or restart the runtime stack so the API loads the active dataset:
+5. Start or restart the runtime stack so the API loads the active dataset:
    - `docker compose up -d --build`
-5. Query the API directly:
+6. Query the API directly:
    - `GET /v1/moves/query?character=makoto&moveInput=2mk`
 
 The dataset directory is the portable artifact. To roll back, repoint `active` to a previous directory under `versions/` or copy the desired version back into the active path before restarting the API.
@@ -61,7 +64,7 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 3. Deploy runtime services:
    - `docker compose --env-file .env.prod -f docker-compose.prod.yml pull`
    - `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --remove-orphans`
-4. Run ingestion on demand with the separate ingestion Compose file using the same dataset root.
+4. Run ingestion on demand with the separate ingestion Compose file using the same dataset root and shared Docker network.
 
 ## Run Services Locally
 

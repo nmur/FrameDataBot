@@ -9,6 +9,8 @@ services:
       - "${SEQ_PORT:-5341}:80"
     volumes:
       - ${FRAMEDATA_SEQ_DATA:-./data/seq}:/data
+    networks:
+      - framedatabot
 
   api:
     image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-api:${FRAMEDATA_IMAGE_TAG:-stable}
@@ -27,6 +29,8 @@ services:
       - "${API_PORT:-8080}:8080"
     volumes:
       - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+    networks:
+      - framedatabot
 
   bot:
     image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-bot:${FRAMEDATA_IMAGE_TAG:-stable}
@@ -47,3 +51,9 @@ services:
         condition: service_started
     volumes:
       - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+    networks:
+      - framedatabot
+
+networks:
+  framedatabot:
+    name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}

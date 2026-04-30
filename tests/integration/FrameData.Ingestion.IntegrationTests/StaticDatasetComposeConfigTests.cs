@@ -12,6 +12,7 @@ public sealed class StaticDatasetComposeConfigTests
         Assert.DoesNotContain("ingestion:", compose);
         Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH", compose);
         Assert.Contains(":ro", compose);
+        Assert.Contains("name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}", compose);
     }
 
     [Fact]
@@ -25,6 +26,8 @@ public sealed class StaticDatasetComposeConfigTests
         Assert.Contains("FRAMEDATA_DATASET_ROOT", compose);
         Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH", compose);
         Assert.Contains(":rw", compose);
+        Assert.Contains("external: true", compose);
+        Assert.Contains("name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}", compose);
     }
 
     [Fact]
@@ -36,6 +39,7 @@ public sealed class StaticDatasetComposeConfigTests
         Assert.DoesNotContain("postgres:", compose);
         Assert.DoesNotContain("ingestion:", compose);
         Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH", compose);
+        Assert.Contains("name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}", compose);
     }
 
     private static string ResolveRepositoryRoot()
