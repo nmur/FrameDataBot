@@ -11,7 +11,6 @@ public sealed class MoveEmbedResponseFactory
 
     private const string CorrectionIssueTemplate = "frame-data-correction.yml";
     private const int MaxIssueFieldLength = 40;
-    private const string SpacerField = "\u200B";
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
@@ -57,11 +56,9 @@ public sealed class MoveEmbedResponseFactory
         builder
             .AddField("Damage", DisplayValue(response.Damage), inline: true)
             .AddField("Stun", DisplayValue(response.Stun), inline: true)
-            .AddField(SpacerField, SpacerField, inline: true)
             .AddField("Startup", DisplayValue(response.FrameData.Startup), inline: true)
             .AddField("Active", DisplayValue(response.FrameData.Active), inline: true)
             .AddField("Recovery", DisplayValue(response.FrameData.Recovery), inline: true)
-            .AddField(SpacerField, SpacerField, inline: true)
             .AddField("On-Hit", DisplayValue(response.FrameData.OnHit), inline: true)
             .AddField("On-Block", DisplayValue(response.FrameData.OnBlock), inline: true)
             .AddField("Frame Advantage", DisplayValue(response.FrameData.FrameAdvantage), inline: true);

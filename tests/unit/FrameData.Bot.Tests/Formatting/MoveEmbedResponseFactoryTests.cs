@@ -34,6 +34,7 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         AssertRepositoryButton(response.Components);
         response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
+        response.Embed.Fields.ShouldNotContain(field => field.Name == "\u200B" || field.Value == "\u200B");
         FieldValue(response, "Damage").ShouldBe("?");
         FieldValue(response, "Stun").ShouldBe("?");
         FieldValue(response, "Startup").ShouldBe("12");
