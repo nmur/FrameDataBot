@@ -48,7 +48,7 @@ public sealed class FramedataInteractionHandlerTests
         _responder.InitialResponses.ShouldBeEmpty();
         _responder.Followups.Single().ShouldBeNull();
         _responder.FollowupEmbeds.Single().ShouldNotBeNull();
-        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk");
+        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk (Normals)");
         _responder.FollowupComponents.Single().ShouldNotBeNull();
         var correctionButton = FindButton(_responder.FollowupComponents.Single(), "Suggest Correction");
         correctionButton.Url.ShouldContain("command=%2Fframedata%20character%3Amakoto%20move%3A2mk");

@@ -31,16 +31,12 @@ public sealed class MoveEmbedResponseFactoryTests
 
         response.Content.ShouldBeNull();
         response.Embed.ShouldNotBeNull();
-        response.Embed.Title.ShouldBe("Makoto - Hayate");
+        response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         AssertRepositoryButton(response.Components);
-        FieldValue(response, "Section").ShouldBe("Specials");
-        FieldValue(response, "Damage").ShouldBe("?");
-        FieldValue(response, "Stun").ShouldBe("?");
-        FieldValue(response, "Startup").ShouldBe("12");
-        FieldValue(response, "Active").ShouldBe("3");
-        FieldValue(response, "Recovery").ShouldBe("21");
-        FieldValue(response, "On-Hit").ShouldBe("+2");
-        FieldValue(response, "On-Block").ShouldBe("-6");
+        response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
+        FieldValue(response, "Damage / Stun").ShouldBe("? / ?");
+        FieldValue(response, "Startup / Active / Recovery").ShouldBe("12 / 3 / 21");
+        FieldValue(response, "On-Hit / On-Block / Frame Advantage").ShouldBe("+2 / -6 / ?");
         response.IsEphemeral.ShouldBeFalse();
     }
 
@@ -68,8 +64,7 @@ public sealed class MoveEmbedResponseFactoryTests
 
         response.Content.ShouldBeNull();
         FieldValue(response, "Motion").ShouldBe("236P");
-        FieldValue(response, "Damage").ShouldBe("120");
-        FieldValue(response, "Stun").ShouldBe("17");
+        FieldValue(response, "Damage / Stun").ShouldBe("120 / 17");
     }
 
     [Fact]
@@ -88,7 +83,7 @@ public sealed class MoveEmbedResponseFactoryTests
 
         correctionButton.Style.ShouldBe(ButtonStyle.Link);
         correctionButton.Url.ShouldContain("template=frame-data-correction.yml");
-        correctionButton.Url.ShouldContain("title=Frame%20data%20correction%3A%20makoto%202mk");
+        correctionButton.Url.ShouldContain("title=Frame%20data%20correction%3A%20Character%3A%20%60makoto%60%2C%20Move%3A%20%602mk%60");
         correctionButton.Url.ShouldContain("command=%2Fframedata%20character%3Amakoto%20move%3A2mk");
         correctionButton.Url.ShouldContain("requested-character=makoto");
         correctionButton.Url.ShouldContain("requested-move=2mk");
@@ -195,7 +190,7 @@ public sealed class MoveEmbedResponseFactoryTests
             }
         });
 
-        response.Embed!.Title.ShouldBe("Alex - Air Knee Smash (HK)");
+        response.Embed!.Title.ShouldBe("Alex - Air Knee Smash (HK) (Specials)");
         FieldValue(response, "Motion").ShouldBe("DP + LP / MP / HP / LK / MK / HK");
     }
 

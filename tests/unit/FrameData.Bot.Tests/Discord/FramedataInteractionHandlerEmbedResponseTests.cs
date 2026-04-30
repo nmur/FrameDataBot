@@ -48,7 +48,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
         var followup = responder.Followups.Single();
         followup.Content.ShouldBeNull();
         followup.Embed.ShouldNotBeNull();
-        followup.Embed.Title.ShouldBe("Makoto - Hayate");
+        followup.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         followup.Components.ShouldNotBeNull();
         followup.Attachment.ShouldBeNull();
         followup.Ephemeral.ShouldBeFalse();

@@ -44,13 +44,11 @@ public sealed class DiscordCommandContractTests
 
         Assert.Null(response.Content);
         Assert.NotNull(response.Embed);
-        Assert.Equal("Makoto - Hayate", response.Embed.Title);
-        Assert.Contains(response.Embed.Fields, field => field.Name == "Section" && field.Value == "Specials");
-        Assert.Contains(response.Embed.Fields, field => field.Name == "Startup" && field.Value == "12");
-        Assert.Contains(response.Embed.Fields, field => field.Name == "Active" && field.Value == "3");
-        Assert.Contains(response.Embed.Fields, field => field.Name == "Recovery" && field.Value == "21");
-        Assert.Contains(response.Embed.Fields, field => field.Name == "On-Hit" && field.Value == "+2");
-        Assert.Contains(response.Embed.Fields, field => field.Name == "On-Block" && field.Value == "-6");
+        Assert.Equal("Makoto - Hayate (Specials)", response.Embed.Title);
+        Assert.DoesNotContain(response.Embed.Fields, field => field.Name == "Section");
+        Assert.Contains(response.Embed.Fields, field => field.Name == "Damage / Stun" && field.Value == "? / ?");
+        Assert.Contains(response.Embed.Fields, field => field.Name == "Startup / Active / Recovery" && field.Value == "12 / 3 / 21");
+        Assert.Contains(response.Embed.Fields, field => field.Name == "On-Hit / On-Block / Frame Advantage" && field.Value == "+2 / -6 / ?");
     }
 
     [Fact]

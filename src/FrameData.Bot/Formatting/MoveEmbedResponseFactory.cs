@@ -48,25 +48,21 @@ public sealed class MoveEmbedResponseFactory
     public DiscordMoveResponse Create(MoveQueryResponse response, MoveCorrectionIssueContext? issueContext = null)
     {
         var builder = new EmbedBuilder()
-            .WithTitle($"{response.Character} - {DisplayButtonNomenclature(response.MatchedMove)}")
-            .WithColor(SuccessColor)
-            .AddField("Section", response.Section, inline: true);
+            .WithTitle($"{response.Character} - {DisplayButtonNomenclature(response.MatchedMove)} ({response.Section})")
+            .WithColor(SuccessColor);
 
         AddOptionalField(builder, "Motion", DisplayOptionalButtonNomenclature(response.Motion));
 
         builder
-            .AddField("Damage", DisplayValue(response.Damage), inline: true)
-            .AddField("Stun", DisplayValue(response.Stun), inline: true)
-            .AddField("Startup", DisplayValue(response.FrameData.Startup), inline: true)
-            .AddField("Active", DisplayValue(response.FrameData.Active), inline: true)
-            .AddField("Recovery", DisplayValue(response.FrameData.Recovery), inline: true)
-            .AddField("On-Hit", DisplayValue(response.FrameData.OnHit), inline: true)
-            .AddField("On-Block", DisplayValue(response.FrameData.OnBlock), inline: true);
-
-        if (!string.IsNullOrWhiteSpace(response.FrameData.FrameAdvantage))
-        {
-            builder.AddField("Frame Advantage", response.FrameData.FrameAdvantage, inline: true);
-        }
+            .AddField("Damage / Stun", JoinValues(DisplayValue(response.Damage), DisplayValue(response.Stun)))
+            .AddField("Startup / Active / Recovery", JoinValues(
+                DisplayValue(response.FrameData.Startup),
+                DisplayValue(response.FrameData.Active),
+                DisplayValue(response.FrameData.Recovery)))
+            .AddField("On-Hit / On-Block / Frame Advantage", JoinValues(
+                DisplayValue(response.FrameData.OnHit),
+                DisplayValue(response.FrameData.OnBlock),
+                DisplayValue(response.FrameData.FrameAdvantage)));
 
         var attachment = CreateAttachment(response.Media);
         if (attachment is not null)
@@ -130,6 +126,11 @@ public sealed class MoveEmbedResponseFactory
         return string.IsNullOrWhiteSpace(value) ? "?" : value;
     }
 
+    private static string JoinValues(params string[] values)
+    {
+        return string.Join(" / ", values);
+    }
+
     private static string DisplayButtonNomenclature(string value)
     {
         return ButtonNomenclatureRegex.Replace(value, match => ButtonDisplayNames[match.Value]);
@@ -144,7 +145,7 @@ public sealed class MoveEmbedResponseFactory
     {
         if (!string.IsNullOrWhiteSpace(value))
         {
-            builder.AddField(name, value, inline: true);
+            builder.AddField(name, value);
         }
     }
 
@@ -219,7 +220,7 @@ public sealed class MoveEmbedResponseFactory
         var character = LimitIssueField(issueContext.Character);
         var moveInput = LimitIssueField(issueContext.MoveInput);
         var command = $"/framedata character:{character} move:{moveInput}";
-        var title = $"Frame data correction: {character} {moveInput}".Trim();
+        var title = $"Frame data correction: Character: `{character}`, Move: `{moveInput}`".Trim();
 
         var parameters = new Dictionary<string, string>
         {
