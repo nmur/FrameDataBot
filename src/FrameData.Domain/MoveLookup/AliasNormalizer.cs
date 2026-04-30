@@ -115,6 +115,7 @@ public sealed partial class AliasNormalizer
         }
 
         var value = input.Trim().ToLowerInvariant();
+        value = ApplyMotionPhraseAliases(value);
         value = ApplyDirectionalPhraseAliases(value);
         foreach (var alias in AttackTermAliases.OrderByDescending(alias => alias.Key.Length))
         {
@@ -134,6 +135,7 @@ public sealed partial class AliasNormalizer
         AddDerivedNotationAliases(aliases, move, normalizedCanonical);
         AddCloseNormalAliases(aliases, move, normalizedCanonical);
         AddSpecialMoveStrengthAliases(aliases, move);
+        AddMotionAliases(aliases, move);
         AddKnownMoveShortNameAliases(aliases, move);
         AddMoveSpecificColloquialAliases(aliases, move, normalizedCanonical);
         AddColloquialAliases(aliases, move, normalizedCanonical);
@@ -231,6 +233,32 @@ public sealed partial class AliasNormalizer
         AddAlias(aliases, move, $"{baseName} {strengthAlias.Strength}", MoveAliasType.Derived);
         AddAlias(aliases, move, $"{strengthAlias.Button} {baseName}", MoveAliasType.Abbreviation);
         AddAlias(aliases, move, $"{baseName} {strengthAlias.Button}", MoveAliasType.Abbreviation);
+    }
+
+    private void AddMotionAliases(List<MoveAlias> aliases, Move move)
+    {
+        if (string.IsNullOrWhiteSpace(move.Motion))
+        {
+            return;
+        }
+
+        var normalizedMotion = Normalize(move.Motion);
+        AddAlias(aliases, move, move.Motion, MoveAliasType.Numpad);
+
+        var motionParts = TryGetMotionParts(normalizedMotion);
+        if (motionParts is null)
+        {
+            return;
+        }
+
+        AddAlias(aliases, move, motionParts.Value.Motion, MoveAliasType.Numpad);
+
+        var parentheticalStrength = GetParentheticalStrengthAlias(move.CanonicalName);
+        var buttons = ExtractMotionButtons(motionParts.Value.Suffix);
+        foreach (var button in SelectMotionButtonAliases(buttons, parentheticalStrength))
+        {
+            AddAlias(aliases, move, $"{motionParts.Value.Motion}{button}", MoveAliasType.Numpad);
+        }
     }
 
     private void AddKnownMoveShortNameAliases(List<MoveAlias> aliases, Move move)
@@ -750,6 +778,19 @@ public sealed partial class AliasNormalizer
         return value;
     }
 
+    private static string ApplyMotionPhraseAliases(string value)
+    {
+        value = DoubleQuarterCircleForwardPhrase().Replace(value, "236236");
+        value = DoubleQuarterCircleBackPhrase().Replace(value, "214214");
+        value = QuarterCircleForwardPhrase().Replace(value, "236");
+        value = QuarterCircleBackPhrase().Replace(value, "214");
+        value = HalfCircleForwardPhrase().Replace(value, "41236");
+        value = HalfCircleBackPhrase().Replace(value, "63214");
+        value = DragonPunchMotionPhrase().Replace(value, "dpm");
+        value = DragonPunchBeforeButtonPhrase().Replace(value, "dpm");
+        return value;
+    }
+
     private static string GetMoveBaseName(string canonicalName)
     {
         var match = ParentheticalVariantName().Match(canonicalName);
@@ -789,6 +830,61 @@ public sealed partial class AliasNormalizer
         return new MovementPrefixResult(baseName, []);
     }
 
+    private static MotionParts? TryGetMotionParts(string normalizedMotion)
+    {
+        foreach (var motion in MotionNotationPrefixes)
+        {
+            if (normalizedMotion.StartsWith(motion, StringComparison.Ordinal))
+            {
+                return new MotionParts(motion, normalizedMotion[motion.Length..]);
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> ExtractMotionButtons(string suffix)
+    {
+        var buttons = new List<string>();
+        var index = 0;
+        while (index < suffix.Length)
+        {
+            var button = MotionButtonTokens.FirstOrDefault(token => suffix[index..].StartsWith(token, StringComparison.Ordinal));
+            if (button is null)
+            {
+                index++;
+                continue;
+            }
+
+            buttons.Add(button);
+            index += button.Length;
+        }
+
+        return buttons;
+    }
+
+    private static IReadOnlyList<string> SelectMotionButtonAliases(
+        IReadOnlyList<string> buttons,
+        StrengthAlias? parentheticalStrength)
+    {
+        if (parentheticalStrength is null)
+        {
+            return buttons;
+        }
+
+        if (buttons.Count == 0
+            || buttons.Contains(parentheticalStrength.Button, StringComparer.Ordinal)
+            || buttons.Contains(GetGenericButton(parentheticalStrength.Button), StringComparer.Ordinal))
+        {
+            return [parentheticalStrength.Button];
+        }
+
+        return buttons;
+    }
+
+    private static string GetGenericButton(string button)
+        => button.EndsWith('p') ? "p" : button.EndsWith('k') ? "k" : string.Empty;
+
     private static bool IsButtonSuffix(string value)
     {
         return value is "lp" or "mp" or "hp" or "lk" or "mk" or "hk";
@@ -807,6 +903,30 @@ public sealed partial class AliasNormalizer
     [GeneratedRegex(@"\bdown\s*(?:\+|/|-)?\s*forward\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
     private static partial Regex DownForwardPhrase();
 
+    [GeneratedRegex(@"\b(?:(?:qcf|quarter[\s-]+circle[\s-]+forward)\s*x\s*2|2\s*x\s*(?:qcf|quarter[\s-]+circle[\s-]+forward)|double\s*(?:qcf|quarter[\s-]+circle[\s-]+forward))\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex DoubleQuarterCircleForwardPhrase();
+
+    [GeneratedRegex(@"\b(?:(?:qcb|quarter[\s-]+circle[\s-]+back)\s*x\s*2|2\s*x\s*(?:qcb|quarter[\s-]+circle[\s-]+back)|double\s*(?:qcb|quarter[\s-]+circle[\s-]+back))\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex DoubleQuarterCircleBackPhrase();
+
+    [GeneratedRegex(@"\b(?:qcf|quarter[\s-]+circle[\s-]+forward)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex QuarterCircleForwardPhrase();
+
+    [GeneratedRegex(@"\b(?:qcb|quarter[\s-]+circle[\s-]+back)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex QuarterCircleBackPhrase();
+
+    [GeneratedRegex(@"\b(?:hcf|half[\s-]+circle[\s-]+forward)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex HalfCircleForwardPhrase();
+
+    [GeneratedRegex(@"\b(?:hcb|half[\s-]+circle[\s-]+back)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex HalfCircleBackPhrase();
+
+    [GeneratedRegex(@"\bdp\s*motion\b|\bdpm\b", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex DragonPunchMotionPhrase();
+
+    [GeneratedRegex(@"\bdp\b(?=\s*\+?\s*(?:lp|mp|hp|lk|mk|hk|jab|strong|fierce|short|forward|roundhouse|rh|light\s+punch|medium\s+punch|heavy\s+punch|light\s+kick|medium\s+kick|heavy\s+kick)\b)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
+    private static partial Regex DragonPunchBeforeButtonPhrase();
+
     [GeneratedRegex("[^a-z0-9]+", RegexOptions.Compiled)]
     private static partial Regex NonLookupCharacters();
 
@@ -816,11 +936,36 @@ public sealed partial class AliasNormalizer
     private sealed record StrengthAlias(string Strength, string Button);
     private sealed record MovementPrefix(string RawPrefix, IReadOnlyList<string> Aliases);
     private sealed record MovementPrefixResult(string BaseName, IReadOnlyList<string> Prefixes);
+    private readonly record struct MotionParts(string Motion, string Suffix);
 
     private static readonly IReadOnlyList<MovementPrefix> MovementPrefixes =
     [
         new MovementPrefix("jumping ", ["jumping", "jump", "jp", "j", "air"]),
         new MovementPrefix("jump ", ["jumping", "jump", "jp", "j", "air"]),
         new MovementPrefix("air ", ["air", "jumping", "jump", "jp", "j"])
+    ];
+
+    private static readonly IReadOnlyList<string> MotionNotationPrefixes =
+    [
+        "236236",
+        "214214",
+        "41236",
+        "63214",
+        "236",
+        "214",
+        "360",
+        "dpm"
+    ];
+
+    private static readonly IReadOnlyList<string> MotionButtonTokens =
+    [
+        "lp",
+        "mp",
+        "hp",
+        "lk",
+        "mk",
+        "hk",
+        "p",
+        "k"
     ];
 }

@@ -421,6 +421,89 @@ public sealed class FuzzyMatcherTests
         candidates[0].Score.ShouldBe(100);
     }
 
+    [Theory]
+    [InlineData("qcf lp", "Hadouken (Jab)", "236lp")]
+    [InlineData("236 lp", "Hadouken (Jab)", "236lp")]
+    [InlineData("quarter circle forward jab", "Hadouken (Jab)", "236lp")]
+    [InlineData("qcb lk", "Tatsumaki Senpuu Kyaku (Short)", "214lk")]
+    [InlineData("214 short", "Tatsumaki Senpuu Kyaku (Short)", "214lk")]
+    [InlineData("hcf hp", "Half Circle Punch", "41236hp")]
+    [InlineData("half circle forward fierce", "Half Circle Punch", "41236hp")]
+    [InlineData("hcb hk", "Half Circle Kick", "63214hk")]
+    [InlineData("half circle back roundhouse", "Half Circle Kick", "63214hk")]
+    [InlineData("360", "Gigas Breaker", "360")]
+    [InlineData("qcf x 2", "Shinku Hadouken", "236236")]
+    [InlineData("236236", "Shinku Hadouken", "236236")]
+    [InlineData("double quarter circle forward", "Shinku Hadouken", "236236")]
+    [InlineData("double qcf", "Shinku Hadouken", "236236")]
+    [InlineData("2x qcf", "Shinku Hadouken", "236236")]
+    [InlineData("qcb x 2", "Reverse Super", "214214")]
+    [InlineData("214214", "Reverse Super", "214214")]
+    [InlineData("double quarter circle back", "Reverse Super", "214214")]
+    [InlineData("double qcb", "Reverse Super", "214214")]
+    [InlineData("2x quarter circle back", "Reverse Super", "214214")]
+    [InlineData("dp mk", "Dragon Punch Kick", "dpmmk")]
+    public void Rank_WhenInputUsesMotionNotation_RanksMoveWithMatchingMotionFirst(
+        string input,
+        string expectedMove,
+        string expectedAlias)
+    {
+        var candidates = _matcher.Rank(input, CreateMotionMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("qcf mp", "Kikouken (Strong)", "236mp")]
+    [InlineData("236 mp", "Kikouken (Strong)", "236mp")]
+    [InlineData("qcb mk", "Kicks (Forward)", "214mk")]
+    public void Rank_WhenMotionUsesGenericPunchOrKick_CombinesWithParentheticalStrength(
+        string input,
+        string expectedMove,
+        string expectedAlias)
+    {
+        var candidates = _matcher.Rank(input, CreateGenericButtonMotionMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Rank_WhenMotionListsMultipleButtons_UsesParenthesizedButtonForSpecificAlias()
+    {
+        var moves = new[]
+        {
+            CreateTestMove(
+                "generic-dragon-punch-forward",
+                "generic",
+                "Generic",
+                "Specials",
+                "Dragon Punch (Forward)",
+                1,
+                motion: "DP + Jab / Strong / Fierce / Short / Forward / Roundhouse"),
+            CreateTestMove(
+                "generic-dragon-punch-roundhouse",
+                "generic",
+                "Generic",
+                "Specials",
+                "Dragon Punch (Roundhouse)",
+                2,
+                motion: "DP + Jab / Strong / Fierce / Short / Forward / Roundhouse")
+        };
+
+        var candidates = _matcher.Rank("dp mk", moves);
+
+        candidates[0].CanonicalName.ShouldBe("Dragon Punch (Forward)");
+        candidates[0].MatchedAlias.ShouldBe("dpmmk");
+        candidates[0].Score.ShouldBe(100);
+        _matcher.IsAmbiguous(candidates).ShouldBeFalse();
+    }
+
     [Fact]
     public void IsAmbiguous_WhenTopCandidatesHaveNearEqualScores_ReturnsTrue()
     {
@@ -476,6 +559,30 @@ public sealed class FuzzyMatcherTests
                 DisplayOrder = 3,
                 FrameData = new MoveFrameData { Startup = "12" }
             }
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateMotionMoves()
+    {
+        return
+        [
+            CreateTestMove("ryu-hadouken-jab", "ryu", "Ryu", "Specials", "Hadouken (Jab)", 1, motion: "QCF + Jab"),
+            CreateTestMove("ryu-tatsu-short", "ryu", "Ryu", "Specials", "Tatsumaki Senpuu Kyaku (Short)", 2, motion: "QCB + Short"),
+            CreateTestMove("generic-hcf-punch", "generic", "Generic", "Specials", "Half Circle Punch", 3, motion: "HCF + Fierce"),
+            CreateTestMove("generic-hcb-kick", "generic", "Generic", "Specials", "Half Circle Kick", 4, motion: "HCB + Roundhouse"),
+            CreateTestMove("hugo-gigas-breaker", "hugo", "Hugo", "SuperArts", "Gigas Breaker", 5, motion: "360"),
+            CreateTestMove("ryu-shinku-hadouken", "ryu", "Ryu", "SuperArts", "Shinku Hadouken", 6, motion: "QCF x 2"),
+            CreateTestMove("generic-reverse-super", "generic", "Generic", "SuperArts", "Reverse Super", 7, motion: "QCB x 2"),
+            CreateTestMove("generic-dragon-punch-kick", "generic", "Generic", "Specials", "Dragon Punch Kick", 8, motion: "DPM + Forward")
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateGenericButtonMotionMoves()
+    {
+        return
+        [
+            CreateTestMove("chun-li-kikouken-strong", "chun-li", "Chun-Li", "Specials", "Kikouken (Strong)", 1, motion: "236P"),
+            CreateTestMove("generic-kicks-forward", "generic", "Generic", "Specials", "Kicks (Forward)", 2, motion: "214K")
         ];
     }
 
@@ -1119,7 +1226,8 @@ public sealed class FuzzyMatcherTests
         string characterName,
         string section,
         string canonicalName,
-        int displayOrder)
+        int displayOrder,
+        string? motion = null)
         => new()
         {
             Id = id,
@@ -1129,6 +1237,7 @@ public sealed class FuzzyMatcherTests
             Section = section,
             CanonicalName = canonicalName,
             DisplayOrder = displayOrder,
+            Motion = motion,
             FrameData = new MoveFrameData { Startup = "1" }
         };
 

@@ -102,6 +102,20 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
     }
 
     [Fact]
+    public async Task GetMoveQuery_WhenInputUsesMotionAlias_ReturnsMoveFromStaticDataset()
+    {
+        var response = await _client.GetAsync(
+            "/v1/moves/query?character=chun-li&moveInput=qcf%20lp");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Kikouken (Jab)", payload.MatchedMove);
+        Assert.Equal("Alias", payload.MatchedBy);
+        Assert.Equal("236P", payload.Motion);
+    }
+
+    [Fact]
     public async Task GetMoveQuery_WhenMoveHasRepresentativeMedia_ReturnsMediaFields()
     {
         var response = await _client.GetAsync("/v1/moves/query?character=chun&moveInput=2mk");
