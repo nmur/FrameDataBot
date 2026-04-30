@@ -73,6 +73,38 @@ public sealed class MoveEmbedResponseFactoryTests
     }
 
     [Fact]
+    public void Create_WhenIssueContextProvided_AddsCorrectionIssueButton()
+    {
+        var response = _factory.Create(new MoveQueryResponse
+        {
+            Character = "Makoto",
+            MatchedMove = "Hayate",
+            Section = "Specials",
+            MatchedBy = "Exact",
+            FrameData = new FrameDataContract()
+        }, new MoveCorrectionIssueContext("makoto", "2mk"));
+
+        var correctionButton = FindButton(response.Components, "Suggest Correction");
+
+        correctionButton.Style.ShouldBe(ButtonStyle.Link);
+        correctionButton.Url.ShouldContain("template=frame-data-correction.yml");
+        correctionButton.Url.ShouldContain("title=Frame%20data%20correction%3A%20makoto%202mk");
+        correctionButton.Url.ShouldContain("command=%2Fframedata%20character%3Amakoto%20move%3A2mk");
+        correctionButton.Url.ShouldContain("requested-character=makoto");
+        correctionButton.Url.ShouldContain("requested-move=2mk");
+    }
+
+    [Fact]
+    public void BuildCorrectionIssueUrl_WhenInputIsLong_KeepsButtonUrlWithinDiscordLimit()
+    {
+        var url = MoveEmbedResponseFactory.BuildCorrectionIssueUrl(new MoveCorrectionIssueContext(
+            new string('a', 200),
+            new string('b', 200)));
+
+        url.Length.ShouldBeLessThanOrEqualTo(512);
+    }
+
+    [Fact]
     public void Create_WhenMoveHasRepresentativeMedia_AttachesLocalFileReference()
     {
         var factory = new MoveEmbedResponseFactory(new()
@@ -229,12 +261,21 @@ public sealed class MoveEmbedResponseFactoryTests
 
     private static void AssertRepositoryButton(MessageComponent? components)
     {
-        components.ShouldNotBeNull();
-        var row = components.Components.Single().ShouldBeOfType<ActionRowComponent>();
-        var button = row.Components.Single().ShouldBeOfType<ButtonComponent>();
+        var button = FindButton(components, "GitHub");
 
         button.Label.ShouldBe("GitHub");
         button.Style.ShouldBe(ButtonStyle.Link);
         button.Url.ShouldBe(MoveEmbedResponseFactory.RepositoryUrl);
+    }
+
+    private static ButtonComponent FindButton(MessageComponent? components, string label)
+    {
+        components.ShouldNotBeNull();
+        return components
+            .Components
+            .OfType<ActionRowComponent>()
+            .SelectMany(row => row.Components)
+            .OfType<ButtonComponent>()
+            .Single(button => button.Label == label);
     }
 }

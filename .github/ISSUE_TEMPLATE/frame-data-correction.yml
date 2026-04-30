@@ -1,0 +1,54 @@
+name: Frame data correction
+description: Report a wrong, missing, ambiguous, or confusing /framedata result.
+title: "[Frame data correction]: "
+labels: ["frame-data", "correction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the bot's accuracy. The command fields may be pre-filled from Discord; please add what you expected to see and what looked wrong.
+  - type: input
+    id: command
+    attributes:
+      label: Discord command
+      description: The command that produced the result.
+      placeholder: /framedata character:makoto move:2mk
+    validations:
+      required: true
+  - type: input
+    id: requested-character
+    attributes:
+      label: Requested character
+      placeholder: makoto
+    validations:
+      required: false
+  - type: input
+    id: requested-move
+    attributes:
+      label: Requested move
+      placeholder: 2mk
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: Include the move name, notation, or frame data you expected if you know it.
+      placeholder: I expected this query to return...
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Describe whether the bot returned the wrong move, missed a move, showed incorrect values, or gave an unclear response.
+      placeholder: The bot returned...
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source or notes
+      description: Optional links, screenshots, notes, or references that make the correction easier to verify.
+    validations:
+      required: false

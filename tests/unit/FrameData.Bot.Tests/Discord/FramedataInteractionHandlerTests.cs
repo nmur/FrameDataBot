@@ -50,6 +50,8 @@ public sealed class FramedataInteractionHandlerTests
         _responder.FollowupEmbeds.Single().ShouldNotBeNull();
         _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk");
         _responder.FollowupComponents.Single().ShouldNotBeNull();
+        var correctionButton = FindButton(_responder.FollowupComponents.Single(), "Suggest Correction");
+        correctionButton.Url.ShouldContain("command=%2Fframedata%20character%3Amakoto%20move%3A2mk");
     }
 
     [Fact]
@@ -171,5 +173,16 @@ public sealed class FramedataInteractionHandlerTests
             FollowupComponents.Add(components);
             return Task.CompletedTask;
         }
+    }
+
+    private static ButtonComponent FindButton(MessageComponent? components, string label)
+    {
+        components.ShouldNotBeNull();
+        return components
+            .Components
+            .OfType<ActionRowComponent>()
+            .SelectMany(row => row.Components)
+            .OfType<ButtonComponent>()
+            .Single(button => button.Label == label);
     }
 }

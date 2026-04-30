@@ -9,12 +9,11 @@ public sealed class MoveEmbedResponseFactory
 {
     public const string RepositoryUrl = "https://github.com/nmur/FrameDataBot";
 
+    private const string CorrectionIssueTemplate = "frame-data-correction.yml";
+    private const int MaxIssueFieldLength = 40;
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
-    private static readonly MessageComponent RepositoryComponents = new ComponentBuilder()
-        .WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl)
-        .Build();
     private static readonly Regex ButtonNomenclatureRegex = new(
         @"\b(?:jab|strong|fierce|short|forward|roundhouse|rh)\b",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -46,7 +45,7 @@ public sealed class MoveEmbedResponseFactory
         _activeDatasetPath = activeDatasetPath;
     }
 
-    public DiscordMoveResponse Create(MoveQueryResponse response)
+    public DiscordMoveResponse Create(MoveQueryResponse response, MoveCorrectionIssueContext? issueContext = null)
     {
         var builder = new EmbedBuilder()
             .WithTitle($"{response.Character} - {DisplayButtonNomenclature(response.MatchedMove)}")
@@ -78,12 +77,12 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
-            Components = RepositoryComponents,
+            Components = CreateComponents(issueContext),
             Attachment = attachment
         };
     }
 
-    public DiscordMoveResponse Create(MoveAmbiguousResponse response)
+    public DiscordMoveResponse Create(MoveAmbiguousResponse response, MoveCorrectionIssueContext? issueContext = null)
     {
         var candidates = response.Candidates
             .Select((candidate, index) =>
@@ -98,11 +97,11 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
-            Components = RepositoryComponents
+            Components = CreateComponents(issueContext)
         };
     }
 
-    public DiscordMoveResponse Create(ErrorResponse error)
+    public DiscordMoveResponse Create(ErrorResponse error, MoveCorrectionIssueContext? issueContext = null)
     {
         var builder = new EmbedBuilder()
             .WithTitle(ErrorTitle(error.Code))
@@ -112,18 +111,18 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
-            Components = RepositoryComponents,
+            Components = CreateComponents(issueContext),
             IsEphemeral = false
         };
     }
 
-    public DiscordMoveResponse CreateFallbackError()
+    public DiscordMoveResponse CreateFallbackError(MoveCorrectionIssueContext? issueContext = null)
     {
         return Create(new ErrorResponse
         {
             Code = "error",
             Message = "Unknown error"
-        });
+        }, issueContext);
     }
 
     private static string DisplayValue(string? value)
@@ -201,4 +200,47 @@ public sealed class MoveEmbedResponseFactory
             ? null
             : new DiscordMoveAttachment(filePath, fileName);
     }
+
+    private static MessageComponent CreateComponents(MoveCorrectionIssueContext? issueContext)
+    {
+        var builder = new ComponentBuilder()
+            .WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl);
+
+        if (issueContext is not null)
+        {
+            builder.WithButton("Suggest Correction", style: ButtonStyle.Link, url: BuildCorrectionIssueUrl(issueContext));
+        }
+
+        return builder.Build();
+    }
+
+    public static string BuildCorrectionIssueUrl(MoveCorrectionIssueContext issueContext)
+    {
+        var character = LimitIssueField(issueContext.Character);
+        var moveInput = LimitIssueField(issueContext.MoveInput);
+        var command = $"/framedata character:{character} move:{moveInput}";
+        var title = $"Frame data correction: {character} {moveInput}".Trim();
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["template"] = CorrectionIssueTemplate,
+            ["title"] = title,
+            ["command"] = command,
+            ["requested-character"] = character,
+            ["requested-move"] = moveInput
+        };
+
+        return $"{RepositoryUrl}/issues/new?{string.Join("&", parameters.Select(pair => $"{Encode(pair.Key)}={Encode(pair.Value)}"))}";
+    }
+
+    private static string LimitIssueField(string value)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value) ? "unknown" : value.Trim();
+        return normalized.Length <= MaxIssueFieldLength
+            ? normalized
+            : normalized[..MaxIssueFieldLength];
+    }
+
+    private static string Encode(string value)
+        => Uri.EscapeDataString(value);
 }
