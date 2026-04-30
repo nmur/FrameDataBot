@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-21
-**Feature**: [/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/spec.md](/home/nmur/code/3sFrameDataBot/specs/001-build-3s-frame-bot/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

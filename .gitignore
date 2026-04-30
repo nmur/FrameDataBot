@@ -1,6 +1,9 @@
 # Local Codex runtime state (machine/user specific)
 .codex/*
 
+# Spec Kit generated cache
+.specify/extensions/.cache/
+
 # Common local noise
 .DS_Store
 Thumbs.db
