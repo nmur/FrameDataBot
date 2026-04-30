@@ -8,7 +8,9 @@ A Discord bot for looking up 3rd Strike frame data sourced from http://ensabahnu
 
 ## Usage
 
-- Add the bot to your Discord server (TODO: Add link)
+> [!NOTE]
+> Currently installation is invite only. Message `nmur` on Discord if you have interest in installing this bot in your server.
+
 - Discord slash command: `/framedata character:<name> move:<move>`
 - Best move match is chosen through fuzzy matching scored on established FGC termanology, colloquial names, etc
   - eg. `6hk`, `towards hk`, `towards roundhouse`, `dart shot` will all evaluate to the same move
