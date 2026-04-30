@@ -74,7 +74,10 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
-            Components = CreateComponents(issueContext),
+            Components = CreateComponents(
+                issueContext,
+                response.CharacterFrameDataUrl,
+                response.MoveHitboxDisplayUrl),
             Attachment = attachment
         };
     }
@@ -198,10 +201,16 @@ public sealed class MoveEmbedResponseFactory
             : new DiscordMoveAttachment(filePath, fileName);
     }
 
-    private static MessageComponent CreateComponents(MoveCorrectionIssueContext? issueContext)
+    private static MessageComponent CreateComponents(
+        MoveCorrectionIssueContext? issueContext,
+        string? characterFrameDataUrl = null,
+        string? moveHitboxDisplayUrl = null)
     {
-        var builder = new ComponentBuilder()
-            .WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl);
+        var builder = new ComponentBuilder();
+
+        AddLinkButton(builder, "Character Frame Data", characterFrameDataUrl);
+        AddLinkButton(builder, "Hitbox Display", moveHitboxDisplayUrl);
+        builder.WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl);
 
         if (issueContext is not null)
         {
@@ -209,6 +218,14 @@ public sealed class MoveEmbedResponseFactory
         }
 
         return builder.Build();
+    }
+
+    private static void AddLinkButton(ComponentBuilder builder, string label, string? url)
+    {
+        if (IsHttpUrl(url))
+        {
+            builder.WithButton(label, style: ButtonStyle.Link, url: url);
+        }
     }
 
     public static string BuildCorrectionIssueUrl(MoveCorrectionIssueContext issueContext)
@@ -240,4 +257,8 @@ public sealed class MoveEmbedResponseFactory
 
     private static string Encode(string value)
         => Uri.EscapeDataString(value);
+
+    private static bool IsHttpUrl(string? value)
+        => Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 }

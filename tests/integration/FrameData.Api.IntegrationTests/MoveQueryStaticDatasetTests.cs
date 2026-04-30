@@ -24,6 +24,7 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                     "chun-li",
                     "2mk",
                     startup: "5",
+                    sourceHitboxPath: "hitboxesDisplay.php?iChar=1&sMoveType=fd_normals&iMove=20",
                     media:
                     [
                         new StaticDatasetMoveMedia
@@ -83,6 +84,8 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("Chun-Li", payload.Character);
         Assert.Equal("2mk", payload.MatchedMove);
         Assert.Equal("5", payload.FrameData.Startup);
+        Assert.Equal("http://example.test/source.php?id=1", payload.CharacterFrameDataUrl);
+        Assert.Equal("http://example.test/hitboxesDisplay.php?iChar=1&sMoveType=fd_normals&iMove=20", payload.MoveHitboxDisplayUrl);
     }
 
     [Fact]

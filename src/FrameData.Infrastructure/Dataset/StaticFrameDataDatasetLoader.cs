@@ -72,7 +72,7 @@ public sealed class StaticFrameDataDatasetLoader
                         $"Move {move.Id} belongs to {move.CharacterId}, not {character.Id}.");
                 }
 
-                moves.Add(ToDomain(move, character));
+                moves.Add(ToDomain(move, character, manifest.SourceBaseUrl));
             }
         }
 
@@ -147,13 +147,15 @@ public sealed class StaticFrameDataDatasetLoader
             Aliases = character.Aliases
         };
 
-    private static Move ToDomain(StaticDatasetMove move, Character character)
+    private static Move ToDomain(StaticDatasetMove move, Character character, string? sourceBaseUrl)
         => new()
         {
             Id = move.Id,
             CharacterId = move.CharacterId,
             Game = character.Game,
             CharacterName = character.Name,
+            SourceCharacterId = character.SourceCharacterId,
+            SourceBaseUrl = sourceBaseUrl,
             Section = move.Section,
             CanonicalName = move.CanonicalName,
             DisplayOrder = move.DisplayOrder,

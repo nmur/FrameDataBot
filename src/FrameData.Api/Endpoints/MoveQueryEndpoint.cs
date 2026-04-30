@@ -73,6 +73,12 @@ public static class MoveQueryEndpoint
                 Motion = result.Move.Motion,
                 Damage = result.Move.Damage,
                 Stun = result.Move.Stun,
+                CharacterFrameDataUrl = BuildCharacterFrameDataUrl(
+                    result.Move.SourceBaseUrl,
+                    result.Move.SourceCharacterId),
+                MoveHitboxDisplayUrl = ResolveSourceUrl(
+                    result.Move.SourceBaseUrl,
+                    result.Move.SourceHitboxPath),
                 FrameData = new FrameDataContract
                 {
                     Startup = result.Move.FrameData.Startup,
@@ -103,5 +109,46 @@ public static class MoveQueryEndpoint
             CaptureStatus = representative.CaptureStatus.ToString(),
             FallbackReason = representative.FallbackReason
         };
+    }
+
+    private static string? BuildCharacterFrameDataUrl(string? sourceBaseUrl, int? sourceCharacterId)
+    {
+        if (string.IsNullOrWhiteSpace(sourceBaseUrl) || sourceCharacterId is null)
+        {
+            return null;
+        }
+
+        if (!Uri.TryCreate(sourceBaseUrl, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        var separator = string.IsNullOrEmpty(uri.Query) ? "?" : "&";
+        return $"{uri.GetLeftPart(UriPartial.Path)}{uri.Query}{separator}id={sourceCharacterId.Value}";
+    }
+
+    private static string? ResolveSourceUrl(string? sourceBaseUrl, string? sourcePathOrUrl)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePathOrUrl))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(sourcePathOrUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceBaseUrl)
+            || !Uri.TryCreate(sourceBaseUrl, UriKind.Absolute, out var baseUri))
+        {
+            return null;
+        }
+
+        var resolved = sourcePathOrUrl.StartsWith("?", StringComparison.Ordinal)
+            ? new Uri($"{baseUri.GetLeftPart(UriPartial.Path)}{sourcePathOrUrl}")
+            : new Uri(baseUri, sourcePathOrUrl);
+
+        return resolved.ToString();
     }
 }
