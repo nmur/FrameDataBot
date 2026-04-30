@@ -74,7 +74,8 @@ public sealed class FramedataInteractionHandler
                 moveResponse.Content,
                 moveResponse.Embed,
                 moveResponse.IsEphemeral,
-                moveResponse.Attachment);
+                moveResponse.Attachment,
+                moveResponse.Components);
         }
         catch (Exception exception)
         {

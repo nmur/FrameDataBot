@@ -49,6 +49,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
         followup.Content.ShouldBeNull();
         followup.Embed.ShouldNotBeNull();
         followup.Embed.Title.ShouldBe("Makoto - Hayate");
+        followup.Components.ShouldNotBeNull();
         followup.Attachment.ShouldBeNull();
         followup.Ephemeral.ShouldBeFalse();
     }
@@ -89,6 +90,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
         followup.Embed.ShouldNotBeNull();
         followup.Attachment.ShouldNotBeNull();
         followup.Attachment.FileName.ShouldBe("representative-active-frame.png");
+        followup.Components.ShouldNotBeNull();
     }
 
     [Fact]
@@ -111,6 +113,7 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
         var followup = responder.Followups.Single();
         followup.Content.ShouldBe("Unable to query frame data right now. Try again shortly.");
         followup.Embed.ShouldBeNull();
+        followup.Components.ShouldBeNull();
     }
 
     private FramedataInteractionHandler CreateHandler()
@@ -133,17 +136,32 @@ public sealed class FramedataInteractionHandlerEmbedResponseTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
+        public Task RespondAsync(
+            string? content = null,
+            Embed? embed = null,
+            bool ephemeral = false,
+            DiscordMoveAttachment? attachment = null,
+            MessageComponent? components = null)
         {
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
+        public Task FollowupAsync(
+            string? content = null,
+            Embed? embed = null,
+            bool ephemeral = false,
+            DiscordMoveAttachment? attachment = null,
+            MessageComponent? components = null)
         {
-            Followups.Add(new SentInteractionResponse(content, embed, ephemeral, attachment));
+            Followups.Add(new SentInteractionResponse(content, embed, ephemeral, attachment, components));
             return Task.CompletedTask;
         }
     }
 
-    private sealed record SentInteractionResponse(string? Content, Embed? Embed, bool Ephemeral, DiscordMoveAttachment? Attachment);
+    private sealed record SentInteractionResponse(
+        string? Content,
+        Embed? Embed,
+        bool Ephemeral,
+        DiscordMoveAttachment? Attachment,
+        MessageComponent? Components);
 }

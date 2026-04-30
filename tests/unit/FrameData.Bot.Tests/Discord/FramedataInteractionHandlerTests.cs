@@ -49,6 +49,7 @@ public sealed class FramedataInteractionHandlerTests
         _responder.Followups.Single().ShouldBeNull();
         _responder.FollowupEmbeds.Single().ShouldNotBeNull();
         _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk");
+        _responder.FollowupComponents.Single().ShouldNotBeNull();
     }
 
     [Fact]
@@ -138,6 +139,7 @@ public sealed class FramedataInteractionHandlerTests
         public List<Embed?> InitialResponseEmbeds { get; } = [];
         public List<string?> Followups { get; } = [];
         public List<Embed?> FollowupEmbeds { get; } = [];
+        public List<MessageComponent?> FollowupComponents { get; } = [];
 
         public Task DeferAsync(bool ephemeral = false)
         {
@@ -145,17 +147,28 @@ public sealed class FramedataInteractionHandlerTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
+        public Task RespondAsync(
+            string? content = null,
+            Embed? embed = null,
+            bool ephemeral = false,
+            DiscordMoveAttachment? attachment = null,
+            MessageComponent? components = null)
         {
             InitialResponses.Add(content);
             InitialResponseEmbeds.Add(embed);
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
+        public Task FollowupAsync(
+            string? content = null,
+            Embed? embed = null,
+            bool ephemeral = false,
+            DiscordMoveAttachment? attachment = null,
+            MessageComponent? components = null)
         {
             Followups.Add(content);
             FollowupEmbeds.Add(embed);
+            FollowupComponents.Add(components);
             return Task.CompletedTask;
         }
     }

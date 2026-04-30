@@ -7,9 +7,14 @@ namespace FrameData.Bot.Formatting;
 
 public sealed class MoveEmbedResponseFactory
 {
+    public const string RepositoryUrl = "https://github.com/nmur/FrameDataBot";
+
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
+    private static readonly MessageComponent RepositoryComponents = new ComponentBuilder()
+        .WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl)
+        .Build();
     private static readonly Regex ButtonNomenclatureRegex = new(
         @"\b(?:jab|strong|fierce|short|forward|roundhouse|rh)\b",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -73,6 +78,7 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
+            Components = RepositoryComponents,
             Attachment = attachment
         };
     }
@@ -91,7 +97,8 @@ public sealed class MoveEmbedResponseFactory
 
         return new DiscordMoveResponse
         {
-            Embed = builder.Build()
+            Embed = builder.Build(),
+            Components = RepositoryComponents
         };
     }
 
@@ -105,6 +112,7 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
+            Components = RepositoryComponents,
             IsEphemeral = false
         };
     }

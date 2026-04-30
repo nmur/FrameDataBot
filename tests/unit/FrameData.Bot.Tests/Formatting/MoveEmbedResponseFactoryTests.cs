@@ -1,3 +1,4 @@
+using Discord;
 using FrameData.Bot.Formatting;
 using FrameData.Bot.Hosting;
 using FrameData.Shared.Contracts;
@@ -31,6 +32,7 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Content.ShouldBeNull();
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Makoto - Hayate");
+        AssertRepositoryButton(response.Components);
         FieldValue(response, "Section").ShouldBe("Specials");
         FieldValue(response, "Damage").ShouldBe("?");
         FieldValue(response, "Stun").ShouldBe("?");
@@ -182,6 +184,7 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Multiple moves matched");
         response.Embed.Description.ShouldBe("Multiple moves matched. Try a more specific move name.");
+        AssertRepositoryButton(response.Components);
         FieldValue(response, "Candidates").ShouldContain("1. 2hk (Normals, 100)");
         FieldValue(response, "Candidates").ShouldContain("2. 5hk (Normals, 94)");
     }
@@ -216,10 +219,22 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Move not found");
         response.Embed.Description.ShouldBe("Move not found. Try an exact move name or clearer notation.");
+        AssertRepositoryButton(response.Components);
     }
 
     private static string FieldValue(DiscordMoveResponse response, string name)
     {
         return response.Embed!.Fields.Single(field => field.Name == name).Value;
+    }
+
+    private static void AssertRepositoryButton(MessageComponent? components)
+    {
+        components.ShouldNotBeNull();
+        var row = components.Components.Single().ShouldBeOfType<ActionRowComponent>();
+        var button = row.Components.Single().ShouldBeOfType<ButtonComponent>();
+
+        button.Label.ShouldBe("GitHub");
+        button.Style.ShouldBe(ButtonStyle.Link);
+        button.Url.ShouldBe(MoveEmbedResponseFactory.RepositoryUrl);
     }
 }
