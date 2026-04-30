@@ -7,6 +7,11 @@ namespace FrameData.Bot.Formatting;
 
 public sealed class MoveEmbedResponseFactory
 {
+    public const string RepositoryUrl = "https://github.com/nmur/FrameDataBot";
+
+    private const string CorrectionIssueTemplate = "frame-data-correction.yml";
+    private const int MaxIssueFieldLength = 40;
+    private const string SpacerField = "\u200B";
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
@@ -41,28 +46,24 @@ public sealed class MoveEmbedResponseFactory
         _activeDatasetPath = activeDatasetPath;
     }
 
-    public DiscordMoveResponse Create(MoveQueryResponse response)
+    public DiscordMoveResponse Create(MoveQueryResponse response, MoveCorrectionIssueContext? issueContext = null)
     {
         var builder = new EmbedBuilder()
-            .WithTitle($"{response.Character} - {DisplayButtonNomenclature(response.MatchedMove)}")
-            .WithColor(SuccessColor)
-            .AddField("Section", response.Section, inline: true);
+            .WithTitle($"{response.Character} - {DisplayButtonNomenclature(response.MatchedMove)} ({response.Section})")
+            .WithColor(SuccessColor);
 
         AddOptionalField(builder, "Motion", DisplayOptionalButtonNomenclature(response.Motion));
 
         builder
             .AddField("Damage", DisplayValue(response.Damage), inline: true)
             .AddField("Stun", DisplayValue(response.Stun), inline: true)
+            .AddField(SpacerField, SpacerField, inline: true)
             .AddField("Startup", DisplayValue(response.FrameData.Startup), inline: true)
             .AddField("Active", DisplayValue(response.FrameData.Active), inline: true)
             .AddField("Recovery", DisplayValue(response.FrameData.Recovery), inline: true)
             .AddField("On-Hit", DisplayValue(response.FrameData.OnHit), inline: true)
-            .AddField("On-Block", DisplayValue(response.FrameData.OnBlock), inline: true);
-
-        if (!string.IsNullOrWhiteSpace(response.FrameData.FrameAdvantage))
-        {
-            builder.AddField("Frame Advantage", response.FrameData.FrameAdvantage, inline: true);
-        }
+            .AddField("On-Block", DisplayValue(response.FrameData.OnBlock), inline: true)
+            .AddField("Frame Advantage", DisplayValue(response.FrameData.FrameAdvantage), inline: true);
 
         var attachment = CreateAttachment(response.Media);
         if (attachment is not null)
@@ -73,11 +74,12 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
+            Components = CreateComponents(issueContext),
             Attachment = attachment
         };
     }
 
-    public DiscordMoveResponse Create(MoveAmbiguousResponse response)
+    public DiscordMoveResponse Create(MoveAmbiguousResponse response, MoveCorrectionIssueContext? issueContext = null)
     {
         var candidates = response.Candidates
             .Select((candidate, index) =>
@@ -91,11 +93,12 @@ public sealed class MoveEmbedResponseFactory
 
         return new DiscordMoveResponse
         {
-            Embed = builder.Build()
+            Embed = builder.Build(),
+            Components = CreateComponents(issueContext)
         };
     }
 
-    public DiscordMoveResponse Create(ErrorResponse error)
+    public DiscordMoveResponse Create(ErrorResponse error, MoveCorrectionIssueContext? issueContext = null)
     {
         var builder = new EmbedBuilder()
             .WithTitle(ErrorTitle(error.Code))
@@ -105,17 +108,18 @@ public sealed class MoveEmbedResponseFactory
         return new DiscordMoveResponse
         {
             Embed = builder.Build(),
+            Components = CreateComponents(issueContext),
             IsEphemeral = false
         };
     }
 
-    public DiscordMoveResponse CreateFallbackError()
+    public DiscordMoveResponse CreateFallbackError(MoveCorrectionIssueContext? issueContext = null)
     {
         return Create(new ErrorResponse
         {
             Code = "error",
             Message = "Unknown error"
-        });
+        }, issueContext);
     }
 
     private static string DisplayValue(string? value)
@@ -137,7 +141,7 @@ public sealed class MoveEmbedResponseFactory
     {
         if (!string.IsNullOrWhiteSpace(value))
         {
-            builder.AddField(name, value, inline: true);
+            builder.AddField(name, value);
         }
     }
 
@@ -193,4 +197,47 @@ public sealed class MoveEmbedResponseFactory
             ? null
             : new DiscordMoveAttachment(filePath, fileName);
     }
+
+    private static MessageComponent CreateComponents(MoveCorrectionIssueContext? issueContext)
+    {
+        var builder = new ComponentBuilder()
+            .WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl);
+
+        if (issueContext is not null)
+        {
+            builder.WithButton("Suggest Correction", style: ButtonStyle.Link, url: BuildCorrectionIssueUrl(issueContext));
+        }
+
+        return builder.Build();
+    }
+
+    public static string BuildCorrectionIssueUrl(MoveCorrectionIssueContext issueContext)
+    {
+        var character = LimitIssueField(issueContext.Character);
+        var moveInput = LimitIssueField(issueContext.MoveInput);
+        var command = $"/framedata character:{character} move:{moveInput}";
+        var title = $"Frame data correction: Character: `{character}`, Move: `{moveInput}`".Trim();
+
+        var parameters = new Dictionary<string, string>
+        {
+            ["template"] = CorrectionIssueTemplate,
+            ["title"] = title,
+            ["command"] = command,
+            ["requested-character"] = character,
+            ["requested-move"] = moveInput
+        };
+
+        return $"{RepositoryUrl}/issues/new?{string.Join("&", parameters.Select(pair => $"{Encode(pair.Key)}={Encode(pair.Value)}"))}";
+    }
+
+    private static string LimitIssueField(string value)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value) ? "unknown" : value.Trim();
+        return normalized.Length <= MaxIssueFieldLength
+            ? normalized
+            : normalized[..MaxIssueFieldLength];
+    }
+
+    private static string Encode(string value)
+        => Uri.EscapeDataString(value);
 }

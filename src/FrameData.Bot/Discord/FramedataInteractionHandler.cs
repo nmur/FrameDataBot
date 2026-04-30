@@ -62,7 +62,8 @@ public sealed class FramedataInteractionHandler
         try
         {
             var result = await _apiClient.QueryMoveAsync(invocation.Character, invocation.Move, cancellationToken);
-            var moveResponse = FormatQueryResult(result.Response, result.Ambiguous, result.Error);
+            var issueContext = new MoveCorrectionIssueContext(invocation.Character, invocation.Move);
+            var moveResponse = FormatQueryResult(result.Response, result.Ambiguous, result.Error, issueContext);
             LogMediaAttachment(result.Response, moveResponse.Attachment);
             _logger.LogInformation(
                 "Discord /framedata interaction completed for character {Character} and move input {MoveInput} with result {ResultCode}.",
@@ -74,7 +75,8 @@ public sealed class FramedataInteractionHandler
                 moveResponse.Content,
                 moveResponse.Embed,
                 moveResponse.IsEphemeral,
-                moveResponse.Attachment);
+                moveResponse.Attachment,
+                moveResponse.Components);
         }
         catch (Exception exception)
         {
@@ -83,19 +85,25 @@ public sealed class FramedataInteractionHandler
         }
     }
 
-    private DiscordMoveResponse FormatQueryResult(MoveQueryResponse? response, MoveAmbiguousResponse? ambiguous, ErrorResponse? error)
+    private DiscordMoveResponse FormatQueryResult(
+        MoveQueryResponse? response,
+        MoveAmbiguousResponse? ambiguous,
+        ErrorResponse? error,
+        MoveCorrectionIssueContext issueContext)
     {
         if (response is not null)
         {
-            return _responseFactory.Create(response);
+            return _responseFactory.Create(response, issueContext);
         }
 
         if (ambiguous is not null)
         {
-            return _responseFactory.Create(ambiguous);
+            return _responseFactory.Create(ambiguous, issueContext);
         }
 
-        return error is null ? _responseFactory.CreateFallbackError() : _responseFactory.Create(error);
+        return error is null
+            ? _responseFactory.CreateFallbackError(issueContext)
+            : _responseFactory.Create(error, issueContext);
     }
 
     private void LogMediaAttachment(MoveQueryResponse? response, DiscordMoveAttachment? attachment)

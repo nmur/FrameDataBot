@@ -48,7 +48,10 @@ public sealed class FramedataInteractionHandlerTests
         _responder.InitialResponses.ShouldBeEmpty();
         _responder.Followups.Single().ShouldBeNull();
         _responder.FollowupEmbeds.Single().ShouldNotBeNull();
-        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk");
+        _responder.FollowupEmbeds.Single()!.Title.ShouldBe("Makoto - 2mk (Normals)");
+        _responder.FollowupComponents.Single().ShouldNotBeNull();
+        var correctionButton = FindButton(_responder.FollowupComponents.Single(), "Suggest Correction");
+        correctionButton.Url.ShouldContain("command=%2Fframedata%20character%3Amakoto%20move%3A2mk");
     }
 
     [Fact]
@@ -138,6 +141,7 @@ public sealed class FramedataInteractionHandlerTests
         public List<Embed?> InitialResponseEmbeds { get; } = [];
         public List<string?> Followups { get; } = [];
         public List<Embed?> FollowupEmbeds { get; } = [];
+        public List<MessageComponent?> FollowupComponents { get; } = [];
 
         public Task DeferAsync(bool ephemeral = false)
         {
@@ -145,18 +149,40 @@ public sealed class FramedataInteractionHandlerTests
             return Task.CompletedTask;
         }
 
-        public Task RespondAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
+        public Task RespondAsync(
+            string? content = null,
+            Embed? embed = null,
+            bool ephemeral = false,
+            DiscordMoveAttachment? attachment = null,
+            MessageComponent? components = null)
         {
             InitialResponses.Add(content);
             InitialResponseEmbeds.Add(embed);
             return Task.CompletedTask;
         }
 
-        public Task FollowupAsync(string? content = null, Embed? embed = null, bool ephemeral = false, DiscordMoveAttachment? attachment = null)
+        public Task FollowupAsync(
+            string? content = null,
+            Embed? embed = null,
+            bool ephemeral = false,
+            DiscordMoveAttachment? attachment = null,
+            MessageComponent? components = null)
         {
             Followups.Add(content);
             FollowupEmbeds.Add(embed);
+            FollowupComponents.Add(components);
             return Task.CompletedTask;
         }
+    }
+
+    private static ButtonComponent FindButton(MessageComponent? components, string label)
+    {
+        components.ShouldNotBeNull();
+        return components
+            .Components
+            .OfType<ActionRowComponent>()
+            .SelectMany(row => row.Components)
+            .OfType<ButtonComponent>()
+            .Single(button => button.Label == label);
     }
 }

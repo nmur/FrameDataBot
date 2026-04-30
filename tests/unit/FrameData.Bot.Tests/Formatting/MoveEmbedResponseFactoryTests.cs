@@ -1,3 +1,4 @@
+using Discord;
 using FrameData.Bot.Formatting;
 using FrameData.Bot.Hosting;
 using FrameData.Shared.Contracts;
@@ -30,8 +31,10 @@ public sealed class MoveEmbedResponseFactoryTests
 
         response.Content.ShouldBeNull();
         response.Embed.ShouldNotBeNull();
-        response.Embed.Title.ShouldBe("Makoto - Hayate");
-        FieldValue(response, "Section").ShouldBe("Specials");
+        response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
+        AssertRepositoryButton(response.Components);
+        response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
+        response.Embed.Fields.ShouldContain(field => field.Name == "\u200B" && field.Value == "\u200B");
         FieldValue(response, "Damage").ShouldBe("?");
         FieldValue(response, "Stun").ShouldBe("?");
         FieldValue(response, "Startup").ShouldBe("12");
@@ -39,6 +42,7 @@ public sealed class MoveEmbedResponseFactoryTests
         FieldValue(response, "Recovery").ShouldBe("21");
         FieldValue(response, "On-Hit").ShouldBe("+2");
         FieldValue(response, "On-Block").ShouldBe("-6");
+        FieldValue(response, "Frame Advantage").ShouldBe("?");
         response.IsEphemeral.ShouldBeFalse();
     }
 
@@ -68,6 +72,38 @@ public sealed class MoveEmbedResponseFactoryTests
         FieldValue(response, "Motion").ShouldBe("236P");
         FieldValue(response, "Damage").ShouldBe("120");
         FieldValue(response, "Stun").ShouldBe("17");
+    }
+
+    [Fact]
+    public void Create_WhenIssueContextProvided_AddsCorrectionIssueButton()
+    {
+        var response = _factory.Create(new MoveQueryResponse
+        {
+            Character = "Makoto",
+            MatchedMove = "Hayate",
+            Section = "Specials",
+            MatchedBy = "Exact",
+            FrameData = new FrameDataContract()
+        }, new MoveCorrectionIssueContext("makoto", "2mk"));
+
+        var correctionButton = FindButton(response.Components, "Suggest Correction");
+
+        correctionButton.Style.ShouldBe(ButtonStyle.Link);
+        correctionButton.Url.ShouldContain("template=frame-data-correction.yml");
+        correctionButton.Url.ShouldContain("title=Frame%20data%20correction%3A%20Character%3A%20%60makoto%60%2C%20Move%3A%20%602mk%60");
+        correctionButton.Url.ShouldContain("command=%2Fframedata%20character%3Amakoto%20move%3A2mk");
+        correctionButton.Url.ShouldContain("requested-character=makoto");
+        correctionButton.Url.ShouldContain("requested-move=2mk");
+    }
+
+    [Fact]
+    public void BuildCorrectionIssueUrl_WhenInputIsLong_KeepsButtonUrlWithinDiscordLimit()
+    {
+        var url = MoveEmbedResponseFactory.BuildCorrectionIssueUrl(new MoveCorrectionIssueContext(
+            new string('a', 200),
+            new string('b', 200)));
+
+        url.Length.ShouldBeLessThanOrEqualTo(512);
     }
 
     [Fact]
@@ -161,7 +197,7 @@ public sealed class MoveEmbedResponseFactoryTests
             }
         });
 
-        response.Embed!.Title.ShouldBe("Alex - Air Knee Smash (HK)");
+        response.Embed!.Title.ShouldBe("Alex - Air Knee Smash (HK) (Specials)");
         FieldValue(response, "Motion").ShouldBe("DP + LP / MP / HP / LK / MK / HK");
     }
 
@@ -182,6 +218,7 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Multiple moves matched");
         response.Embed.Description.ShouldBe("Multiple moves matched. Try a more specific move name.");
+        AssertRepositoryButton(response.Components);
         FieldValue(response, "Candidates").ShouldContain("1. 2hk (Normals, 100)");
         FieldValue(response, "Candidates").ShouldContain("2. 5hk (Normals, 94)");
     }
@@ -216,10 +253,31 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Move not found");
         response.Embed.Description.ShouldBe("Move not found. Try an exact move name or clearer notation.");
+        AssertRepositoryButton(response.Components);
     }
 
     private static string FieldValue(DiscordMoveResponse response, string name)
     {
         return response.Embed!.Fields.Single(field => field.Name == name).Value;
+    }
+
+    private static void AssertRepositoryButton(MessageComponent? components)
+    {
+        var button = FindButton(components, "GitHub");
+
+        button.Label.ShouldBe("GitHub");
+        button.Style.ShouldBe(ButtonStyle.Link);
+        button.Url.ShouldBe(MoveEmbedResponseFactory.RepositoryUrl);
+    }
+
+    private static ButtonComponent FindButton(MessageComponent? components, string label)
+    {
+        components.ShouldNotBeNull();
+        return components
+            .Components
+            .OfType<ActionRowComponent>()
+            .SelectMany(row => row.Components)
+            .OfType<ButtonComponent>()
+            .Single(button => button.Label == label);
     }
 }
