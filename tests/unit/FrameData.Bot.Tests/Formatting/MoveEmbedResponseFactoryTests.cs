@@ -34,9 +34,14 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         AssertRepositoryButton(response.Components);
         response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
-        FieldValue(response, "Damage / Stun").ShouldBe("? / ?");
-        FieldValue(response, "Startup / Active / Recovery").ShouldBe("12 / 3 / 21");
-        FieldValue(response, "On-Hit / On-Block / Frame Advantage").ShouldBe("+2 / -6 / ?");
+        FieldValue(response, "Damage").ShouldBe("?");
+        FieldValue(response, "Stun").ShouldBe("?");
+        FieldValue(response, "Startup").ShouldBe("12");
+        FieldValue(response, "Active").ShouldBe("3");
+        FieldValue(response, "Recovery").ShouldBe("21");
+        FieldValue(response, "On-Hit").ShouldBe("+2");
+        FieldValue(response, "On-Block").ShouldBe("-6");
+        FieldValue(response, "Frame Advantage").ShouldBe("?");
         response.IsEphemeral.ShouldBeFalse();
     }
 
@@ -64,7 +69,8 @@ public sealed class MoveEmbedResponseFactoryTests
 
         response.Content.ShouldBeNull();
         FieldValue(response, "Motion").ShouldBe("236P");
-        FieldValue(response, "Damage / Stun").ShouldBe("120 / 17");
+        FieldValue(response, "Damage").ShouldBe("120");
+        FieldValue(response, "Stun").ShouldBe("17");
     }
 
     [Fact]

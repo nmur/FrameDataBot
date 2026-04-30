@@ -11,6 +11,7 @@ public sealed class MoveEmbedResponseFactory
 
     private const string CorrectionIssueTemplate = "frame-data-correction.yml";
     private const int MaxIssueFieldLength = 40;
+    private const string SpacerField = "\u200B";
     private static readonly Color SuccessColor = new(52, 152, 219);
     private static readonly Color AmbiguousColor = new(241, 196, 15);
     private static readonly Color ErrorColor = new(231, 76, 60);
@@ -54,15 +55,16 @@ public sealed class MoveEmbedResponseFactory
         AddOptionalField(builder, "Motion", DisplayOptionalButtonNomenclature(response.Motion));
 
         builder
-            .AddField("Damage / Stun", JoinValues(DisplayValue(response.Damage), DisplayValue(response.Stun)))
-            .AddField("Startup / Active / Recovery", JoinValues(
-                DisplayValue(response.FrameData.Startup),
-                DisplayValue(response.FrameData.Active),
-                DisplayValue(response.FrameData.Recovery)))
-            .AddField("On-Hit / On-Block / Frame Advantage", JoinValues(
-                DisplayValue(response.FrameData.OnHit),
-                DisplayValue(response.FrameData.OnBlock),
-                DisplayValue(response.FrameData.FrameAdvantage)));
+            .AddField("Damage", DisplayValue(response.Damage), inline: true)
+            .AddField("Stun", DisplayValue(response.Stun), inline: true)
+            .AddField(SpacerField, SpacerField, inline: true)
+            .AddField("Startup", DisplayValue(response.FrameData.Startup), inline: true)
+            .AddField("Active", DisplayValue(response.FrameData.Active), inline: true)
+            .AddField("Recovery", DisplayValue(response.FrameData.Recovery), inline: true)
+            .AddField(SpacerField, SpacerField, inline: true)
+            .AddField("On-Hit", DisplayValue(response.FrameData.OnHit), inline: true)
+            .AddField("On-Block", DisplayValue(response.FrameData.OnBlock), inline: true)
+            .AddField("Frame Advantage", DisplayValue(response.FrameData.FrameAdvantage), inline: true);
 
         var attachment = CreateAttachment(response.Media);
         if (attachment is not null)
@@ -124,11 +126,6 @@ public sealed class MoveEmbedResponseFactory
     private static string DisplayValue(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "?" : value;
-    }
-
-    private static string JoinValues(params string[] values)
-    {
-        return string.Join(" / ", values);
     }
 
     private static string DisplayButtonNomenclature(string value)
