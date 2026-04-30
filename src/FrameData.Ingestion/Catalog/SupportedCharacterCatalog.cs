@@ -24,8 +24,8 @@ public sealed class SupportedCharacterCatalog : ISupportedCharacterCatalog
         Entry("chun-li", 16, "Chun-Li", 16, ["chun", "chun li", "chunli"]),
         Entry("makoto", 17, "Makoto", 17),
         Entry("q", 18, "Q", 18),
-        Entry("remy", 19, "Remy", 19),
-        Entry("twelve", 20, "Twelve", 20, ["12"])
+        Entry("remy", 20, "Remy", 19),
+        Entry("twelve", 19, "Twelve", 20, ["12"])
     ];
 
     public IReadOnlyList<SourceCharacterCatalogEntry> AllCharacters => Characters;

@@ -52,6 +52,18 @@ public sealed class SupportedCharacterCatalogTests
     }
 
     [Fact]
+    public void ResolveScope_WhenRemyAndTwelveProvided_UsesLiveSourceCharacterIds()
+    {
+        var scope = _catalog.ResolveScope(["remy", "12"]);
+
+        scope.Count.ShouldBe(2);
+        scope[0].CharacterId.ShouldBe("remy");
+        scope[0].SourceCharacterId.ShouldBe(20);
+        scope[1].CharacterId.ShouldBe("twelve");
+        scope[1].SourceCharacterId.ShouldBe(19);
+    }
+
+    [Fact]
     public void ResolveScope_WhenNoCharacterIdsProvided_ReturnsEnabledCatalog()
     {
         var scope = _catalog.ResolveScope([]);
