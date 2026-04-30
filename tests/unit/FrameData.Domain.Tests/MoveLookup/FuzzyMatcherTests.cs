@@ -66,6 +66,24 @@ public sealed class FuzzyMatcherTests
     }
 
     [Theory]
+    [InlineData("light chesto", "Hayate (LP)", "lightchesto")]
+    [InlineData("lp chesto", "Hayate (LP)", "lpchesto")]
+    [InlineData("medium chesto", "Hayate (MP)", "mediumchesto")]
+    [InlineData("heavy chesto", "Hayate (HP)", "heavychesto")]
+    public void Rank_WhenInputUsesStrengthQualifiedMoveSpecificAlias_RanksExpectedVariant(
+        string input,
+        string expectedMove,
+        string expectedAlias)
+    {
+        var candidates = _matcher.Rank(input, CreateMakotoHayateVariants());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
+    [Theory]
     [InlineData("red hadouken", "Akuma", "Shakunetsu Hadouken", "redhadouken")]
     [InlineData("red fireball", "Akuma", "Shakunetsu Hadouken", "redfireball")]
     [InlineData("kkz", "Akuma", "Kongou Kokuretsu Zan", "kkz")]
@@ -1300,6 +1318,16 @@ public sealed class FuzzyMatcherTests
             CreateTestMove("dudley-machine-gun-blow-strong", "dudley", "Dudley", "Specials", "Machine Gun Blow (Strong)", 2),
             CreateTestMove("dudley-machine-gun-blow-fierce", "dudley", "Dudley", "Specials", "Machine Gun Blow (Fierce)", 3),
             CreateTestMove("dudley-machine-gun-blow-ex", "dudley", "Dudley", "Specials", "Machine Gun Blow (EX)", 4)
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateMakotoHayateVariants()
+    {
+        return
+        [
+            CreateTestMove("makoto-hayate-lp", "makoto", "Makoto", "Specials", "Hayate (LP)", 1),
+            CreateTestMove("makoto-hayate-mp", "makoto", "Makoto", "Specials", "Hayate (MP)", 2),
+            CreateTestMove("makoto-hayate-hp", "makoto", "Makoto", "Specials", "Hayate (HP)", 3)
         ];
     }
 

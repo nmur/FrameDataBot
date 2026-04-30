@@ -48,7 +48,14 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                     startup: "13",
                     motion: "236P",
                     damage: "60",
-                    stun: "7"))).GetAwaiter().GetResult();
+                    stun: "7")),
+            StaticDatasetFixtureWriter.Character(
+                "makoto",
+                "Makoto",
+                [],
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (LP)", displayOrder: 1, startup: "12"),
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (MP)", displayOrder: 2, startup: "15"),
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (HP)", displayOrder: 3, startup: "19"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -116,6 +123,19 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("Kikouken (Jab)", payload.MatchedMove);
         Assert.Equal("Alias", payload.MatchedBy);
         Assert.Equal("236P", payload.Motion);
+    }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenInputUsesStrengthQualifiedChestoAlias_ReturnsMakotoHayateVariant()
+    {
+        var response = await _client.GetAsync(
+            "/v1/moves/query?character=makoto&moveInput=light%20chesto");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Hayate (LP)", payload.MatchedMove);
+        Assert.Equal("Alias", payload.MatchedBy);
     }
 
     [Fact]

@@ -322,15 +322,28 @@ public sealed partial class AliasNormalizer
 
     private void AddMoveSpecificColloquialAliases(List<MoveAlias> aliases, Move move, string normalizedCanonical)
     {
-        var key = $"{Normalize(move.CharacterId)}:{normalizedCanonical}";
+        var characterId = Normalize(move.CharacterId);
+        AddMoveSpecificColloquialAliasesForKey(aliases, move, $"{characterId}:{normalizedCanonical}");
+
+        var normalizedBase = Normalize(GetMoveBaseName(move.CanonicalName));
+        if (!string.Equals(normalizedBase, normalizedCanonical, StringComparison.Ordinal))
+        {
+            AddMoveSpecificColloquialAliasesForKey(aliases, move, $"{characterId}:{normalizedBase}");
+        }
+    }
+
+    private void AddMoveSpecificColloquialAliasesForKey(List<MoveAlias> aliases, Move move, string key)
+    {
         if (!MoveSpecificColloquialAliases.TryGetValue(key, out var colloquialAliases))
         {
             return;
         }
 
+        var strengthAlias = GetParentheticalStrengthAlias(move.CanonicalName);
         foreach (var colloquialAlias in colloquialAliases)
         {
             AddAlias(aliases, move, colloquialAlias, MoveAliasType.Colloquial);
+            AddStrengthShortNameAliases(aliases, move, colloquialAlias, strengthAlias);
         }
     }
 
