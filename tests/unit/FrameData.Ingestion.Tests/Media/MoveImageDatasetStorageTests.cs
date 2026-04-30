@@ -114,6 +114,35 @@ public sealed class MoveImageDatasetStorageTests
     }
 
     [Fact]
+    public void CaptureRepresentativeImage_WhenOnlyActiveThrowHitboxExists_StoresSuccessImage()
+    {
+        var move = CreateMove("ken", "ken-throws-forward-throw");
+        const string html = """
+            <div data-frame="003" data-frame-image-url="/frames/003.png">
+              <span data-hitbox-type="P1_T" data-x="10" data-y="20" data-width="6" data-height="6"></span>
+            </div>
+            <div data-frame="004" data-frame-image-url="/frames/004.png">
+              <span data-hitbox-type="P1_T" data-x="10" data-y="20" data-width="8" data-height="8"></span>
+            </div>
+            """;
+
+        var asset = _storage.CaptureRepresentativeImage(
+            move,
+            "http://example.test/hitboxesDisplay.php?iMove=2",
+            html,
+            new RepresentativeFrameSelectionPolicy
+            {
+                PilotMoveScope = ["ken/ken-throws-forward-throw"]
+            });
+
+        asset.ShouldNotBeNull();
+        asset.Image.CaptureStatus.ShouldBe(MoveImageCaptureStatus.Success);
+        asset.Image.SelectedFrame.ShouldBe("004");
+        asset.Image.ActiveHitboxArea.ShouldBe(64);
+        asset.Image.SelectionStrategy.ShouldBe(RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy);
+    }
+
+    [Fact]
     public void RenderPng_DrawsSourceViewerStyleSolidBorderAndTransparentFill()
     {
         var renderer = new HitboxCanvasRenderer();

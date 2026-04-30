@@ -45,6 +45,22 @@ public sealed class StaticDatasetComposeConfigTests
         Assert.Contains("name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}", compose);
     }
 
+    [Fact]
+    public void IngestionEnvExample_DeclaresSharedImageDatasetNetworkAndLoggingSettings()
+    {
+        var root = ResolveRepositoryRoot();
+        var env = File.ReadAllText(Path.Combine(root, ".env.ingestion.example"));
+
+        Assert.Contains("FRAMEDATA_IMAGE_REPOSITORY=ghcr.io/nmur", env);
+        Assert.Contains("FRAMEDATA_IMAGE_TAG=stable", env);
+        Assert.Contains("FRAMEDATA_DATASET_HOST_ROOT=./data/framedata", env);
+        Assert.Contains("FRAMEDATA_DATASET_ROOT=/data/framedata", env);
+        Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH=/data/framedata/active", env);
+        Assert.Contains("FRAMEDATA_DOCKER_NETWORK=framedatabot", env);
+        Assert.Contains("INGESTION_MEDIA_PILOT_SCOPE=", env);
+        Assert.Contains("SEQ_SERVER_URL=http://seq", env);
+    }
+
     private static string ResolveRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

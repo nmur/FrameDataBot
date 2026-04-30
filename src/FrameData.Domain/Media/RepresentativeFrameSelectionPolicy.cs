@@ -3,6 +3,7 @@ namespace FrameData.Domain.Media;
 public sealed class RepresentativeFrameSelectionPolicy
 {
     public const string LargestActiveHitboxAreaStrategy = "largest-active-hitbox-area";
+    public const string LargestActiveThrowHitboxAreaStrategy = "largest-active-throw-hitbox-area";
 
     public string DefaultStrategy { get; init; } = LargestActiveHitboxAreaStrategy;
     public IReadOnlyList<string> PilotMoveScope { get; init; } = [];
