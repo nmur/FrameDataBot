@@ -27,6 +27,7 @@ public sealed class StaticDatasetPublisherTests
             File.Exists(Path.Combine(activePath, "manifest.json")).ShouldBeTrue();
             File.Exists(Path.Combine(activePath, "characters", "makoto.json")).ShouldBeTrue();
             Directory.Exists(Path.Combine(activePath, "media")).ShouldBeTrue();
+            new DirectoryInfo(activePath).LinkTarget.ShouldBeNull();
 
             await using var manifestStream = File.OpenRead(Path.Combine(activePath, "manifest.json"));
             var writtenManifest = await JsonSerializer.DeserializeAsync<StaticDatasetManifest>(
@@ -65,6 +66,7 @@ public sealed class StaticDatasetPublisherTests
 
             var after = await File.ReadAllTextAsync(Path.Combine(activePath, "manifest.json"));
             after.ShouldBe(before);
+            new DirectoryInfo(activePath).LinkTarget.ShouldBeNull();
 
             var loaded = await new StaticFrameDataDatasetLoader().LoadAsync(activePath);
             loaded.Moves.Single().FrameData.Startup.ShouldBe("6");
