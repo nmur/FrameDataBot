@@ -1,0 +1,180 @@
+# Implementation Plan: Discord 3s Frame Data Bot
+
+**Branch**: `001-build-3s-frame-bot` | **Date**: 2026-04-25 | **Spec**: `/specs/001-build-3s-frame-bot/spec.md`
+**Input**: Feature specification from `/specs/001-build-3s-frame-bot/spec.md`, plus 2026-04-25 planning refinement for real ingestion, 2026-04-27 planning refinement to replace Postgres-backed query persistence with a versioned static JSON/media dataset on disk, 2026-04-28 refinement to make Discord embeds the default bot response format instead of primitive text, 2026-04-28 source-column refinement to preserve Motion, Damage, and Stun values from ingestion, 2026-04-28 refinement to remove duplicate basic text content from normal embed responses, and 2026-04-29 media refinement to select representative active frames by largest active hitbox area with scoped pilot ingestion and dummy-image fallback.
+
+## Summary
+
+Revise the US2 persistence direction from a Postgres-backed runtime store to a static dataset model. Ingestion remains a Dockerized one-shot worker, but it is no longer part of the always-running application stack. The worker scrapes source pages, writes a versioned dataset directory containing `manifest.json`, per-character move JSON files, and later media files, then atomically publishes that directory under a shared local dataset path. The API and Bot stack mount the active dataset read-only; the API loads all move data into memory at startup and uses static-file-backed query indexes for exact, alias, and fuzzy lookup. JSON backup/restore utility modes are no longer needed because the dataset itself is already a portable JSON/media bundle.
+
+The production/runtime stack keeps Bot, API, and Seq as long-running services. A separate ingestion Compose file runs the ingestion worker on demand against the same host dataset root so operators can refresh the static dataset without keeping ingestion or Postgres online. The Bot should render move lookup results as Discord embeds by default without also sending the old basic text response content. Later image work stores representative active-frame screenshots beside the move data and attaches that local media to the existing embed response rather than requiring public media URLs.
+
+Representative active-frame capture chooses the earliest frame with the largest summed active hitbox rectangle area by default, with a selector abstraction so future scoring algorithms and per-move overrides can be introduced without reshaping storage. Rendered hitbox images include P1 passive, vulnerability, active, throw, and throwable overlays (`P1_P`, `P1_V`, `P1_A`, `P1_T`, `P1_TA`) and exclude all P2 hitboxes. Because the source site is slow, first execution is scoped to a small pilot set such as selected Ken normals, selected Ken specials, and Ken SA3 before any full media ingestion run. If a selected frame image is unavailable, ingestion writes a configured or generated empty/dummy image plus fallback metadata instead of failing the text data refresh.
+
+Ingestion also preserves source move columns that are not part of the classic frame timing set. `Motion` is optional and expected primarily on Specials and Super Arts source tables; `Damage` and `Stun` are optional source columns that should travel with the move record through the static dataset, API response contract, and Discord presentation when present.
+
+## Technical Context
+
+- **Language/Version**: .NET 10 (C#) for bot/API/ingestion/scraper services and shared libraries
+- **Primary Dependencies**: Discord.Net WebSocket/Interactions/EmbedBuilder, ASP.NET Core Minimal APIs, AngleSharp, FuzzySharp, Serilog, Serilog.Sinks.Seq, Seq Docker container, NSubstitute, Shouldly, xUnit
+- **Storage**: Versioned static dataset directories on local disk are the source of truth. Each dataset contains `manifest.json`, one JSON file per character under `characters/`, and media files under `media/`; the API mounts the active dataset read-only and loads it into memory at startup. PostgreSQL/Npgsql are to be removed from runtime storage.
+- **Testing**: xUnit + Shouldly + NSubstitute for unit tests; file-system integration tests for dataset publish/load/query behavior; deterministic Discord boundary tests stay separate from live Discord. Testcontainers PostgreSQL coverage becomes obsolete once the static dataset migration is complete.
+- **Target Platform**: Linux Docker containers on local Compose and Unraid/self-hosted Docker; Bot/API/Seq run in the main stack; ingestion runs only as an explicit one-shot container from a separate Compose file sharing the same host dataset root.
+- **Project Type**: Multi-service backend (`FrameData.Bot`, `FrameData.Api`, `FrameData.Ingestion`, scraper + shared libraries)
+- **Performance Goals**: Formal sample-based API/bot latency benchmarking is deferred
+  to a future plan by maintainer-approved closeout exception. Current validation
+  focuses on completed functional, integration, contract, Compose, and dataset checks.
+- **Constraints**: .NET-only scraper scope; no Moq/FluentAssertions; no live Discord in CI; ingestion must publish static datasets atomically, preserve the prior active dataset if a full refresh fails, support resumable media capture by skipping already-successful media files, support scoped pilot media runs to reduce slow source-site calls, and fall back to a configured or generated dummy image when selected frame assets are unavailable.
+- **Scale/Scope**: Single-game Street Fighter III: 3rd Strike scope; full supported-roster source catalog for frame data; Normals/Specials/Super Arts/Misc ingestion plus static dataset publishing; Motion/Damage/Stun source columns are retained as optional move attributes; rich Discord embed responses for baseline frame data; representative active-frame hitbox image capture writes local media files in a later slice and initially runs only for a small pilot set; no public CDN is required for Discord embeds because the Bot can upload local files as embed attachments.
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+Pre-Phase 0 gate:
+- [x] Small, single-purpose functions: dataset loading, dataset publishing, catalog, worker host, scraper/orchestrator, and media storage concerns are planned as separate services/classes.
+- [x] Descriptive naming/intent comments: new names must describe static dataset behavior, ingestion worker options, media paths, and catalog entries directly; comments are only for external source/schema constraints.
+- [x] TDD order: the new task block adds unit/contract/integration tests before implementation tasks.
+- [x] Comprehensive automated testing: file-system integration tests are required to prove static datasets are published atomically, loaded by the API, and queryable without PostgreSQL.
+- [x] Reproducible integration testing: source HTML is supplied by deterministic fixtures/fake HTTP handlers in automated tests; live source scraping is covered by manual smoke validation.
+- [x] Focused scope/performance: the slice replaces the runtime storage substrate with static files while preserving the existing Discord/API command surface.
+- [x] Closeout exception: formal sample-based performance benchmark evidence and
+  production security-gate automation are deferred to future plans by maintainer
+  approval on 2026-04-29.
+
+Post-Phase 1 re-check:
+- [x] Research resolves the static dataset, worker execution, catalog, media storage, and API query-load strategy.
+- [x] Data model identifies the full character source catalog, static dataset manifest, character file layout, and move media references needed for retry/resume visibility.
+- [x] API contract keeps move-query behavior stable while removing runtime ingestion trigger/status endpoints from the always-running API target.
+- [x] Quickstart must document separate ingestion Compose execution, active dataset verification, and API/bot query validation from mounted JSON files.
+
+## Core Implementation Sequence
+
+### Step 1: Define the Static Dataset Contract
+
+- Introduce a versioned dataset directory shape:
+  `manifest.json`, `characters/{characterId}.json`, `media/{characterId}/{moveId}/...`.
+- Keep stable `characterId` and `moveId` values as the join between move JSON and media files.
+- Include optional per-move source attributes `motion`, `damage`, and `stun` alongside section/name/frame data in character JSON files.
+- Include dataset metadata such as generated timestamp, source base URL, source page IDs, schema version, character count, move count, and media count.
+- Treat the dataset directory itself as the portable backup/restore artifact; do not maintain separate JSON backup/import modes.
+
+### Step 2: Replace Runtime PostgreSQL With Static Dataset Loading
+
+- Implement a static dataset loader under `FrameData.Infrastructure` that validates the manifest, reads all character JSON, builds in-memory exact/alias/fuzzy lookup indexes, and exposes the existing `IMoveQueryRepository` behavior.
+- Remove runtime schema bootstrap, Npgsql repository registration, API ingestion endpoints, and Postgres connection-string requirements from the API and Bot deployment path.
+- Keep API response contracts stable for `/v1/moves/query`; only the storage backing changes.
+- Preserve previous exact and fuzzy behavior by running existing query tests against a temporary static dataset fixture.
+
+### Step 3: Promote Discord Responses to Embeds
+
+- Keep the API contract neutral and continue returning structured move-query JSON.
+- Add a Bot-owned response model/factory that maps `MoveQueryResponse`, `MoveAmbiguousResponse`, and `ErrorResponse` into Discord.Net embed payloads without duplicate plain-text message content.
+- Use embed fields for section, startup, active, recovery, on-hit, and on-block values so frame data scans cleanly in Discord.
+- Extend the Discord interaction responder abstraction so tests can verify embed payloads without live Discord, and `SocketSlashCommandResponder` can send the built embed through Discord.Net.
+- Keep content-only text only for validation or operational failures where no formatted embed result exists.
+
+### Step 4: Convert Ingestion Into a Dataset Publisher
+
+- Keep `FrameData.Ingestion` as a Dockerized one-shot worker, but make its output the canonical static dataset directory instead of Postgres rows plus JSON exports.
+- Parse and map Motion, Damage, and Stun table columns when present so Specials, Super Arts, and any other source rows can retain those values without schema-specific branching.
+- The worker writes into a staging directory, validates the full dataset, then atomically publishes it as a new dataset version or updates the configured `active` pointer.
+- Failed full-catalog runs must leave the prior active dataset intact.
+- Scoped or resume runs may fill missing media for an existing dataset without re-scraping all move data.
+
+### Step 5: Split Runtime and Ingestion Compose Topologies
+
+- Remove `postgres` and `ingestion` services from the main local/production Compose files.
+- Add a separate `docker-compose.ingestion.yml` for one-shot ingestion execution.
+- Use a shared host dataset root across both Compose stacks. Runtime mounts the active dataset read-only; ingestion mounts the dataset root read-write.
+- Update `.env.example`/`.env.prod.example` to use `FRAMEDATA_DATASET_ROOT` and `FRAMEDATA_ACTIVE_DATASET_PATH` instead of Postgres/export-specific settings.
+
+### Step 6: Prepare Media Storage for Local Discord Attachments
+
+- Store representative active-frame PNGs under the dataset `media/` tree with metadata that links each file to a stable `moveId`.
+- Parse hitbox display frame metadata into a neutral structure, then use a selector service to choose the representative frame. The default selector sums the rendered area of all active hitbox rectangles for the frame and chooses the earliest frame when multiple frames tie for the maximum area.
+- Keep selector policy and per-move overrides data-driven so future scoring algorithms or manual frame choices do not require changing the storage or query contracts.
+- Render media with the configured P1 hitbox overlay set: `P1_P`, `P1_V`, `P1_A`, `P1_T`, and `P1_TA`. Do not include P2 hitboxes in the generated image.
+- Gate initial media execution behind a scoped pilot move list that covers a few Ken normals, a few Ken specials, and Ken SA3. Full media ingestion stays disabled until the pilot proves reliability and source-site request behavior is acceptable.
+- When the selected frame image is missing or cannot be loaded, write a configured or generated empty/dummy PNG to the media path and record fallback metadata rather than failing the dataset publish.
+- API query responses can expose relative media paths and metadata. Discord rendering should reuse the Bot's embed response path, read local files when media exists, and attach them to the embed with `attachment://...`.
+- No public CDN is required for the first media implementation.
+
+### Step 7: Centralize Structured Logs With Seq
+
+- Add a persistent Seq container to local and production Compose so API, Bot, and Ingestion logs are searchable from one UI.
+- Configure all three .NET services with shared Serilog bootstrap logic that always writes console logs and writes to Seq when `SEQ_SERVER_URL` is configured.
+- Default application categories to Debug-level logging while keeping noisy framework categories at safer levels, with `SEQ_MINIMUM_LEVEL` available for operational overrides.
+- Add request and interaction logging for Discord command handling, Bot-to-API calls, API move queries, dataset load events, and ingestion worker runs.
+- Add detailed ingestion run logs for source page fetches, per-character parse/export status, per-section move counts, per-move frame data at Debug level, dataset publish/replacement, media capture, and failures.
+
+### Deferred Follow-Up Scope
+
+- Full per-frame storage assessment and archival approval workflow.
+- Expanded advanced move metadata beyond Motion, Damage, and Stun source columns.
+- Formal sample-based API/bot latency benchmark evidence.
+- Automated pre-production security gate workflow and evidence.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/001-build-3s-frame-bot/
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── contracts/
+│   ├── bot-api.yaml
+│   └── discord-command.md
+└── tasks.md
+```
+
+### Source Code (repository root)
+
+```text
+src/
+├── FrameData.Bot/
+│   ├── Api/
+│   ├── Commands/
+│   ├── Discord/
+│   ├── Formatting/
+│   └── Hosting/
+├── FrameData.Api/
+│   └── Endpoints/
+├── FrameData.Ingestion/
+│   ├── Catalog/          # supported character/source-id catalog
+│   ├── Hosting/          # worker options/bootstrap
+│   ├── Media/            # hitbox image capture and dataset media metadata
+│   ├── Publishing/       # static dataset writer, manifest, atomic publish
+│   └── Services/
+├── FrameData.Scraper/
+│   ├── Parsing/
+│   └── Source/
+├── FrameData.Domain/
+├── FrameData.Infrastructure/
+│   ├── Dataset/          # static dataset reader and query index
+│   └── Storage/          # file-system helpers for dataset/media paths
+└── FrameData.Shared/
+
+tests/
+├── unit/
+│   ├── FrameData.Bot.Tests/
+│   ├── FrameData.Domain.Tests/
+│   └── FrameData.Ingestion.Tests/
+├── integration/
+│   ├── FrameData.Api.IntegrationTests/
+│   ├── FrameData.Bot.IntegrationTests/
+│   └── FrameData.Ingestion.IntegrationTests/
+└── contract/
+    └── FrameData.Contracts.Tests/
+```
+
+**Structure Decision**: Keep the existing layered .NET multi-service structure, but remove PostgreSQL as a runtime dependency. Add static dataset loading/query indexing under `FrameData.Infrastructure`, dataset publishing and media capture under `FrameData.Ingestion`, and reuse API/Bot boundaries so the bot continues to access move data through the API. Discord-specific presentation stays in `FrameData.Bot`, where the embed response factory can render baseline frame-data fields now and later add local media attachments.
+
+## Complexity Tracking
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| None | N/A | N/A |

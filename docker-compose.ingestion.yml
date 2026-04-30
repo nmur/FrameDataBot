@@ -1,0 +1,31 @@
+services:
+  ingestion:
+    image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-ingestion:${FRAMEDATA_IMAGE_TAG:-stable}
+    pull_policy: always
+    environment:
+      FRAMEDATA_DATASET_ROOT: ${FRAMEDATA_DATASET_ROOT:-/data/framedata}
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
+      INGESTION_SOURCE_BASE_URL: ${INGESTION_SOURCE_BASE_URL:-http://ensabahnur.free.fr/BastonNew/index.php}
+      Ingestion__Characters: ${INGESTION_CHARACTER_SCOPE:-}
+      INGESTION_MEDIA_PILOT_SCOPE: ${INGESTION_MEDIA_PILOT_SCOPE:-}
+      INGESTION_MEDIA_DUMMY_IMAGE_PATH: ${INGESTION_MEDIA_DUMMY_IMAGE_PATH:-}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
+    volumes:
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:rw
+
+  seq:
+    image: datalust/seq:latest
+    profiles:
+      - with-seq
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:-framedata-dev}
+    ports:
+      - "${SEQ_PORT:-5341}:80"
+    volumes:
+      - seq_data:/data
+
+volumes:
+  seq_data:

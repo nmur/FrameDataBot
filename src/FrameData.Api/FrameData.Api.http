@@ -1,0 +1,6 @@
+@FrameData.Api_HostAddress = http://localhost:0
+
+GET {{FrameData.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

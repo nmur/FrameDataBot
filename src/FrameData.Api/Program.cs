@@ -1,0 +1,54 @@
+using FrameData.Api.Endpoints;
+using FrameData.Api.Responses;
+using FrameData.Domain.MoveLookup;
+using FrameData.Infrastructure.Dataset;
+using FrameData.Shared.Logging;
+using Serilog;
+
+var builder = WebApplication.CreateBuilder(args);
+FrameDataLogging.Configure(builder.Logging, builder.Configuration, "FrameData.Api");
+builder.Services.AddSerilog(Log.Logger, dispose: false);
+
+builder.Services.AddSingleton<StaticFrameDataDatasetLoader>();
+builder.Services.AddSingleton<IMoveQueryRepository>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var activeDatasetPath = configuration["FRAMEDATA_ACTIVE_DATASET_PATH"]
+        ?? configuration["FrameData:ActiveDatasetPath"]
+        ?? Path.Combine("data", "framedata", "active");
+
+    return new ReloadingStaticMoveQueryRepository(
+        sp.GetRequiredService<StaticFrameDataDatasetLoader>(),
+        activeDatasetPath,
+        sp.GetRequiredService<ILogger<ReloadingStaticMoveQueryRepository>>());
+});
+builder.Services.AddSingleton<AliasNormalizer>();
+builder.Services.AddSingleton<FuzzyMoveMatcher>();
+builder.Services.AddSingleton<ExactMoveLookupService>();
+builder.Services.AddSingleton<MoveDisambiguationResponseFactory>();
+
+try
+{
+    var app = builder.Build();
+
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    });
+
+    app.MapGet("/", () => "Hello World!");
+    app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+    _ = app.Services.GetRequiredService<IMoveQueryRepository>()
+        .SupportsCharacterAsync(string.Empty)
+        .GetAwaiter()
+        .GetResult();
+    app.MapMoveQueryEndpoint();
+
+    await app.RunAsync();
+}
+finally
+{
+    FrameDataLogging.CloseAndFlush();
+}
+
+public partial class Program;

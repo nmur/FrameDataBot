@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: 3s Frame Data Bot Service API
+  version: 0.1.0
+  description: Internal API contract for move lookup from the active static dataset.
+servers:
+  - url: http://localhost:8080
+paths:
+  /v1/moves/query:
+    get:
+      summary: Query move frame data
+      operationId: queryMove
+      parameters:
+        - in: query
+          name: character
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: moveInput
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Match found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveQueryResponse'
+        '300':
+          description: Ambiguous query; candidates returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveAmbiguousResponse'
+        '404':
+          description: No suitable match
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    MoveQueryResponse:
+      type: object
+      required: [character, matchedMove, section, frameData]
+      properties:
+        character:
+          type: string
+        matchedMove:
+          type: string
+        section:
+          type: string
+          enum: [Normals, Specials, SuperArts, Misc]
+        matchedBy:
+          type: string
+          enum: [Exact, Alias, Fuzzy]
+        motion:
+          type: string
+          description: Optional source command/input notation, primarily present for Specials and Super Arts.
+        damage:
+          type: string
+          description: Optional source damage value preserved as text.
+        stun:
+          type: string
+          description: Optional source stun value preserved as text.
+        frameData:
+          $ref: '#/components/schemas/FrameData'
+        media:
+          $ref: '#/components/schemas/MoveMedia'
+    MoveAmbiguousResponse:
+      type: object
+      required: [message, candidates]
+      properties:
+        message:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/MoveCandidate'
+    MoveCandidate:
+      type: object
+      required: [moveName, section, score]
+      properties:
+        moveName:
+          type: string
+        section:
+          type: string
+          enum: [Normals, Specials, SuperArts, Misc]
+        score:
+          type: number
+          format: float
+    FrameData:
+      type: object
+      properties:
+        startup:
+          type: string
+        active:
+          type: string
+        recovery:
+          type: string
+        onHit:
+          type: string
+        onBlock:
+          type: string
+    MoveMedia:
+      type: object
+      properties:
+        representativeFrameImageUrl:
+          type: string
+        selectedFrame:
+          type: string
+          description: Zero-padded source frame identifier selected for capture.
+        selectionStrategy:
+          type: string
+          description: Strategy used to choose the representative frame.
+        captureStatus:
+          type: string
+          enum: [Success, DummyFallback, Failed, NotDerivable]
+        fallbackReason:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

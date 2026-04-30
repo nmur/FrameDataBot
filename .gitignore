@@ -1,0 +1,25 @@
+# Local Codex runtime state (machine/user specific)
+.codex/*
+
+# Common local noise
+.DS_Store
+Thumbs.db
+.env
+.env.prod
+.env.ingestion
+!.env.example
+!.env.prod.example
+!.env.ingestion.example
+
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+packages/
+
+# Editor and temp artifacts
+.vscode/
+.idea/
+*.tmp
+*.swp

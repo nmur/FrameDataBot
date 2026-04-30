@@ -1,0 +1,49 @@
+services:
+  seq:
+    image: datalust/seq:${SEQ_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD}
+    ports:
+      - "${SEQ_PORT:-5341}:80"
+    volumes:
+      - ${FRAMEDATA_SEQ_DATA:-./data/seq}:/data
+
+  api:
+    image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-api:${FRAMEDATA_IMAGE_TAG:-stable}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
+    depends_on:
+      seq:
+        condition: service_started
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+
+  bot:
+    image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-bot:${FRAMEDATA_IMAGE_TAG:-stable}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      BOT_GUILD_ID: ${BOT_GUILD_ID}
+      BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
+    depends_on:
+      api:
+        condition: service_started
+      seq:
+        condition: service_started
+    volumes:
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro

@@ -1,0 +1,48 @@
+services:
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:-framedata-dev}
+    ports:
+      - "${SEQ_PORT:-5341}:80"
+    volumes:
+      - seq_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
+    depends_on:
+      - seq
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      BOT_GUILD_ID: ${BOT_GUILD_ID}
+      BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
+      FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
+      SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
+      SEQ_API_KEY: ${SEQ_API_KEY:-}
+      SEQ_MINIMUM_LEVEL: ${SEQ_MINIMUM_LEVEL:-Debug}
+    depends_on:
+      - api
+      - seq
+    volumes:
+      - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+
+volumes:
+  seq_data:
