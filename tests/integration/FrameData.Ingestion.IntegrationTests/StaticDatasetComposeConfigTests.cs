@@ -23,8 +23,11 @@ public sealed class StaticDatasetComposeConfigTests
 
         Assert.Contains("ingestion:", compose);
         Assert.DoesNotContain("postgres:", compose);
+        Assert.DoesNotContain("datalust/seq", compose);
+        Assert.DoesNotContain("with-seq", compose);
         Assert.Contains("FRAMEDATA_DATASET_ROOT", compose);
         Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH", compose);
+        Assert.Contains("SEQ_SERVER_URL", compose);
         Assert.Contains(":rw", compose);
         Assert.Contains("external: true", compose);
         Assert.Contains("name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}", compose);

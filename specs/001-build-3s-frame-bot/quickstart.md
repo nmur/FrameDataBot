@@ -40,6 +40,7 @@
 2. Run ingestion when you want to refresh data:
    - Full catalog: `docker compose --env-file .env.ingestion -f docker-compose.ingestion.yml run --rm ingestion`
    - Scoped retry: `docker compose --env-file .env.ingestion -f docker-compose.ingestion.yml run --rm ingestion --characters=makoto,chun-li`
+   - The ingestion Compose file does not start Seq; it sends logs to the existing runtime `seq` service through the shared network.
 3. Ingestion writes a versioned dataset under the mounted dataset root `versions/` directory and updates `active`.
 4. Confirm the active dataset has:
    - `manifest.json`
@@ -64,7 +65,7 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 3. Deploy runtime services:
    - `docker compose --env-file .env.prod -f docker-compose.prod.yml pull`
    - `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --remove-orphans`
-4. Run ingestion on demand with the separate ingestion Compose file using the same dataset root and shared Docker network.
+4. Run ingestion on demand with the separate ingestion Compose file using the same dataset root and shared Docker network. Seq must already be running in the runtime stack.
 
 ## Run Services Locally
 
