@@ -182,6 +182,9 @@ public sealed partial class AliasNormalizer
                 AddAlias(aliases, move, $"down forward {button}", MoveAliasType.Numpad);
                 AddAlias(aliases, move, $"down-forward {button}", MoveAliasType.Numpad);
                 break;
+            case '4':
+                AddAlias(aliases, move, $"back {button}", MoveAliasType.Numpad);
+                break;
             case '6':
                 AddAlias(aliases, move, $"toward {button}", MoveAliasType.Numpad);
                 AddAlias(aliases, move, $"towards {button}", MoveAliasType.Numpad);
@@ -711,9 +714,9 @@ public sealed partial class AliasNormalizer
             return compact;
         }
 
-        if (compact.StartsWith("back", StringComparison.Ordinal) && IsDirectionalFiveSuffix(compact["back".Length..]))
+        if (compact.StartsWith("back", StringComparison.Ordinal) && IsDirectionalFourSuffix(compact["back".Length..]))
         {
-            return "5" + compact["back".Length..];
+            return "4" + compact["back".Length..];
         }
 
         if (compact.StartsWith("crouching", StringComparison.Ordinal))
@@ -903,7 +906,7 @@ public sealed partial class AliasNormalizer
         return value is "lp" or "mp" or "hp" or "lk" or "mk" or "hk";
     }
 
-    private static bool IsDirectionalFiveSuffix(string value)
+    private static bool IsDirectionalFourSuffix(string value)
         => IsButtonSuffix(value) || value.StartsWith("sa", StringComparison.Ordinal);
 
     private static bool IsSuperArt(Move move)

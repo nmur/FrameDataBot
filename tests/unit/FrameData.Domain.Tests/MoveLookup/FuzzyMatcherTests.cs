@@ -204,7 +204,7 @@ public sealed class FuzzyMatcherTests
     [Theory]
     [InlineData("sa1", "Alex", "Hyper Bomb", "sa1")]
     [InlineData("reverse sa1", "Alex", "Reverse Hyper Bomb", "reversesa1")]
-    [InlineData("back sa1", "Alex", "Reverse Hyper Bomb", "5sa1")]
+    [InlineData("back sa1", "Alex", "Reverse Hyper Bomb", "4sa1")]
     [InlineData("from behind sa1", "Alex", "Reverse Hyper Bomb", "frombehindsa1")]
     [InlineData("sa2", "Alex", "Boomerang Raid", "sa2")]
     [InlineData("sa3", "Alex", "Stun Gun Headbutt", "sa3")]

@@ -1,4 +1,5 @@
 using FrameData.Domain.MoveLookup;
+using FrameData.Domain.Moves;
 using Shouldly;
 
 namespace FrameData.Domain.Tests.MoveLookup;
@@ -24,11 +25,13 @@ public sealed class AliasNormalizerTests
     [InlineData("Towards + Forward", "6mk")]
     [InlineData("towards MK", "6mk")]
     [InlineData("toward roundhouse", "6hk")]
-    [InlineData("Back + Fierce", "5hp")]
-    [InlineData("back HP", "5hp")]
+    [InlineData("Back + Fierce", "4hp")]
+    [InlineData("back HP", "4hp")]
     [InlineData("low forward", "2mk")]
     [InlineData("Standing LP", "5lp")]
+    [InlineData("standing HP", "5hp")]
     [InlineData("st.HK", "5hk")]
+    [InlineData("st.MP", "5mp")]
     [InlineData("RH", "hk")]
     [InlineData("Air Knee Smash RH", "jkneesmashhk")]
     [InlineData("jumping Heavy Punch", "jhp")]
@@ -78,5 +81,25 @@ public sealed class AliasNormalizerTests
         var normalized = _normalizer.Normalize(" sweep ");
 
         normalized.ShouldBe("sweep");
+    }
+
+    [Fact]
+    public void CreateAliases_WhenCanonicalMoveUsesBackNumpadNotation_AddsBackAlias()
+    {
+        var move = new Move
+        {
+            Id = "test-4hp",
+            CharacterId = "test",
+            Game = "sf3_3s",
+            CharacterName = "Test",
+            Section = "Normals",
+            CanonicalName = "4hp",
+            DisplayOrder = 1,
+            FrameData = new MoveFrameData()
+        };
+
+        var aliases = _normalizer.CreateAliases(move);
+
+        aliases.ShouldContain(alias => alias.Alias == "back hp" && alias.NormalizedAlias == "4hp");
     }
 }
