@@ -38,7 +38,9 @@ services:
     restart: unless-stopped
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      BOT_GUILD_ID: ${BOT_GUILD_ID}
+      DISCORD_COMMAND_REGISTRATION_SCOPE: ${DISCORD_COMMAND_REGISTRATION_SCOPE:-global}
+      BOT_GUILD_IDS: ${BOT_GUILD_IDS:-}
+      BOT_GUILD_ID: ${BOT_GUILD_ID:-}
       BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
       FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
       SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}

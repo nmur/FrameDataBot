@@ -15,8 +15,9 @@ public sealed class DiscordGatewayWiringTests
         var options = new BotRuntimeOptions
         {
             DiscordBotToken = "token-value",
-            BotGuildId = "123456789",
-            DiscordGuildId = 123456789,
+            CommandRegistrationScope = DiscordCommandRegistrationScope.Global,
+            BotGuildIds = "123456789,987654321",
+            DiscordGuildIds = [123456789UL, 987654321UL],
             BotApiBaseUrl = new Uri("http://api:8080"),
             ActiveDatasetPath = "/data/framedata/active"
         };

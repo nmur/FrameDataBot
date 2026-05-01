@@ -19,7 +19,7 @@
 
 ### Session 2026-04-25
 
-- Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command for the configured guild, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. The original first pass allowed primitive text; the 2026-04-28 clarification supersedes that response-format direction.
+- Q: Does MVP completion require actual Discord gateway/slash-command handling, not only command handler logic? → A: Yes. The bot runtime must connect to Discord, register the `/framedata` slash command globally by default, receive slash-command interactions in Discord channels, query the API using the provided `character` and `move` values, and reply in-channel. Guild-scoped registration remains available for beta/test deployments. The original first pass allowed primitive text; the 2026-04-28 clarification supersedes that response-format direction.
 - Q: Does US2 completion require a real ingestion worker and persistent PostgreSQL read/write path, not only parser/orchestrator scaffolding? → A: Yes for the 2026-04-25 intermediate slice. This was superseded by the completed static dataset refactor, where ingestion publishes versioned JSON/media datasets and API/bot lookup reads the active dataset.
 
 ### Session 2026-04-28
@@ -214,7 +214,7 @@ return a representative active-frame image including configured P1 hitbox boxes.
 - **FR-016**: Comments in production code MUST explain why decisions were made, not
   restate behavior.
 - **FR-017**: The bot runtime MUST connect to Discord, register the `/framedata` slash
-  command for the configured guild, receive slash-command interactions, and route them
+  command globally by default, receive slash-command interactions, and route them
   through the move query flow.
 - **FR-018**: The bot MUST use a rich Discord embed as the default move lookup response,
   including matched character, matched move, section, and frame-data fields, without

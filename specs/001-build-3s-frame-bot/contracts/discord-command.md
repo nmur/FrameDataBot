@@ -3,7 +3,7 @@
 ## Command
 
 - Name: `/framedata`
-- Registration scope: configured guild (`BOT_GUILD_ID`) for the first gateway slice
+- Registration scope: global by default; optional guild-scoped registration for beta/test deployments
 - Visibility: channel-visible response by default
 
 ## Parameters
@@ -18,7 +18,9 @@
 ## Gateway Behavior
 
 - Bot runtime connects to Discord Gateway using `DISCORD_BOT_TOKEN`.
-- On startup, the bot registers or updates the guild-scoped `/framedata` slash command.
+- On startup, the bot registers or updates the global `/framedata` slash command by
+  default, or the guild-scoped command in each configured guild when
+  `DISCORD_COMMAND_REGISTRATION_SCOPE=guild`.
 - On `framedata` slash interaction:
   - Extract `character` and `move` option values.
   - Reject missing/blank values with a clear validation response.

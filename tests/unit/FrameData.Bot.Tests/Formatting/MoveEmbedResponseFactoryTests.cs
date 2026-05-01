@@ -116,8 +116,9 @@ public sealed class MoveEmbedResponseFactoryTests
         var factory = new MoveEmbedResponseFactory(new()
         {
             DiscordBotToken = "token",
-            BotGuildId = "123",
-            DiscordGuildId = 123,
+            CommandRegistrationScope = DiscordCommandRegistrationScope.Global,
+            BotGuildIds = "123",
+            DiscordGuildIds = [123UL],
             BotApiBaseUrl = new Uri("http://api:8080"),
             ActiveDatasetPath = "/data/framedata/active"
         });

@@ -17,6 +17,12 @@ public sealed class DiscordCommandRegistrar
         _logger = logger;
     }
 
+    public async Task RegisterGlobalFramedataCommandAsync()
+    {
+        await _registrationClient.RegisterGlobalCommandAsync(FramedataSlashCommandDefinition.Build());
+        _logger.LogInformation("Registered global Discord slash command /{CommandName}.", FramedataSlashCommandDefinition.CommandName);
+    }
+
     public async Task RegisterFramedataCommandAsync(ulong guildId)
     {
         await _registrationClient.RegisterGuildCommandAsync(guildId, FramedataSlashCommandDefinition.Build());
@@ -26,6 +32,7 @@ public sealed class DiscordCommandRegistrar
 
 public interface IDiscordCommandRegistrationClient
 {
+    Task RegisterGlobalCommandAsync(ApplicationCommandProperties command);
     Task RegisterGuildCommandAsync(ulong guildId, ApplicationCommandProperties command);
 }
 
@@ -38,7 +45,12 @@ public sealed class DiscordSocketCommandRegistrationClient : IDiscordCommandRegi
         _client = client;
     }
 
-    public Task RegisterGuildCommandAsync(ulong guildId, ApplicationCommandProperties command)
+    public async Task RegisterGlobalCommandAsync(ApplicationCommandProperties command)
+    {
+        await ((IDiscordClient)_client).CreateGlobalApplicationCommand(command);
+    }
+
+    public async Task RegisterGuildCommandAsync(ulong guildId, ApplicationCommandProperties command)
     {
         var guild = _client.GetGuild(guildId);
         if (guild is null)
@@ -46,6 +58,6 @@ public sealed class DiscordSocketCommandRegistrationClient : IDiscordCommandRegi
             throw new InvalidOperationException($"Discord guild {guildId} is not available to this bot.");
         }
 
-        return guild.BulkOverwriteApplicationCommandAsync([command]);
+        await guild.CreateApplicationCommandAsync(command);
     }
 }
