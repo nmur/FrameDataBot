@@ -198,8 +198,10 @@ Rationale:
 
 ## Decision 15: Slash Command Registration Scope
 
-- Decision: Register `/framedata` as a guild-scoped slash command on bot startup using
-  the configured `BOT_GUILD_ID`.
+- Decision: Register `/framedata` as a global slash command on bot startup by default so
+  it is available in every server that installs the app. Keep optional guild-scoped
+  registration for beta/test deployments using `DISCORD_COMMAND_REGISTRATION_SCOPE=guild`
+  with configured `BOT_GUILD_IDS` values, or legacy `BOT_GUILD_ID`.
 - Rationale: Guild command registration propagates quickly, is easier to validate during
   local/self-hosted development, and matches the current single-guild/home-server
   deployment assumptions.

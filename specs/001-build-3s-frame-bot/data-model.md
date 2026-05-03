@@ -246,12 +246,13 @@
 
 ## DiscordCommandRegistration
 
-- Description: Runtime command definition registered with Discord for the configured
-  guild. This is not persisted.
+- Description: Runtime command definition registered with Discord globally by default,
+  or for configured guilds in beta/test mode. This is not persisted.
 - Fields:
   - `name` (string, required): `framedata`.
   - `description` (string, required): short user-facing Discord command description.
-  - `guildId` (string, required): target guild for registration.
+  - `scope` (string, required): `global` or `guild`.
+  - `guildId` (string, optional): target guild for guild-scoped registration.
   - `options` (collection, required): required string options `character` and `move`.
   - `registeredAt` (datetime, optional): last successful startup registration time.
 - Validation:

@@ -84,6 +84,7 @@ internal static class StaticDatasetFixtureWriter
         string? motion = null,
         string? damage = null,
         string? stun = null,
+        string? sourceHitboxPath = null,
         IReadOnlyList<StaticDatasetMoveMedia>? media = null)
         => new()
         {
@@ -95,6 +96,7 @@ internal static class StaticDatasetFixtureWriter
             Motion = motion,
             Damage = damage,
             Stun = stun,
+            SourceHitboxPath = sourceHitboxPath,
             FrameData = new StaticDatasetMoveFrameData
             {
                 Startup = startup,

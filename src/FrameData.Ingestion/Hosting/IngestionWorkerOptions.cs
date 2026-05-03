@@ -19,6 +19,9 @@ public sealed class IngestionWorkerOptions
     public static IngestionWorkerOptions FromConfiguration(IConfiguration configuration, IngestionWorkerCommand command)
     {
         var characterScope = configuration["characters"] ?? configuration["Ingestion:Characters"];
+        var mediaPilotScope = configuration["Ingestion:Media:PilotScope"]
+            ?? configuration["Ingestion:Media:PilotMoveScope"]
+            ?? configuration["INGESTION_MEDIA_PILOT_SCOPE"];
 
         return new IngestionWorkerOptions
         {
@@ -35,6 +38,7 @@ public sealed class IngestionWorkerOptions
             CharacterIds = ParseCharacterIds(characterScope),
             RepresentativeFramePolicy = new RepresentativeFrameSelectionPolicy
             {
+                PilotMoveScope = ParseCharacterIds(mediaPilotScope),
                 DummyImagePath = configuration["Ingestion:Media:DummyImagePath"]
                     ?? configuration["INGESTION_MEDIA_DUMMY_IMAGE_PATH"]
             }

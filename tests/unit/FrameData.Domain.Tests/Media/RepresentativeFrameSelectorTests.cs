@@ -22,6 +22,7 @@ public sealed class RepresentativeFrameSelectorTests
         selected.ShouldNotBeNull();
         selected.Frame.FrameId.ShouldBe("005");
         selected.ActiveHitboxArea.ShouldBe(100);
+        selected.SelectionStrategy.ShouldBe(RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy);
     }
 
     [Fact]
@@ -41,6 +42,64 @@ public sealed class RepresentativeFrameSelectorTests
         selected.ShouldNotBeNull();
         selected.Frame.FrameId.ShouldBe("001");
         selected.ActiveHitboxArea.ShouldBe(72);
+    }
+
+    [Fact]
+    public void Select_WhenNoActiveHitboxes_ChoosesEarliestFrameWithLargestSummedActiveThrowArea()
+    {
+        var frames = new[]
+        {
+            Frame("006", Box("P1_T", width: 10, height: 10)),
+            Frame("004", Box("P1_T", width: 20, height: 5)),
+            Frame("005", Box("P1_T", width: 5, height: 5)),
+            Frame("003", Box("P2_T", width: 100, height: 100))
+        };
+
+        var selected = _selector.Select(frames);
+
+        selected.ShouldNotBeNull();
+        selected.Frame.FrameId.ShouldBe("004");
+        selected.ActiveHitboxArea.ShouldBe(100);
+        selected.SelectionStrategy.ShouldBe(RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy);
+    }
+
+    [Fact]
+    public void Select_WhenActiveAndActiveThrowHitboxesExist_DefaultStrategyPrefersActiveHitboxes()
+    {
+        var frames = new[]
+        {
+            Frame("001", Box("P1_A", width: 2, height: 2)),
+            Frame("002", Box("P1_T", width: 20, height: 20))
+        };
+
+        var selected = _selector.Select(frames);
+
+        selected.ShouldNotBeNull();
+        selected.Frame.FrameId.ShouldBe("001");
+        selected.ActiveHitboxArea.ShouldBe(4);
+        selected.SelectionStrategy.ShouldBe(RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy);
+    }
+
+    [Fact]
+    public void Select_WhenThrowStrategyConfigured_ChoosesLargestActiveThrowArea()
+    {
+        var frames = new[]
+        {
+            Frame("001", Box("P1_A", width: 50, height: 50)),
+            Frame("002", Box("P1_T", width: 20, height: 20))
+        };
+
+        var selected = _selector.Select(
+            frames,
+            new RepresentativeFrameSelectionPolicy
+            {
+                DefaultStrategy = RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy
+            });
+
+        selected.ShouldNotBeNull();
+        selected.Frame.FrameId.ShouldBe("002");
+        selected.ActiveHitboxArea.ShouldBe(400);
+        selected.SelectionStrategy.ShouldBe(RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy);
     }
 
     [Fact]

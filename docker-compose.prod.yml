@@ -9,6 +9,8 @@ services:
       - "${SEQ_PORT:-5341}:80"
     volumes:
       - ${FRAMEDATA_SEQ_DATA:-./data/seq}:/data
+    networks:
+      - framedatabot
 
   api:
     image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-api:${FRAMEDATA_IMAGE_TAG:-stable}
@@ -27,6 +29,8 @@ services:
       - "${API_PORT:-8080}:8080"
     volumes:
       - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+    networks:
+      - framedatabot
 
   bot:
     image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-bot:${FRAMEDATA_IMAGE_TAG:-stable}
@@ -34,7 +38,9 @@ services:
     restart: unless-stopped
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      BOT_GUILD_ID: ${BOT_GUILD_ID}
+      DISCORD_COMMAND_REGISTRATION_SCOPE: ${DISCORD_COMMAND_REGISTRATION_SCOPE:-global}
+      BOT_GUILD_IDS: ${BOT_GUILD_IDS:-}
+      BOT_GUILD_ID: ${BOT_GUILD_ID:-}
       BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
       FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
       SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
@@ -47,3 +53,9 @@ services:
         condition: service_started
     volumes:
       - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+    networks:
+      - framedatabot
+
+networks:
+  framedatabot:
+    name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}

@@ -98,13 +98,15 @@ public sealed class MoveImageDatasetStorageService
         var frames = _parser.Parse(hitboxDisplayHtml);
         var totalHitboxes = frames.Sum(frame => frame.Hitboxes.Count);
         var activeFrameCount = frames.Count(frame => frame.Hitboxes.Any(hitbox => HitboxOverlayTypes.IsActiveAreaHitbox(hitbox.Type)));
+        var activeThrowFrameCount = frames.Count(frame => frame.Hitboxes.Any(hitbox => HitboxOverlayTypes.IsActiveThrowHitbox(hitbox.Type)));
         _logger.LogInformation(
-            "Parsed hitbox display page for {CharacterId}/{MoveId}. Frames={FrameCount}; Hitboxes={HitboxCount}; FramesWithActiveHitboxes={ActiveFrameCount}.",
+            "Parsed hitbox display page for {CharacterId}/{MoveId}. Frames={FrameCount}; Hitboxes={HitboxCount}; FramesWithActiveHitboxes={ActiveFrameCount}; FramesWithActiveThrowHitboxes={ActiveThrowFrameCount}.",
             move.CharacterId,
             move.Id,
             frames.Count,
             totalHitboxes,
-            activeFrameCount);
+            activeFrameCount,
+            activeThrowFrameCount);
 
         var moveOverride = policy.FindOverride(move.CharacterId, move.Id);
         if (moveOverride is not null)
@@ -121,12 +123,13 @@ public sealed class MoveImageDatasetStorageService
         if (selection is null)
         {
             _logger.LogWarning(
-                "No representative active frame could be selected for {CharacterId}/{MoveId}. Frames={FrameCount}; FramesWithActiveHitboxes={ActiveFrameCount}; creating dummy fallback.",
+                "No representative active or active throw frame could be selected for {CharacterId}/{MoveId}. Frames={FrameCount}; FramesWithActiveHitboxes={ActiveFrameCount}; FramesWithActiveThrowHitboxes={ActiveThrowFrameCount}; creating dummy fallback.",
                 move.CharacterId,
                 move.Id,
                 frames.Count,
-                activeFrameCount);
-            return CreateDummyFallback(move, sourceUrl, policy, "Representative active frame could not be derived.");
+                activeFrameCount,
+                activeThrowFrameCount);
+            return CreateDummyFallback(move, sourceUrl, policy, "Representative active or active throw frame could not be derived.");
         }
 
         _logger.LogInformation(
@@ -151,7 +154,8 @@ public sealed class MoveImageDatasetStorageService
                 policy,
                 "Selected frame image was not available.",
                 selection.Frame.FrameId,
-                selection.ActiveHitboxArea);
+                selection.ActiveHitboxArea,
+                selection.SelectionStrategy);
         }
 
         var image = CreateImage(
@@ -316,7 +320,8 @@ public sealed class MoveImageDatasetStorageService
         RepresentativeFrameSelectionPolicy policy,
         string fallbackReason,
         string? selectedFrame = null,
-        int? activeHitboxArea = null)
+        int? activeHitboxArea = null,
+        string? selectionStrategy = null)
     {
         var image = CreateImage(
             move,
@@ -324,7 +329,7 @@ public sealed class MoveImageDatasetStorageService
             MoveImageCaptureStatus.DummyFallback,
             selectedFrame,
             sourceFrameImageUrl: null,
-            selectionStrategy: RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
+            selectionStrategy: selectionStrategy ?? RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
             activeHitboxArea: activeHitboxArea,
             fallbackReason: fallbackReason);
 

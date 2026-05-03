@@ -19,6 +19,8 @@ public sealed class MoveEmbedResponseFactoryTests
             MatchedMove = "Hayate",
             Section = "Specials",
             MatchedBy = "Exact",
+            CharacterFrameDataUrl = "http://example.test/source.php?id=17",
+            MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay.php?iMove=42",
             FrameData = new FrameDataContract
             {
                 Startup = "12",
@@ -33,6 +35,8 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         AssertRepositoryButton(response.Components);
+        AssertLinkButton(response.Components, "Character Frame Data", "http://example.test/source.php?id=17");
+        AssertLinkButton(response.Components, "Hitbox Display", "http://example.test/hitboxesDisplay.php?iMove=42");
         response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
         response.Embed.Fields.ShouldContain(field => field.Name == "\u200B" && field.Value == "\u200B");
         FieldValue(response, "Damage").ShouldBe("?");
@@ -112,8 +116,9 @@ public sealed class MoveEmbedResponseFactoryTests
         var factory = new MoveEmbedResponseFactory(new()
         {
             DiscordBotToken = "token",
-            BotGuildId = "123",
-            DiscordGuildId = 123,
+            CommandRegistrationScope = DiscordCommandRegistrationScope.Global,
+            BotGuildIds = "123",
+            DiscordGuildIds = [123UL],
             BotApiBaseUrl = new Uri("http://api:8080"),
             ActiveDatasetPath = "/data/framedata/active"
         });
@@ -268,6 +273,15 @@ public sealed class MoveEmbedResponseFactoryTests
         button.Label.ShouldBe("GitHub");
         button.Style.ShouldBe(ButtonStyle.Link);
         button.Url.ShouldBe(MoveEmbedResponseFactory.RepositoryUrl);
+    }
+
+    private static void AssertLinkButton(MessageComponent? components, string label, string url)
+    {
+        var button = FindButton(components, label);
+
+        button.Label.ShouldBe(label);
+        button.Style.ShouldBe(ButtonStyle.Link);
+        button.Url.ShouldBe(url);
     }
 
     private static ButtonComponent FindButton(MessageComponent? components, string label)

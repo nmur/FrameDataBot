@@ -41,6 +41,8 @@ public sealed class MoveQueryContractTests
             Motion = "236P",
             Damage = "60",
             Stun = "7",
+            CharacterFrameDataUrl = "http://example.test/source.php?id=1",
+            MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay.php?iMove=2",
             FrameData = new FrameDataContract
             {
                 Startup = "6",
@@ -56,6 +58,8 @@ public sealed class MoveQueryContractTests
         Assert.Equal("236P", response.Motion);
         Assert.Equal("60", response.Damage);
         Assert.Equal("7", response.Stun);
+        Assert.Equal("http://example.test/source.php?id=1", response.CharacterFrameDataUrl);
+        Assert.Equal("http://example.test/hitboxesDisplay.php?iMove=2", response.MoveHitboxDisplayUrl);
         Assert.Equal("6", response.FrameData.Startup);
     }
 }

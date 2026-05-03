@@ -24,6 +24,7 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                     "chun-li",
                     "2mk",
                     startup: "5",
+                    sourceHitboxPath: "hitboxesDisplay.php?iChar=1&sMoveType=fd_normals&iMove=20",
                     media:
                     [
                         new StaticDatasetMoveMedia
@@ -47,7 +48,14 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                     startup: "13",
                     motion: "236P",
                     damage: "60",
-                    stun: "7"))).GetAwaiter().GetResult();
+                    stun: "7")),
+            StaticDatasetFixtureWriter.Character(
+                "makoto",
+                "Makoto",
+                [],
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (LP)", displayOrder: 1, startup: "12"),
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (MP)", displayOrder: 2, startup: "15"),
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (HP)", displayOrder: 3, startup: "19"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -83,6 +91,8 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("Chun-Li", payload.Character);
         Assert.Equal("2mk", payload.MatchedMove);
         Assert.Equal("5", payload.FrameData.Startup);
+        Assert.Equal("http://example.test/source.php?id=1", payload.CharacterFrameDataUrl);
+        Assert.Equal("http://example.test/hitboxesDisplay.php?iChar=1&sMoveType=fd_normals&iMove=20", payload.MoveHitboxDisplayUrl);
     }
 
     [Fact]
@@ -99,6 +109,33 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("236P", payload.Motion);
         Assert.Equal("60", payload.Damage);
         Assert.Equal("7", payload.Stun);
+    }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenInputUsesMotionAlias_ReturnsMoveFromStaticDataset()
+    {
+        var response = await _client.GetAsync(
+            "/v1/moves/query?character=chun-li&moveInput=qcf%20lp");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Kikouken (Jab)", payload.MatchedMove);
+        Assert.Equal("Alias", payload.MatchedBy);
+        Assert.Equal("236P", payload.Motion);
+    }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenInputUsesStrengthQualifiedChestoAlias_ReturnsMakotoHayateVariant()
+    {
+        var response = await _client.GetAsync(
+            "/v1/moves/query?character=makoto&moveInput=light%20chesto");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Hayate (LP)", payload.MatchedMove);
+        Assert.Equal("Alias", payload.MatchedBy);
     }
 
     [Fact]

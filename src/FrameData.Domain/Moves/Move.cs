@@ -8,6 +8,8 @@ public sealed class Move
     public required string CharacterId { get; init; }
     public required string Game { get; init; }
     public required string CharacterName { get; init; }
+    public int? SourceCharacterId { get; init; }
+    public string? SourceBaseUrl { get; init; }
     public required string Section { get; init; }
     public required string CanonicalName { get; init; }
     public int? DisplayOrder { get; init; }

@@ -78,6 +78,44 @@ public sealed class HitboxFrameParserTests
     }
 
     [Fact]
+    public void Parse_WhenSourceFrameContainsObject_ReadsProjectileActiveHitboxes()
+    {
+        const string html = """
+            <script>
+            var sBaseUrl = 'http://example.test/repo/11/fd_normals/037/';
+            aFramesInfos = {
+              "011": {
+                "frame": "011",
+                "objects_list": ["OBJECT_1"],
+                "pngFileName": "011_canvas.png",
+                "P1": {
+                  "hitboxes": {
+                    "a_hb_to_draw": []
+                  }
+                },
+                "OBJECT_1": {
+                  "hitboxes": {
+                    "a_hb_to_draw": [[197, 117, 123, 149]]
+                  }
+                }
+              }
+            };
+            </script>
+            """;
+
+        var frames = _parser.Parse(html);
+
+        frames.Count.ShouldBe(1);
+        frames[0].SourceFrameImageUrl.ShouldBe("http://example.test/repo/11/fd_normals/037/011_canvas.png");
+
+        var objectActiveHitbox = frames[0].Hitboxes.Single(hitbox => hitbox.Type == "OBJECT_A");
+        objectActiveHitbox.X.ShouldBe(117);
+        objectActiveHitbox.Y.ShouldBe(123);
+        objectActiveHitbox.Width.ShouldBe(80);
+        objectActiveHitbox.Height.ShouldBe(26);
+    }
+
+    [Fact]
     public void Parse_WhenJsonPayloadExists_ReadsFrames()
     {
         const string html = """

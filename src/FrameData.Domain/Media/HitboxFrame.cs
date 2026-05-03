@@ -55,6 +55,21 @@ public static class HitboxOverlayTypes
             || (normalized.StartsWith("P1_", StringComparison.Ordinal) && normalized.EndsWith("_A", StringComparison.Ordinal));
     }
 
+    public static bool IsActiveThrowHitbox(string type)
+    {
+        var normalized = Normalize(type);
+        if (IsP2(normalized))
+        {
+            return false;
+        }
+
+        return normalized == "P1_T"
+            || normalized == "OBJ_T"
+            || normalized == "OBJECT_T"
+            || normalized == "P1_OBJECT_T"
+            || (normalized.StartsWith("P1_", StringComparison.Ordinal) && normalized.EndsWith("_T", StringComparison.Ordinal));
+    }
+
     public static bool ShouldRender(string type, IReadOnlyCollection<string> overlays)
     {
         if (IsP2(type))
@@ -64,7 +79,8 @@ public static class HitboxOverlayTypes
 
         var normalized = Normalize(type);
         return overlays.Any(overlay => string.Equals(Normalize(overlay), normalized, StringComparison.Ordinal))
-            || IsActiveAreaHitbox(normalized);
+            || IsActiveAreaHitbox(normalized)
+            || IsActiveThrowHitbox(normalized);
     }
 
     public static string Normalize(string value)

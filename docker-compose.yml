@@ -8,6 +8,8 @@ services:
       - "${SEQ_PORT:-5341}:80"
     volumes:
       - seq_data:/data
+    networks:
+      - framedatabot
 
   api:
     build:
@@ -25,6 +27,8 @@ services:
       - "${API_PORT:-8080}:8080"
     volumes:
       - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+    networks:
+      - framedatabot
 
   bot:
     build:
@@ -32,7 +36,9 @@ services:
       dockerfile: Dockerfile.bot
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      BOT_GUILD_ID: ${BOT_GUILD_ID}
+      DISCORD_COMMAND_REGISTRATION_SCOPE: ${DISCORD_COMMAND_REGISTRATION_SCOPE:-global}
+      BOT_GUILD_IDS: ${BOT_GUILD_IDS:-}
+      BOT_GUILD_ID: ${BOT_GUILD_ID:-}
       BOT_API_BASE_URL: ${BOT_API_BASE_URL:-http://api:8080}
       FRAMEDATA_ACTIVE_DATASET_PATH: ${FRAMEDATA_ACTIVE_DATASET_PATH:-/data/framedata/active}
       SEQ_SERVER_URL: ${SEQ_SERVER_URL:-http://seq}
@@ -43,6 +49,12 @@ services:
       - seq
     volumes:
       - ${FRAMEDATA_DATASET_HOST_ROOT:-./data/framedata}:${FRAMEDATA_DATASET_ROOT:-/data/framedata}:ro
+    networks:
+      - framedatabot
 
 volumes:
   seq_data:
+
+networks:
+  framedatabot:
+    name: ${FRAMEDATA_DOCKER_NETWORK:-framedatabot}

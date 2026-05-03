@@ -23,26 +23,52 @@ public sealed class RepresentativeFrameSelector
 
             return overridden is null
                 ? null
-                : CreateSelection(
-                    overridden,
-                    RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
-                    CalculateActiveHitboxArea(overridden));
+                : CreateSelectionForOverriddenFrame(overridden);
         }
 
         var strategy = moveOverride?.SelectionStrategy
             ?? policy?.DefaultStrategy
             ?? RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy;
 
-        if (!string.Equals(
-            strategy,
-            RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
-            StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(
+                strategy,
+                RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
+                StringComparison.OrdinalIgnoreCase))
         {
-            return null;
+            return SelectLargestActiveHitboxArea(frames)
+                ?? SelectLargestActiveThrowHitboxArea(frames);
         }
 
+        if (string.Equals(
+                strategy,
+                RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return SelectLargestActiveThrowHitboxArea(frames);
+        }
+
+        return null;
+    }
+
+    private static RepresentativeFrameSelection? SelectLargestActiveHitboxArea(IReadOnlyCollection<HitboxFrame> frames)
+        => SelectLargestArea(
+            frames,
+            RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
+            CalculateActiveHitboxArea);
+
+    private static RepresentativeFrameSelection? SelectLargestActiveThrowHitboxArea(IReadOnlyCollection<HitboxFrame> frames)
+        => SelectLargestArea(
+            frames,
+            RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy,
+            CalculateActiveThrowHitboxArea);
+
+    private static RepresentativeFrameSelection? SelectLargestArea(
+        IReadOnlyCollection<HitboxFrame> frames,
+        string strategy,
+        Func<HitboxFrame, int> calculateArea)
+    {
         return frames
-            .Select(frame => CreateSelection(frame, RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy, CalculateActiveHitboxArea(frame)))
+            .Select(frame => CreateSelection(frame, strategy, calculateArea(frame)))
             .Where(selection => selection.ActiveHitboxArea > 0)
             .OrderByDescending(selection => selection.ActiveHitboxArea)
             .ThenBy(selection => FrameSortKey(selection.Frame.FrameId))
@@ -54,6 +80,37 @@ public sealed class RepresentativeFrameSelector
         => frame.Hitboxes
             .Where(hitbox => HitboxOverlayTypes.IsActiveAreaHitbox(hitbox.Type))
             .Sum(hitbox => hitbox.Area);
+
+    public static int CalculateActiveThrowHitboxArea(HitboxFrame frame)
+        => frame.Hitboxes
+            .Where(hitbox => HitboxOverlayTypes.IsActiveThrowHitbox(hitbox.Type))
+            .Sum(hitbox => hitbox.Area);
+
+    private static RepresentativeFrameSelection CreateSelectionForOverriddenFrame(HitboxFrame frame)
+    {
+        var activeHitboxArea = CalculateActiveHitboxArea(frame);
+        if (activeHitboxArea > 0)
+        {
+            return CreateSelection(
+                frame,
+                RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
+                activeHitboxArea);
+        }
+
+        var activeThrowHitboxArea = CalculateActiveThrowHitboxArea(frame);
+        if (activeThrowHitboxArea > 0)
+        {
+            return CreateSelection(
+                frame,
+                RepresentativeFrameSelectionPolicy.LargestActiveThrowHitboxAreaStrategy,
+                activeThrowHitboxArea);
+        }
+
+        return CreateSelection(
+            frame,
+            RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
+            activeHitboxArea);
+    }
 
     private static RepresentativeFrameSelection CreateSelection(
         HitboxFrame frame,

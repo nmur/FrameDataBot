@@ -12,16 +12,16 @@ public static class BotRuntimeOptionsLoader
             throw new InvalidOperationException("DISCORD_BOT_TOKEN is required.");
         }
 
-        var guildId = configuration["BOT_GUILD_ID"] ?? configuration["Bot:GuildId"];
-        if (string.IsNullOrWhiteSpace(guildId))
-        {
-            throw new InvalidOperationException("BOT_GUILD_ID is required.");
-        }
-
-        if (!ulong.TryParse(guildId, out var discordGuildId))
-        {
-            throw new InvalidOperationException("BOT_GUILD_ID must be a numeric Discord guild ID.");
-        }
+        var commandRegistrationScope = ParseCommandRegistrationScope(
+            configuration["DISCORD_COMMAND_REGISTRATION_SCOPE"] ?? configuration["Bot:CommandRegistrationScope"]);
+        var guildIdsRaw = FirstNonBlank(
+            configuration["BOT_GUILD_IDS"],
+            configuration["Bot:GuildIds"],
+            configuration["BOT_GUILD_ID"],
+            configuration["Bot:GuildId"]);
+        var discordGuildIds = commandRegistrationScope == DiscordCommandRegistrationScope.Guild
+            ? ParseRequiredGuildIds(guildIdsRaw)
+            : [];
 
         var apiBaseUrlRaw = configuration["BOT_API_BASE_URL"] ?? configuration["Bot:ApiBaseUrl"];
         if (string.IsNullOrWhiteSpace(apiBaseUrlRaw))
@@ -45,10 +45,62 @@ public static class BotRuntimeOptionsLoader
         return new BotRuntimeOptions
         {
             DiscordBotToken = token,
-            BotGuildId = guildId,
-            DiscordGuildId = discordGuildId,
+            CommandRegistrationScope = commandRegistrationScope,
+            BotGuildIds = string.Join(",", discordGuildIds),
+            DiscordGuildIds = discordGuildIds,
             BotApiBaseUrl = apiBaseUrl,
             ActiveDatasetPath = activeDatasetPath
         };
+    }
+
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+    }
+
+    private static DiscordCommandRegistrationScope ParseCommandRegistrationScope(string? rawScope)
+    {
+        if (string.IsNullOrWhiteSpace(rawScope))
+        {
+            return DiscordCommandRegistrationScope.Global;
+        }
+
+        return rawScope.Trim().ToLowerInvariant() switch
+        {
+            "global" => DiscordCommandRegistrationScope.Global,
+            "guild" or "guilds" => DiscordCommandRegistrationScope.Guild,
+            _ => throw new InvalidOperationException("DISCORD_COMMAND_REGISTRATION_SCOPE must be either global or guild.")
+        };
+    }
+
+    private static IReadOnlyList<ulong> ParseRequiredGuildIds(string? guildIdsRaw)
+    {
+        if (string.IsNullOrWhiteSpace(guildIdsRaw))
+        {
+            throw new InvalidOperationException("BOT_GUILD_IDS or BOT_GUILD_ID is required when DISCORD_COMMAND_REGISTRATION_SCOPE=guild.");
+        }
+
+        var guildIds = new List<ulong>();
+        var seen = new HashSet<ulong>();
+
+        foreach (var rawGuildId in guildIdsRaw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!ulong.TryParse(rawGuildId, out var guildId))
+            {
+                throw new InvalidOperationException("BOT_GUILD_IDS must contain numeric Discord guild IDs separated by commas.");
+            }
+
+            if (seen.Add(guildId))
+            {
+                guildIds.Add(guildId);
+            }
+        }
+
+        if (guildIds.Count == 0)
+        {
+            throw new InvalidOperationException("BOT_GUILD_IDS must contain at least one Discord guild ID.");
+        }
+
+        return guildIds;
     }
 }

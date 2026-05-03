@@ -186,6 +186,7 @@ public sealed partial class HitboxDisplayParser
             AddSourceDrawBoxes(frameElement, "P2", "a_hb_to_draw", "P2_A", hitboxes);
             AddSourceDrawBoxes(frameElement, "P2", "t_hb_to_draw", "P2_T", hitboxes);
             AddSourceDrawBoxes(frameElement, "P2", "ta_hb_to_draw", "P2_TA", hitboxes);
+            AddSourceObjectDrawBoxes(frameElement, hitboxes);
 
             yield return new HitboxFrame
             {
@@ -194,6 +195,42 @@ public sealed partial class HitboxDisplayParser
                 Hitboxes = hitboxes
             };
         }
+    }
+
+    private static void AddSourceObjectDrawBoxes(JsonElement frameElement, ICollection<HitboxRectangle> hitboxes)
+    {
+        foreach (var actorKey in GetSourceObjectActorKeys(frameElement))
+        {
+            AddSourceDrawBoxes(frameElement, actorKey, "a_hb_to_draw", "OBJECT_A", hitboxes);
+        }
+    }
+
+    private static IEnumerable<string> GetSourceObjectActorKeys(JsonElement frameElement)
+    {
+        var actorKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (TryGetProperty(frameElement, "objects_list", out var objectsElement)
+            && objectsElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var objectElement in objectsElement.EnumerateArray())
+            {
+                if (objectElement.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(objectElement.GetString()))
+                {
+                    actorKeys.Add(objectElement.GetString()!.Trim());
+                }
+            }
+        }
+
+        foreach (var property in frameElement.EnumerateObject())
+        {
+            if (property.Value.ValueKind == JsonValueKind.Object
+                && property.Name.StartsWith("OBJECT_", StringComparison.OrdinalIgnoreCase))
+            {
+                actorKeys.Add(property.Name);
+            }
+        }
+
+        return actorKeys;
     }
 
     private static void AddSourceDrawBoxes(

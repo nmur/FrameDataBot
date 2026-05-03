@@ -30,9 +30,10 @@ public sealed class BotRuntimeService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation(
-            "Bot runtime started with API base URL {ApiBaseUrl} for guild {GuildId}. ActiveDatasetPath={ActiveDatasetPath}.",
+            "Bot runtime started with API base URL {ApiBaseUrl}. CommandRegistrationScope={CommandRegistrationScope}. GuildIds={GuildIds}. ActiveDatasetPath={ActiveDatasetPath}.",
             _options.BotApiBaseUrl,
-            _options.BotGuildId,
+            _options.CommandRegistrationScope,
+            _options.BotGuildIds,
             _options.ActiveDatasetPath);
 
         _gatewayClient.Ready += RegisterCommandsAsync;
@@ -57,9 +58,28 @@ public sealed class BotRuntimeService : BackgroundService
         }
     }
 
-    private Task RegisterCommandsAsync()
+    private async Task RegisterCommandsAsync()
     {
-        return _commandRegistrar.RegisterFramedataCommandAsync(_options.DiscordGuildId);
+        if (_options.CommandRegistrationScope == DiscordCommandRegistrationScope.Global)
+        {
+            await _commandRegistrar.RegisterGlobalFramedataCommandAsync();
+            return;
+        }
+
+        foreach (var guildId in _options.DiscordGuildIds)
+        {
+            try
+            {
+                await _commandRegistrar.RegisterFramedataCommandAsync(guildId);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "Failed to register Discord slash commands for guild {GuildId}. Ensure the bot is installed in that guild with the bot and applications.commands scopes.",
+                    guildId);
+            }
+        }
     }
 
     private Task HandleInteractionAsync(SocketInteraction interaction)

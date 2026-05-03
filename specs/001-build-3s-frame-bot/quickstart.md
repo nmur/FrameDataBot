@@ -4,8 +4,8 @@
 
 - Docker and Docker Compose
 - .NET 10 SDK for local non-container development
-- Discord application with bot token, application ID, and target guild ID
-- Bot invited to the target guild with application command permissions
+- Discord application with bot token and application ID
+- Bot install link configured with bot and application-command permissions
 - Container image registry account for production images
 - Seq is included in Compose for centralized structured logs
 
@@ -13,38 +13,55 @@
 
 1. Create `.env` from `.env.example` for the runtime stack:
    - `DISCORD_BOT_TOKEN`
-   - `BOT_GUILD_ID`
+   - `DISCORD_COMMAND_REGISTRATION_SCOPE` (defaults to `global`; use `guild` only for beta/test guild-scoped registration)
    - `BOT_API_BASE_URL` (defaults to `http://api:8080`)
    - `FRAMEDATA_DATASET_HOST_ROOT` host path shared by runtime and ingestion
    - `FRAMEDATA_DATASET_ROOT` container path, usually `/data/framedata`
    - `FRAMEDATA_ACTIVE_DATASET_PATH` container path read by the API, usually `/data/framedata/active`
+   - `FRAMEDATA_DOCKER_NETWORK` shared Docker network name used by runtime and ingestion Compose files
    - `SEQ_*` settings for local structured logs
 2. Create `.env.ingestion` from `.env.ingestion.example` for one-shot ingestion runs.
+   - Keep `FRAMEDATA_DOCKER_NETWORK` aligned with the runtime `.env`/`.env.prod` value so ingestion can resolve `http://seq`.
 3. Keep the host dataset root on persistent local storage. On Unraid, a practical default is a share such as `/mnt/user/appdata/framedatabot/dataset` mapped to `/data/framedata` in both Compose files.
 
 ## Discord Application Setup
 
 1. In the Discord Developer Portal, create or select the bot application.
 2. Enable the bot user and copy the bot token into `DISCORD_BOT_TOKEN`.
-3. Invite the bot with scopes:
+3. Keep `DISCORD_COMMAND_REGISTRATION_SCOPE=global` so `/framedata` is registered once
+   and becomes available in any server that installs the app.
+4. Invite the bot with scopes:
    - `bot`
    - `applications.commands`
-4. Grant the bot permission to view/send messages in the test channel.
-5. Use the numeric target guild ID as `BOT_GUILD_ID`.
+5. Grant the bot permission to view/send messages in the channel, plus embed/media
+   permissions for formatted results.
+6. Confirm startup logs contain `Registered global Discord slash command /framedata`.
+
+For a guild-scoped beta/test deployment:
+
+1. Set `DISCORD_COMMAND_REGISTRATION_SCOPE=guild`.
+2. Enable Discord Developer Mode, right-click or long-press the test server name,
+   and copy the server ID.
+3. Set `BOT_GUILD_IDS=<test_server_id>` or a comma-separated list of test server IDs.
+4. Restart the bot service so it can connect to Discord and register `/framedata` in the
+   configured guild(s).
+5. Confirm logs contain `Registered Discord slash command /framedata for guild <id>`.
 
 ## Static Dataset Flow
 
-1. Run ingestion when you want to refresh data:
+1. Start the runtime stack at least once so Compose creates the shared Docker network and Seq service.
+2. Run ingestion when you want to refresh data:
    - Full catalog: `docker compose --env-file .env.ingestion -f docker-compose.ingestion.yml run --rm ingestion`
    - Scoped retry: `docker compose --env-file .env.ingestion -f docker-compose.ingestion.yml run --rm ingestion --characters=makoto,chun-li`
-2. Ingestion writes a versioned dataset under the mounted dataset root `versions/` directory and updates `active`.
-3. Confirm the active dataset has:
+   - The ingestion Compose file does not start Seq; it sends logs to the existing runtime `seq` service through the shared network.
+3. Ingestion writes a versioned dataset under the mounted dataset root `versions/` directory and updates `active`.
+4. Confirm the active dataset has:
    - `manifest.json`
    - `characters/*.json`
    - `media/` for later local attachment assets
-4. Start or restart the runtime stack so the API loads the active dataset:
+5. Start or restart the runtime stack so the API loads the active dataset:
    - `docker compose up -d --build`
-5. Query the API directly:
+6. Query the API directly:
    - `GET /v1/moves/query?character=makoto&moveInput=2mk`
 
 The dataset directory is the portable artifact. To roll back, repoint `active` to a previous directory under `versions/` or copy the desired version back into the active path before restarting the API.
@@ -61,7 +78,7 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 3. Deploy runtime services:
    - `docker compose --env-file .env.prod -f docker-compose.prod.yml pull`
    - `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --remove-orphans`
-4. Run ingestion on demand with the separate ingestion Compose file using the same dataset root.
+4. Run ingestion on demand with the separate ingestion Compose file using the same dataset root and shared Docker network. Seq must already be running in the runtime stack.
 
 ## Run Services Locally
 
@@ -93,7 +110,7 @@ The dataset directory is the portable artifact. To roll back, repoint `active` t
 3. Query the API:
    - `GET /v1/moves/query?character=makoto&moveInput=2mk`
 4. Start the bot service and confirm it connects to Discord Gateway.
-5. Confirm `/framedata` appears in the configured guild.
+5. Confirm `/framedata` appears in an installed server.
 6. Query a known move via Discord:
    - `/framedata character:makoto move:2mk`
 7. Confirm the Discord response is a structured embed with character, move, section,

@@ -210,6 +210,12 @@ public sealed class StaticDatasetPublisher
             return;
         }
 
+        if (!Directory.Exists(activePath) && !File.Exists(activePath))
+        {
+            CreatePhysicalActiveDirectory(versionDirectory, activePath, activeParent);
+            return;
+        }
+
         var temporaryLink = Path.Combine(activeParent, $".{Path.GetFileName(activePath)}.{Guid.NewGuid():N}.tmp");
         var relativeTarget = Path.GetRelativePath(activeParent, versionDirectory);
         Directory.CreateSymbolicLink(temporaryLink, relativeTarget);
@@ -243,6 +249,25 @@ public sealed class StaticDatasetPublisher
 
     private static bool IsDirectorySymlink(string path)
         => new DirectoryInfo(path).LinkTarget is not null;
+
+    private static void CreatePhysicalActiveDirectory(string versionDirectory, string activePath, string activeParent)
+    {
+        var temporaryPath = Path.Combine(activeParent, $".{Path.GetFileName(activePath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            CopyDirectory(versionDirectory, temporaryPath);
+            Directory.Move(temporaryPath, activePath);
+        }
+        catch
+        {
+            if (Directory.Exists(temporaryPath))
+            {
+                Directory.Delete(temporaryPath, recursive: true);
+            }
+
+            throw;
+        }
+    }
 
     private static void ReplacePhysicalActiveDirectory(string versionDirectory, string activePath)
     {
