@@ -11,6 +11,7 @@ public sealed class MoveQueryResponse
     public string? Stun { get; init; }
     public string? CharacterFrameDataUrl { get; init; }
     public string? MoveHitboxDisplayUrl { get; init; }
+    public string? GameRestaurantMoveUrl { get; init; }
     public required FrameDataContract FrameData { get; init; }
     public MoveMediaContract? Media { get; init; }
 }

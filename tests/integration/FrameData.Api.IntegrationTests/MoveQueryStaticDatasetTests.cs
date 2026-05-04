@@ -93,6 +93,7 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("5", payload.FrameData.Startup);
         Assert.Equal("http://example.test/source.php?id=1", payload.CharacterFrameDataUrl);
         Assert.Equal("http://example.test/hitboxesDisplay.php?iChar=1&sMoveType=fd_normals&iMove=20", payload.MoveHitboxDisplayUrl);
+        Assert.Equal("http://gere.stars.ne.jp/01_3rd/kouryaku/chunli/chunli_mk.html", payload.GameRestaurantMoveUrl);
     }
 
     [Fact]
@@ -109,6 +110,7 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("236P", payload.Motion);
         Assert.Equal("60", payload.Damage);
         Assert.Equal("7", payload.Stun);
+        Assert.Equal("http://gere.stars.ne.jp/01_3rd/kouryaku/chunli/chunli_h1.html", payload.GameRestaurantMoveUrl);
     }
 
     [Fact]

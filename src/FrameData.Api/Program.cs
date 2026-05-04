@@ -22,7 +22,7 @@ builder.Services.AddSingleton<IMoveQueryRepository>(sp =>
         activeDatasetPath,
         sp.GetRequiredService<ILogger<ReloadingStaticMoveQueryRepository>>());
 });
-builder.Services.AddSingleton<AliasNormalizer>();
+builder.Services.AddSingleton<AliasNormaliser>();
 builder.Services.AddSingleton<FuzzyMoveMatcher>();
 builder.Services.AddSingleton<ExactMoveLookupService>();
 builder.Services.AddSingleton<MoveDisambiguationResponseFactory>();

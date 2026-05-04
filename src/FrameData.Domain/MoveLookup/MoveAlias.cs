@@ -15,5 +15,5 @@ public sealed class MoveAlias
     public required string MoveId { get; init; }
     public required string Alias { get; init; }
     public required MoveAliasType AliasType { get; init; }
-    public required string NormalizedAlias { get; init; }
+    public required string NormalisedAlias { get; init; }
 }

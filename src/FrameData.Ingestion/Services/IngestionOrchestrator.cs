@@ -118,7 +118,7 @@ public sealed class IngestionOrchestrator
 
                 var parsedMoves = _sectionParser.Parse(html);
                 var sectionCounts = parsedMoves
-                    .GroupBy(move => NormalizeSection(move.Section))
+                    .GroupBy(move => NormaliseSection(move.Section))
                     .OrderBy(group => group.Key)
                     .ToDictionary(group => group.Key, group => group.Count());
 
@@ -251,14 +251,14 @@ public sealed class IngestionOrchestrator
         {
             var parsed = parsedMoves[index];
             var displayOrder = index + 1;
-            var section = NormalizeSection(parsed.Section);
+            var section = NormaliseSection(parsed.Section);
             var baseMoveId = BuildMoveId(scope.CharacterId, section, parsed.CanonicalName);
             var moveId = EnsureUniqueMoveId(baseMoveId, usedMoveIds);
 
             if (!string.Equals(moveId, baseMoveId, StringComparison.Ordinal))
             {
                 _logger.LogWarning(
-                    "Generated duplicate normalized move id {BaseMoveId} for {CharacterId} move {MoveName}; assigned unique id {MoveId}.",
+                    "Generated duplicate normalised move id {BaseMoveId} for {CharacterId} move {MoveName}; assigned unique id {MoveId}.",
                     baseMoveId,
                     scope.CharacterId,
                     parsed.CanonicalName,
@@ -307,9 +307,9 @@ public sealed class IngestionOrchestrator
 
     private static string BuildMoveId(string characterId, string section, string moveName)
     {
-        var normalizedSection = NormalizeIdPart(section);
-        var normalizedName = NormalizeIdPart(moveName);
-        return $"{characterId}-{normalizedSection}-{normalizedName}".ToLowerInvariant();
+        var normalisedSection = NormaliseIdPart(section);
+        var normalisedName = NormaliseIdPart(moveName);
+        return $"{characterId}-{normalisedSection}-{normalisedName}".ToLowerInvariant();
     }
 
     private static string? BuildHitboxDisplayPath(int sourceCharacterId, string section, string? sourceMoveId)
@@ -357,10 +357,10 @@ public sealed class IngestionOrchestrator
         }
     }
 
-    private static string NormalizeSection(string section)
+    private static string NormaliseSection(string section)
         => string.Equals(section, "Super Arts", StringComparison.OrdinalIgnoreCase) ? "SuperArts" : section;
 
-    private static string NormalizeIdPart(string value)
+    private static string NormaliseIdPart(string value)
         => new(value
             .Trim()
             .Select(ch => char.IsLetterOrDigit(ch) ? char.ToLowerInvariant(ch) : '-')

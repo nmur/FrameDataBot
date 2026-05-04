@@ -48,7 +48,7 @@ public sealed class CharacterSectionParser
         }
 
         var headers = rows[0].QuerySelectorAll("th,td")
-            .Select(c => NormalizeHeader(c.TextContent))
+            .Select(c => NormaliseHeader(c.TextContent))
             .ToArray();
 
         var moveIndex = FindFirstHeaderIndex(headers, "move", "name");
@@ -107,11 +107,11 @@ public sealed class CharacterSectionParser
         }
     }
 
-    private static int FindHeaderIndex(IReadOnlyList<string> headers, string normalizedTarget)
+    private static int FindHeaderIndex(IReadOnlyList<string> headers, string normalisedTarget)
     {
         for (var i = 0; i < headers.Count; i++)
         {
-            if (headers[i] == normalizedTarget)
+            if (headers[i] == normalisedTarget)
             {
                 return i;
             }
@@ -120,9 +120,9 @@ public sealed class CharacterSectionParser
         return -1;
     }
 
-    private static int FindFirstHeaderIndex(IReadOnlyList<string> headers, params string[] normalizedTargets)
+    private static int FindFirstHeaderIndex(IReadOnlyList<string> headers, params string[] normalisedTargets)
     {
-        foreach (var target in normalizedTargets)
+        foreach (var target in normalisedTargets)
         {
             var index = FindHeaderIndex(headers, target);
             if (index >= 0)
@@ -134,7 +134,7 @@ public sealed class CharacterSectionParser
         return -1;
     }
 
-    private static string NormalizeHeader(string value)
+    private static string NormaliseHeader(string value)
         => new string(value.Where(char.IsLetterOrDigit).ToArray())
             .ToLowerInvariant();
 

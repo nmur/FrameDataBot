@@ -240,9 +240,9 @@ return a representative active-frame image including configured P1 hitbox boxes.
   aliases, and associated move set.
 - **Move**: A single attack entry tied to one character and one section, with canonical
   name, optional Motion/Damage/Stun source attributes, and frame data values.
-- **MoveAlias**: A normalized alternate input form for a move, including shorthand,
+- **MoveAlias**: A normalised alternate input form for a move, including shorthand,
   numpad notation, and colloquial terms.
-- **MatchCandidate**: A scored move candidate containing normalized query,
+- **MatchCandidate**: A scored move candidate containing normalised query,
   candidate move, confidence score, and rank.
 - **MoveFrameData**: Structured timing and advantage attributes for a move.
 - **MoveImage**: Stored artifact for move visuals, including image location, source

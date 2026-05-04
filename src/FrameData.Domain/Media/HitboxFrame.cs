@@ -31,43 +31,43 @@ public static class HitboxOverlayTypes
 
     public static bool IsP2(string type)
     {
-        var normalized = Normalize(type);
-        return normalized.StartsWith("P2_", StringComparison.Ordinal)
-            || normalized.StartsWith("P2", StringComparison.Ordinal)
-            || normalized.Contains("_P2_", StringComparison.Ordinal);
+        var normalised = Normalise(type);
+        return normalised.StartsWith("P2_", StringComparison.Ordinal)
+            || normalised.StartsWith("P2", StringComparison.Ordinal)
+            || normalised.Contains("_P2_", StringComparison.Ordinal);
     }
 
     public static bool IsActiveAreaHitbox(string type)
     {
-        var normalized = Normalize(type);
-        if (IsP2(normalized))
+        var normalised = Normalise(type);
+        if (IsP2(normalised))
         {
             return false;
         }
 
-        return normalized == "P1_A"
-            || normalized == "OBJ_A"
-            || normalized == "OBJECT_A"
-            || normalized == "PROJECTILE_A"
-            || normalized == "P1_OA"
-            || normalized == "P1_OBJECT_A"
-            || normalized == "P1_PROJECTILE_A"
-            || (normalized.StartsWith("P1_", StringComparison.Ordinal) && normalized.EndsWith("_A", StringComparison.Ordinal));
+        return normalised == "P1_A"
+            || normalised == "OBJ_A"
+            || normalised == "OBJECT_A"
+            || normalised == "PROJECTILE_A"
+            || normalised == "P1_OA"
+            || normalised == "P1_OBJECT_A"
+            || normalised == "P1_PROJECTILE_A"
+            || (normalised.StartsWith("P1_", StringComparison.Ordinal) && normalised.EndsWith("_A", StringComparison.Ordinal));
     }
 
     public static bool IsActiveThrowHitbox(string type)
     {
-        var normalized = Normalize(type);
-        if (IsP2(normalized))
+        var normalised = Normalise(type);
+        if (IsP2(normalised))
         {
             return false;
         }
 
-        return normalized == "P1_T"
-            || normalized == "OBJ_T"
-            || normalized == "OBJECT_T"
-            || normalized == "P1_OBJECT_T"
-            || (normalized.StartsWith("P1_", StringComparison.Ordinal) && normalized.EndsWith("_T", StringComparison.Ordinal));
+        return normalised == "P1_T"
+            || normalised == "OBJ_T"
+            || normalised == "OBJECT_T"
+            || normalised == "P1_OBJECT_T"
+            || (normalised.StartsWith("P1_", StringComparison.Ordinal) && normalised.EndsWith("_T", StringComparison.Ordinal));
     }
 
     public static bool ShouldRender(string type, IReadOnlyCollection<string> overlays)
@@ -77,13 +77,13 @@ public static class HitboxOverlayTypes
             return false;
         }
 
-        var normalized = Normalize(type);
-        return overlays.Any(overlay => string.Equals(Normalize(overlay), normalized, StringComparison.Ordinal))
-            || IsActiveAreaHitbox(normalized)
-            || IsActiveThrowHitbox(normalized);
+        var normalised = Normalise(type);
+        return overlays.Any(overlay => string.Equals(Normalise(overlay), normalised, StringComparison.Ordinal))
+            || IsActiveAreaHitbox(normalised)
+            || IsActiveThrowHitbox(normalised);
     }
 
-    public static string Normalize(string value)
+    public static string Normalise(string value)
         => value.Trim()
             .Replace('-', '_')
             .Replace(' ', '_')

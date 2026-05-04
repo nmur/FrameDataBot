@@ -21,6 +21,7 @@ public sealed class MoveEmbedResponseFactoryTests
             MatchedBy = "Exact",
             CharacterFrameDataUrl = "http://example.test/source.php?id=17",
             MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay.php?iMove=42",
+            GameRestaurantMoveUrl = "http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html",
             FrameData = new FrameDataContract
             {
                 Startup = "12",
@@ -35,8 +36,9 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.ShouldNotBeNull();
         response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         AssertRepositoryButton(response.Components);
-        AssertLinkButton(response.Components, "Character Frame Data", "http://example.test/source.php?id=17");
-        AssertLinkButton(response.Components, "Hitbox Display", "http://example.test/hitboxesDisplay.php?iMove=42");
+        AssertLinkButton(response.Components, "Frame Data", "http://example.test/source.php?id=17");
+        AssertLinkButton(response.Components, "Full Animation", "http://example.test/hitboxesDisplay.php?iMove=42");
+        AssertLinkButton(response.Components, "Games Restaurant", "http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html");
         response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
         response.Embed.Fields.ShouldContain(field => field.Name == "\u200B" && field.Value == "\u200B");
         FieldValue(response, "Damage").ShouldBe("?");
@@ -268,9 +270,9 @@ public sealed class MoveEmbedResponseFactoryTests
 
     private static void AssertRepositoryButton(MessageComponent? components)
     {
-        var button = FindButton(components, "GitHub");
+        var button = FindButton(components, "Source");
 
-        button.Label.ShouldBe("GitHub");
+        button.Label.ShouldBe("Source");
         button.Style.ShouldBe(ButtonStyle.Link);
         button.Url.ShouldBe(MoveEmbedResponseFactory.RepositoryUrl);
     }

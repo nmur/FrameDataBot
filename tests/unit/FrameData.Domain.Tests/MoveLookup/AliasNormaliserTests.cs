@@ -4,9 +4,9 @@ using Shouldly;
 
 namespace FrameData.Domain.Tests.MoveLookup;
 
-public sealed class AliasNormalizerTests
+public sealed class AliasNormaliserTests
 {
-    private readonly AliasNormalizer _normalizer = new();
+    private readonly AliasNormaliser _normaliser = new();
 
     [Theory]
     [InlineData("cr.HK", "2hk")]
@@ -68,19 +68,19 @@ public sealed class AliasNormalizerTests
     [InlineData("stomp", "stomp")]
     [InlineData("backbreaker", "backbreaker")]
     [InlineData("crab punch", "crabpunch")]
-    public void Normalize_ConvertsCommonNotationToStableLookupForm(string input, string expected)
+    public void Normalise_ConvertsCommonNotationToStableLookupForm(string input, string expected)
     {
-        var normalized = _normalizer.Normalize(input);
+        var normalised = _normaliser.Normalise(input);
 
-        normalized.ShouldBe(expected);
+        normalised.ShouldBe(expected);
     }
 
     [Fact]
-    public void Normalize_WhenInputIsColloquial_PreservesSearchableTerm()
+    public void Normalise_WhenInputIsColloquial_PreservesSearchableTerm()
     {
-        var normalized = _normalizer.Normalize(" sweep ");
+        var normalised = _normaliser.Normalise(" sweep ");
 
-        normalized.ShouldBe("sweep");
+        normalised.ShouldBe("sweep");
     }
 
     [Fact]
@@ -98,8 +98,8 @@ public sealed class AliasNormalizerTests
             FrameData = new MoveFrameData()
         };
 
-        var aliases = _normalizer.CreateAliases(move);
+        var aliases = _normaliser.CreateAliases(move);
 
-        aliases.ShouldContain(alias => alias.Alias == "back hp" && alias.NormalizedAlias == "4hp");
+        aliases.ShouldContain(alias => alias.Alias == "back hp" && alias.NormalisedAlias == "4hp");
     }
 }
