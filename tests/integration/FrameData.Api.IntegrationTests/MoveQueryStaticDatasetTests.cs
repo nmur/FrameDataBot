@@ -110,7 +110,7 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         Assert.Equal("236P", payload.Motion);
         Assert.Equal("60", payload.Damage);
         Assert.Equal("7", payload.Stun);
-        Assert.Equal("http://gere.stars.ne.jp/01_3rd/kouryaku/chunli/chunli_h1.html", payload.GameRestaurantMoveUrl);
+        Assert.Equal("http://gere.stars.ne.jp/01_3rd/kouryaku/chunli/chunli_h2.html", payload.GameRestaurantMoveUrl);
     }
 
     [Fact]
