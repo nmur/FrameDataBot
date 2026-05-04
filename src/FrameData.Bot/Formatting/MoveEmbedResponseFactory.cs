@@ -77,7 +77,8 @@ public sealed class MoveEmbedResponseFactory
             Components = CreateComponents(
                 issueContext,
                 response.CharacterFrameDataUrl,
-                response.MoveHitboxDisplayUrl),
+                response.MoveHitboxDisplayUrl,
+                response.GameRestaurantMoveUrl),
             Attachment = attachment
         };
     }
@@ -204,13 +205,15 @@ public sealed class MoveEmbedResponseFactory
     private static MessageComponent CreateComponents(
         MoveCorrectionIssueContext? issueContext,
         string? characterFrameDataUrl = null,
-        string? moveHitboxDisplayUrl = null)
+        string? moveHitboxDisplayUrl = null,
+        string? gameRestaurantMoveUrl = null)
     {
         var builder = new ComponentBuilder();
 
-        AddLinkButton(builder, "Character Frame Data", characterFrameDataUrl);
-        AddLinkButton(builder, "Hitbox Display", moveHitboxDisplayUrl);
-        builder.WithButton("GitHub", style: ButtonStyle.Link, url: RepositoryUrl);
+        AddLinkButton(builder, "Frame Data", characterFrameDataUrl);
+        AddLinkButton(builder, "Full Animation", moveHitboxDisplayUrl);
+        AddLinkButton(builder, "Games Restaurant", gameRestaurantMoveUrl);
+        builder.WithButton("Source", style: ButtonStyle.Link, url: RepositoryUrl);
 
         if (issueContext is not null)
         {
@@ -249,10 +252,10 @@ public sealed class MoveEmbedResponseFactory
 
     private static string LimitIssueField(string value)
     {
-        var normalized = string.IsNullOrWhiteSpace(value) ? "unknown" : value.Trim();
-        return normalized.Length <= MaxIssueFieldLength
-            ? normalized
-            : normalized[..MaxIssueFieldLength];
+        var normalised = string.IsNullOrWhiteSpace(value) ? "unknown" : value.Trim();
+        return normalised.Length <= MaxIssueFieldLength
+            ? normalised
+            : normalised[..MaxIssueFieldLength];
     }
 
     private static string Encode(string value)

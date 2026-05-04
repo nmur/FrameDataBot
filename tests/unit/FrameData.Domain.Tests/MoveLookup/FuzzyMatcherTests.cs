@@ -6,7 +6,7 @@ namespace FrameData.Domain.Tests.MoveLookup;
 
 public sealed class FuzzyMatcherTests
 {
-    private readonly FuzzyMoveMatcher _matcher = new(new AliasNormalizer());
+    private readonly FuzzyMoveMatcher _matcher = new(new AliasNormaliser());
 
     [Fact]
     public void Rank_WhenInputUsesCrouchingNotation_RanksNumpadCanonicalMoveFirst()

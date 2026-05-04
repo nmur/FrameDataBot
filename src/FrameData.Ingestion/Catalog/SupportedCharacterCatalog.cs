@@ -47,11 +47,11 @@ public sealed class SupportedCharacterCatalog : ISupportedCharacterCatalog
 
     private SourceCharacterCatalogEntry ResolveCharacter(string characterId)
     {
-        var normalized = characterId.Trim();
+        var normalised = characterId.Trim();
         var entry = EnabledCharacters.FirstOrDefault(character =>
-            string.Equals(character.Id, normalized, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(character.DisplayName, normalized, StringComparison.OrdinalIgnoreCase) ||
-            character.Aliases.Any(alias => string.Equals(alias, normalized, StringComparison.OrdinalIgnoreCase)));
+            string.Equals(character.Id, normalised, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(character.DisplayName, normalised, StringComparison.OrdinalIgnoreCase) ||
+            character.Aliases.Any(alias => string.Equals(alias, normalised, StringComparison.OrdinalIgnoreCase)));
 
         return entry ?? throw new ArgumentException($"Unsupported ingestion character scope: {characterId}", nameof(characterId));
     }

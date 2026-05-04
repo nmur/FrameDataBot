@@ -66,7 +66,7 @@ public sealed class StaticMoveQueryRepository : IMoveQueryRepository
 
     private bool TryResolveCharacter(string character, out Character resolvedCharacter)
     {
-        if (_charactersByLookup.TryGetValue(NormalizeLookup(character), out resolvedCharacter!))
+        if (_charactersByLookup.TryGetValue(NormaliseLookup(character), out resolvedCharacter!))
         {
             return true;
         }
@@ -104,13 +104,13 @@ public sealed class StaticMoveQueryRepository : IMoveQueryRepository
         string value,
         Character character)
     {
-        var normalized = NormalizeLookup(value);
-        if (normalized.Length > 0)
+        var normalised = NormaliseLookup(value);
+        if (normalised.Length > 0)
         {
-            lookup.TryAdd(normalized, character);
+            lookup.TryAdd(normalised, character);
         }
     }
 
-    private static string NormalizeLookup(string value)
+    private static string NormaliseLookup(string value)
         => value.Trim().ToLowerInvariant();
 }

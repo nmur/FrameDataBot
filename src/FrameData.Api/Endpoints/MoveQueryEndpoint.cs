@@ -79,6 +79,7 @@ public static class MoveQueryEndpoint
                 MoveHitboxDisplayUrl = ResolveSourceUrl(
                     result.Move.SourceBaseUrl,
                     result.Move.SourceHitboxPath),
+                GameRestaurantMoveUrl = GameRestaurantUrlResolver.Resolve(result.Move),
                 FrameData = new FrameDataContract
                 {
                     Startup = result.Move.FrameData.Startup,

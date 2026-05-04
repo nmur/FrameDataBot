@@ -8,36 +8,36 @@ public sealed class ExactMoveLookupService
     public ExactMoveLookupService(IMoveQueryRepository repository, FuzzyMoveMatcher? matcher = null)
     {
         _repository = repository;
-        _matcher = matcher ?? new FuzzyMoveMatcher(new AliasNormalizer());
+        _matcher = matcher ?? new FuzzyMoveMatcher(new AliasNormaliser());
     }
 
     public async Task<MoveLookupResult> LookupAsync(string character, string move, CancellationToken cancellationToken = default)
     {
-        var normalizedCharacter = character.Trim();
-        var normalizedMove = move.Trim();
+        var normalisedCharacter = character.Trim();
+        var normalisedMove = move.Trim();
 
-        if (!await _repository.SupportsCharacterAsync(normalizedCharacter, cancellationToken))
+        if (!await _repository.SupportsCharacterAsync(normalisedCharacter, cancellationToken))
         {
-            return MoveLookupResult.UnsupportedCharacter(normalizedCharacter);
+            return MoveLookupResult.UnsupportedCharacter(normalisedCharacter);
         }
 
-        var foundMove = await _repository.FindExactMoveAsync(normalizedCharacter, normalizedMove, cancellationToken);
+        var foundMove = await _repository.FindExactMoveAsync(normalisedCharacter, normalisedMove, cancellationToken);
         if (foundMove is null)
         {
-            var moves = await _repository.GetMovesForCharacterAsync(normalizedCharacter, cancellationToken);
-            var candidates = _matcher.Rank(normalizedMove, moves);
+            var moves = await _repository.GetMovesForCharacterAsync(normalisedCharacter, cancellationToken);
+            var candidates = _matcher.Rank(normalisedMove, moves);
             var passingCandidates = candidates
                 .Where(candidate => candidate.ThresholdPassed)
                 .ToArray();
 
             if (passingCandidates.Length == 0)
             {
-                return MoveLookupResult.NotFound(normalizedMove);
+                return MoveLookupResult.NotFound(normalisedMove);
             }
 
             if (_matcher.IsAmbiguous(candidates))
             {
-                return MoveLookupResult.Ambiguous(normalizedMove, passingCandidates);
+                return MoveLookupResult.Ambiguous(normalisedMove, passingCandidates);
             }
 
             return MoveLookupResult.Found(passingCandidates[0].Move, passingCandidates[0].MatchedBy);

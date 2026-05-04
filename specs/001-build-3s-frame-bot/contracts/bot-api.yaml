@@ -65,6 +65,15 @@ components:
         stun:
           type: string
           description: Optional source stun value preserved as text.
+        characterFrameDataUrl:
+          type: string
+          description: Source character frame-data page URL.
+        moveHitboxDisplayUrl:
+          type: string
+          description: Source full-animation/hitbox display URL for the matched move.
+        gameRestaurantMoveUrl:
+          type: string
+          description: Best-known Game Restaurant cross-reference URL for the matched move.
         frameData:
           $ref: '#/components/schemas/FrameData'
         media:

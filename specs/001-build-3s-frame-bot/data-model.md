@@ -118,9 +118,9 @@
   - `moveId` (string, required)
   - `alias` (string, required)
   - `aliasType` (enum, required): `Canonical | Abbreviation | Numpad | Colloquial | Derived`
-  - `normalizedAlias` (string, required)
+  - `normalisedAlias` (string, required)
 - Validation:
-  - Unique per move on `normalizedAlias`.
+  - Unique per move on `normalisedAlias`.
 
 ## MatchCandidate
 

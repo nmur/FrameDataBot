@@ -67,7 +67,7 @@ public sealed class BotHostBootstrapTests
     }
 
     [Fact]
-    public void Load_WhenGuildIdsContainWhitespaceAndDuplicates_NormalizesThem()
+    public void Load_WhenGuildIdsContainWhitespaceAndDuplicates_NormalisesThem()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>

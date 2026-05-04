@@ -42,7 +42,7 @@ public sealed class RepresentativeFrameSelectionPolicy
             errors.Add("Representative frame default strategy is required.");
         }
 
-        var known = new HashSet<string>(knownMoveKeys.Select(NormalizeMoveKey), StringComparer.OrdinalIgnoreCase);
+        var known = new HashSet<string>(knownMoveKeys.Select(NormaliseMoveKey), StringComparer.OrdinalIgnoreCase);
         var knownCharacters = new HashSet<string>(
             known
                 .Select(GetCharacterScope)
@@ -51,8 +51,8 @@ public sealed class RepresentativeFrameSelectionPolicy
             StringComparer.OrdinalIgnoreCase);
         foreach (var scopedMove in PilotMoveScope)
         {
-            var normalizedScope = NormalizeMoveKey(scopedMove);
-            if (!known.Contains(normalizedScope) && !CharacterScopeMatchesKnownCharacter(normalizedScope, knownCharacters))
+            var normalisedScope = NormaliseMoveKey(scopedMove);
+            if (!known.Contains(normalisedScope) && !CharacterScopeMatchesKnownCharacter(normalisedScope, knownCharacters))
             {
                 errors.Add($"Representative frame media scope does not resolve to a known move or character: {scopedMove}.");
             }
@@ -60,7 +60,7 @@ public sealed class RepresentativeFrameSelectionPolicy
 
         foreach (var (moveKey, moveOverride) in MoveOverrides)
         {
-            if (!known.Contains(NormalizeMoveKey(moveKey)))
+            if (!known.Contains(NormaliseMoveKey(moveKey)))
             {
                 errors.Add($"Representative frame override does not resolve to a known move: {moveKey}.");
             }
@@ -83,35 +83,35 @@ public sealed class RepresentativeFrameSelectionPolicy
     public static string BuildMoveKey(string characterId, string moveId)
         => $"{characterId.Trim()}/{moveId.Trim()}";
 
-    public static string NormalizeMoveKey(string moveKey)
+    public static string NormaliseMoveKey(string moveKey)
         => moveKey.Trim().Replace('\\', '/').ToLowerInvariant();
 
     private static bool MoveKeyMatches(string configuredMoveKey, string characterId, string moveId)
     {
-        var normalizedConfigured = NormalizeMoveKey(configuredMoveKey);
-        var normalizedCharacterId = characterId.Trim().ToLowerInvariant();
-        var normalizedMoveId = moveId.Trim().ToLowerInvariant();
-        var normalizedFullKey = NormalizeMoveKey(BuildMoveKey(characterId, moveId));
+        var normalisedConfigured = NormaliseMoveKey(configuredMoveKey);
+        var normalisedCharacterId = characterId.Trim().ToLowerInvariant();
+        var normalisedMoveId = moveId.Trim().ToLowerInvariant();
+        var normalisedFullKey = NormaliseMoveKey(BuildMoveKey(characterId, moveId));
 
-        return string.Equals(normalizedConfigured, normalizedCharacterId, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(normalizedConfigured, $"{normalizedCharacterId}/*", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(normalizedConfigured, normalizedMoveId, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(normalizedConfigured, normalizedFullKey, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(normalisedConfigured, normalisedCharacterId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalisedConfigured, $"{normalisedCharacterId}/*", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalisedConfigured, normalisedMoveId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalisedConfigured, normalisedFullKey, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool CharacterScopeMatchesKnownCharacter(string normalizedScope, IReadOnlySet<string> knownCharacters)
+    private static bool CharacterScopeMatchesKnownCharacter(string normalisedScope, IReadOnlySet<string> knownCharacters)
     {
-        var characterScope = normalizedScope.EndsWith("/*", StringComparison.Ordinal)
-            ? normalizedScope[..^2]
-            : normalizedScope;
+        var characterScope = normalisedScope.EndsWith("/*", StringComparison.Ordinal)
+            ? normalisedScope[..^2]
+            : normalisedScope;
 
         return knownCharacters.Contains(characterScope);
     }
 
-    private static string? GetCharacterScope(string normalizedMoveKey)
+    private static string? GetCharacterScope(string normalisedMoveKey)
     {
-        var separatorIndex = normalizedMoveKey.IndexOf('/');
-        return separatorIndex <= 0 ? null : normalizedMoveKey[..separatorIndex];
+        var separatorIndex = normalisedMoveKey.IndexOf('/');
+        return separatorIndex <= 0 ? null : normalisedMoveKey[..separatorIndex];
     }
 }
 

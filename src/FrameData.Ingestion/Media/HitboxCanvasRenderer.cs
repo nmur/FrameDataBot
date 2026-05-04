@@ -214,7 +214,7 @@ public sealed class HitboxCanvasRenderer
 
     private static HitboxStyle StyleFor(string type)
     {
-        var color = HitboxOverlayTypes.Normalize(type) switch
+        var color = HitboxOverlayTypes.Normalise(type) switch
         {
             "P1_P" => new Rgba(0, 0, 255, 255),
             "P1_V" => new Rgba(96, 192, 255, 255),

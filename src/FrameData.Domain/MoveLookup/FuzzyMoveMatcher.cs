@@ -11,24 +11,24 @@ public sealed class FuzzyMoveMatcher
     private const int MinimumPrefixPartialLength = 4;
     private const int PartialSubstringScoreCap = 92;
 
-    private readonly AliasNormalizer _normalizer;
+    private readonly AliasNormaliser _normaliser;
 
-    public FuzzyMoveMatcher(AliasNormalizer normalizer)
+    public FuzzyMoveMatcher(AliasNormaliser normaliser)
     {
-        _normalizer = normalizer;
+        _normaliser = normaliser;
     }
 
     public IReadOnlyList<MatchCandidate> Rank(string query, IEnumerable<Move> moves, int limit = 5)
     {
-        var normalizedQuery = _normalizer.Normalize(query);
-        if (normalizedQuery.Length == 0)
+        var normalisedQuery = _normaliser.Normalise(query);
+        if (normalisedQuery.Length == 0)
         {
             return [];
         }
 
         var moveList = moves as IReadOnlyList<Move> ?? moves.ToArray();
         return moveList
-            .Select(move => RankMove(normalizedQuery, move, moveList))
+            .Select(move => RankMove(normalisedQuery, move, moveList))
             .Where(candidate => candidate is not null)
             .Select(candidate => candidate!)
             .GroupBy(candidate => candidate.MoveId, StringComparer.OrdinalIgnoreCase)
@@ -67,26 +67,26 @@ public sealed class FuzzyMoveMatcher
         return passingCandidates[0].Score - passingCandidates[1].Score <= AmbiguityScoreDelta;
     }
 
-    private MatchCandidate? RankMove(string normalizedQuery, Move move, IReadOnlyList<Move> characterMoves)
+    private MatchCandidate? RankMove(string normalisedQuery, Move move, IReadOnlyList<Move> characterMoves)
     {
-        return _normalizer.CreateAliases(move, characterMoves)
-            .Select(alias => CreateCandidate(normalizedQuery, move, alias))
+        return _normaliser.CreateAliases(move, characterMoves)
+            .Select(alias => CreateCandidate(normalisedQuery, move, alias))
             .OrderByDescending(candidate => candidate.Score)
             .ThenBy(candidate => candidate.AliasType is MoveAliasType.Canonical ? 1 : 0)
             .ThenBy(candidate => candidate.AliasType)
             .FirstOrDefault();
     }
 
-    private static MatchCandidate CreateCandidate(string normalizedQuery, Move move, MoveAlias alias)
+    private static MatchCandidate CreateCandidate(string normalisedQuery, Move move, MoveAlias alias)
     {
-        var score = CalculateScore(normalizedQuery, alias.NormalizedAlias);
+        var score = CalculateScore(normalisedQuery, alias.NormalisedAlias);
 
         return new MatchCandidate
         {
             MoveId = move.Id,
             CanonicalName = move.CanonicalName,
             Section = move.Section,
-            MatchedAlias = alias.NormalizedAlias,
+            MatchedAlias = alias.NormalisedAlias,
             AliasType = alias.AliasType,
             Score = score,
             Rank = 0,
@@ -95,27 +95,27 @@ public sealed class FuzzyMoveMatcher
         };
     }
 
-    private static int CalculateScore(string normalizedQuery, string normalizedAlias)
+    private static int CalculateScore(string normalisedQuery, string normalisedAlias)
     {
-        if (normalizedQuery == normalizedAlias)
+        if (normalisedQuery == normalisedAlias)
         {
             return 100;
         }
 
-        if (normalizedQuery.Length >= MinimumPrefixPartialLength
-            && normalizedAlias.StartsWith(normalizedQuery, StringComparison.Ordinal))
+        if (normalisedQuery.Length >= MinimumPrefixPartialLength
+            && normalisedAlias.StartsWith(normalisedQuery, StringComparison.Ordinal))
         {
             return PrefixPartialScore;
         }
 
-        var ratio = Fuzz.Ratio(normalizedQuery, normalizedAlias);
-        var partialRatio = Fuzz.PartialRatio(normalizedQuery, normalizedAlias);
+        var ratio = Fuzz.Ratio(normalisedQuery, normalisedAlias);
+        var partialRatio = Fuzz.PartialRatio(normalisedQuery, normalisedAlias);
         var score = Math.Max(ratio, partialRatio);
 
         if (partialRatio == score
-            && normalizedQuery.Length != normalizedAlias.Length
-            && (normalizedAlias.Contains(normalizedQuery, StringComparison.Ordinal)
-                || normalizedQuery.Contains(normalizedAlias, StringComparison.Ordinal)))
+            && normalisedQuery.Length != normalisedAlias.Length
+            && (normalisedAlias.Contains(normalisedQuery, StringComparison.Ordinal)
+                || normalisedQuery.Contains(normalisedAlias, StringComparison.Ordinal)))
         {
             return Math.Min(score, PartialSubstringScoreCap);
         }
