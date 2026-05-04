@@ -4,7 +4,7 @@
 
 A Discord bot for looking up 3rd Strike frame data sourced from http://ensabahnur.free.fr/BastonNew/index.php.
 
-![12 frames lol good luck](docs/assets/example.png)
+![12 frames lol good luck](docs/assets/dartshot.png)
 
 ## Usage
 
@@ -24,4 +24,4 @@ Street Fighter III: 3rd Strike is the property of its respective rights holders.
 ## Acknowledgements
 
 - Huge thanks to [En Sabah Nur](http://ensabahnur.free.fr/) for their very valuable [frame data website](http://ensabahnur.free.fr/BastonNew/index.php) as well as their permission to use their data and assets for this project.
-- Developed using [Spec Kit](https://github.com/github/spec-kit)
+- Developed using [Spec Kit](https://github.com/github/spec-kit) and Codex with GPT-5.3-codex/5.5.
