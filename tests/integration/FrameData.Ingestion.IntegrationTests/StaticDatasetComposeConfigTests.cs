@@ -34,10 +34,10 @@ public sealed class StaticDatasetComposeConfigTests
     }
 
     [Fact]
-    public void ProductionCompose_DoesNotContainPostgresOrIngestionServices()
+    public void BotCompose_DoesNotContainPostgresOrIngestionServices()
     {
         var root = ResolveRepositoryRoot();
-        var compose = File.ReadAllText(Path.Combine(root, "docker-compose.prod.yml"));
+        var compose = File.ReadAllText(Path.Combine(root, "docker-compose.bot.yml"));
 
         Assert.DoesNotContain("postgres:", compose);
         Assert.DoesNotContain("ingestion:", compose);
@@ -54,7 +54,7 @@ public sealed class StaticDatasetComposeConfigTests
         Assert.Contains("COMPOSE_PROJECT_NAME=framedatabot", env);
         Assert.Contains("FRAMEDATA_IMAGE_REPOSITORY=ghcr.io/nmur", env);
         Assert.Contains("FRAMEDATA_IMAGE_TAG=stable", env);
-        Assert.Contains("FRAMEDATA_DATASET_HOST_ROOT=./data/framedata", env);
+        Assert.Contains("FRAMEDATA_DATASET_HOST_ROOT=/srv/framedatabot/dataset", env);
         Assert.Contains("FRAMEDATA_DATASET_ROOT=/data/framedata", env);
         Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH=/data/framedata/active", env);
         Assert.Contains("FRAMEDATA_DOCKER_NETWORK=framedatabot", env);
