@@ -257,6 +257,16 @@ internal static partial class AliasTextNormaliser
             return "4" + compact["back".Length..];
         }
 
+        if (compact.StartsWith('b') && compact.Length > 1 && IsButtonSuffix(compact[1..]))
+        {
+            return "4" + compact[1..];
+        }
+
+        if (compact.StartsWith('f') && compact.Length > 1 && IsButtonSuffix(compact[1..]))
+        {
+            return "6" + compact[1..];
+        }
+
         if (compact.StartsWith("crouching", StringComparison.Ordinal))
         {
             return "2" + compact["crouching".Length..];

@@ -440,6 +440,20 @@ public sealed class FuzzyMatcherTests
     }
 
     [Theory]
+    [InlineData("f.hp", "6hp")]
+    [InlineData("b.hk", "4hk")]
+    public void Rank_WhenInputUsesAbbreviatedCommandNormal_RanksMatchingNumpadNormalFirst(
+        string input,
+        string expectedMove)
+    {
+        var candidates = _matcher.Rank(input, CreateCommandNormalMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedMove);
+        candidates[0].Score.ShouldBe(100);
+    }
+
+    [Theory]
     [InlineData("qcf lp", "Hadouken (Jab)", "236lp")]
     [InlineData("236 lp", "Hadouken (Jab)", "236lp")]
     [InlineData("quarter circle forward jab", "Hadouken (Jab)", "236lp")]
@@ -1307,6 +1321,15 @@ public sealed class FuzzyMatcherTests
                 DisplayOrder = 4,
                 FrameData = new MoveFrameData { Startup = "6" }
             }
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateCommandNormalMoves()
+    {
+        return
+        [
+            CreateTestMove("ryu-forward-fierce", "ryu", "Ryu", "Normals", "6hp", 1),
+            CreateTestMove("ryu-back-roundhouse", "ryu", "Ryu", "Normals", "4hk", 2)
         ];
     }
 

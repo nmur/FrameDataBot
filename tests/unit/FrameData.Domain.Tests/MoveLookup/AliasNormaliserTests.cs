@@ -25,8 +25,12 @@ public sealed class AliasNormaliserTests
     [InlineData("Towards + Forward", "6mk")]
     [InlineData("towards MK", "6mk")]
     [InlineData("toward roundhouse", "6hk")]
+    [InlineData("f.HP", "6hp")]
+    [InlineData("f+HP", "6hp")]
     [InlineData("Back + Fierce", "4hp")]
     [InlineData("back HP", "4hp")]
+    [InlineData("b.HK", "4hk")]
+    [InlineData("b+HK", "4hk")]
     [InlineData("low forward", "2mk")]
     [InlineData("Standing LP", "5lp")]
     [InlineData("standing HP", "5hp")]
@@ -84,7 +88,7 @@ public sealed class AliasNormaliserTests
     }
 
     [Fact]
-    public void CreateAliases_WhenCanonicalMoveUsesBackNumpadNotation_AddsBackAlias()
+    public void CreateAliases_WhenCanonicalMoveUsesBackNumpadNotation_AddsBackAbbreviationAlias()
     {
         var move = new Move
         {
@@ -100,6 +104,26 @@ public sealed class AliasNormaliserTests
 
         var aliases = _normaliser.CreateAliases(move);
 
-        aliases.ShouldContain(alias => alias.Alias == "back hp" && alias.NormalisedAlias == "4hp");
+        aliases.ShouldContain(alias => alias.Alias == "b.hp" && alias.NormalisedAlias == "4hp");
+    }
+
+    [Fact]
+    public void CreateAliases_WhenCanonicalMoveUsesForwardNumpadNotation_AddsForwardAbbreviationAlias()
+    {
+        var move = new Move
+        {
+            Id = "test-6hp",
+            CharacterId = "test",
+            Game = "sf3_3s",
+            CharacterName = "Test",
+            Section = "Normals",
+            CanonicalName = "6hp",
+            DisplayOrder = 1,
+            FrameData = new MoveFrameData()
+        };
+
+        var aliases = _normaliser.CreateAliases(move);
+
+        aliases.ShouldContain(alias => alias.Alias == "f.hp" && alias.NormalisedAlias == "6hp");
     }
 }
