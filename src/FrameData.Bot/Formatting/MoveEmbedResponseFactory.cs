@@ -63,7 +63,7 @@ public sealed class MoveEmbedResponseFactory
             .AddField("Recovery", DisplayValue(response.FrameData.Recovery), inline: true)
             .AddField("On-Hit", DisplayValue(response.FrameData.OnHit), inline: true)
             .AddField("On-Block", DisplayValue(response.FrameData.OnBlock), inline: true)
-            .AddField("Frame Advantage", DisplayValue(response.FrameData.FrameAdvantage), inline: true);
+            .AddField("Cr. On-Hit", DisplayValue(response.FrameData.OnCrouchingHit), inline: true);
 
         var attachment = CreateAttachment(response.Media);
         if (attachment is not null)

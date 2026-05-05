@@ -50,7 +50,7 @@ receives frame data for the intended move.
 
 1. **Given** a supported character and exact canonical move name, **When** the user
    submits a query command, **Then** the bot returns startup, active, recovery, and
-   frame advantage values when available.
+   on-hit and on-block values when available.
 2. **Given** a supported character but an exact move name that does not exist,
    **When** the user submits a query, **Then** the bot returns a not-found response with
    guidance.
@@ -173,7 +173,7 @@ return a representative active-frame image including configured P1 hitbox boxes.
 - **FR-001**: Users MUST be able to request move data via `/framedata` by providing
   required `character` and `move` values.
 - **FR-002**: MVP lookup MUST support exact canonical move-name matching.
-- **FR-003**: MVP responses MUST include startup, active, recovery, and frame advantage
+- **FR-003**: MVP responses MUST include startup, active, recovery, on-hit, and on-block
   values when available for the requested move.
 - **FR-004**: The response MUST identify matched character, matched move name, and move
   category (Normals, Specials, Super Arts, or Misc).

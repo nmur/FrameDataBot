@@ -113,6 +113,9 @@ components:
           type: string
         onBlock:
           type: string
+        onCrouchingHit:
+          type: string
+          description: Source Cr. Hit Adv. value when available.
     MoveMedia:
       type: object
       properties:

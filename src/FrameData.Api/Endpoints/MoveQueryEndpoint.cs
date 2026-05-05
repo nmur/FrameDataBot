@@ -87,7 +87,7 @@ public static class MoveQueryEndpoint
                     Recovery = result.Move.FrameData.Recovery,
                     OnHit = result.Move.FrameData.OnHit,
                     OnBlock = result.Move.FrameData.OnBlock,
-                    FrameAdvantage = result.Move.FrameData.FrameAdvantage
+                    OnCrouchingHit = result.Move.FrameData.OnCrouchingHit
                 },
                 Media = media
             });

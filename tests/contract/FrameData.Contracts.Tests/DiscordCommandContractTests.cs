@@ -38,7 +38,8 @@ public sealed class DiscordCommandContractTests
                 Active = "3",
                 Recovery = "21",
                 OnHit = "+2",
-                OnBlock = "-6"
+                OnBlock = "-6",
+                OnCrouchingHit = "+4"
             }
         });
 
@@ -53,7 +54,7 @@ public sealed class DiscordCommandContractTests
         Assert.Contains(response.Embed.Fields, field => field.Name == "Recovery" && field.Value == "21");
         Assert.Contains(response.Embed.Fields, field => field.Name == "On-Hit" && field.Value == "+2");
         Assert.Contains(response.Embed.Fields, field => field.Name == "On-Block" && field.Value == "-6");
-        Assert.Contains(response.Embed.Fields, field => field.Name == "Frame Advantage" && field.Value == "?");
+        Assert.Contains(response.Embed.Fields, field => field.Name == "Cr. On-Hit" && field.Value == "+4");
     }
 
     [Fact]

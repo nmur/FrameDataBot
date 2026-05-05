@@ -15,19 +15,19 @@ public sealed class BotApiConnectivityConfigTests
     }
 
     [Fact]
-    public void EnvExample_ProvidesBotApiBaseUrlDefault()
+    public void BotEnvExample_ProvidesBotApiBaseUrlDefault()
     {
         var repositoryRoot = ResolveRepositoryRoot();
-        var envContent = File.ReadAllText(Path.Combine(repositoryRoot, ".env.example"));
+        var envContent = File.ReadAllText(Path.Combine(repositoryRoot, ".env.bot.example"));
 
         Assert.Contains("BOT_API_BASE_URL=http://api:8080", envContent);
     }
 
     [Fact]
-    public void ProductionCompose_UsesRegistryImagesAndStableTagDefault()
+    public void BotCompose_UsesRegistryImagesAndStableTagDefault()
     {
         var repositoryRoot = ResolveRepositoryRoot();
-        var composeContent = File.ReadAllText(Path.Combine(repositoryRoot, "docker-compose.prod.yml"));
+        var composeContent = File.ReadAllText(Path.Combine(repositoryRoot, "docker-compose.bot.yml"));
 
         Assert.Contains("image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-api:${FRAMEDATA_IMAGE_TAG:-stable}", composeContent);
         Assert.Contains("image: ${FRAMEDATA_IMAGE_REPOSITORY:-ghcr.io/nmur}/framedata-bot:${FRAMEDATA_IMAGE_TAG:-stable}", composeContent);
@@ -37,10 +37,10 @@ public sealed class BotApiConnectivityConfigTests
     }
 
     [Fact]
-    public void ProductionEnvExample_DefaultsToStableRegistryDeployment()
+    public void BotEnvExample_DefaultsToStableRegistryDeployment()
     {
         var repositoryRoot = ResolveRepositoryRoot();
-        var envContent = File.ReadAllText(Path.Combine(repositoryRoot, ".env.prod.example"));
+        var envContent = File.ReadAllText(Path.Combine(repositoryRoot, ".env.bot.example"));
 
         Assert.Contains("FRAMEDATA_IMAGE_REPOSITORY=ghcr.io/nmur", envContent);
         Assert.Contains("FRAMEDATA_IMAGE_TAG=stable", envContent);

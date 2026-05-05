@@ -102,6 +102,28 @@ public sealed class StaticDatasetPublisherTests
         }
     }
 
+    [Fact]
+    public async Task PublishAsync_PreservesOnCrouchingHitInCharacterFiles()
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var publisher = CreatePublisher(root);
+
+            await publisher.PublishAsync(
+                [CreateCharacter("makoto", "Makoto")],
+                [CreateMove("makoto", "2mk", onCrouchingHit: "+3")]);
+
+            var loaded = await new StaticFrameDataDatasetLoader().LoadAsync(Path.Combine(root, "active"));
+
+            loaded.Moves.Single().FrameData.OnCrouchingHit.ShouldBe("+3");
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
     private static StaticDatasetPublisher CreatePublisher(string root)
         => new(new StaticDatasetPublisherOptions
         {
@@ -127,7 +149,8 @@ public sealed class StaticDatasetPublisherTests
         string startup = "6",
         string? motion = null,
         string? damage = null,
-        string? stun = null)
+        string? stun = null,
+        string? onCrouchingHit = null)
         => new()
         {
             Id = $"{characterId}-normals-{canonicalName}",
@@ -146,7 +169,8 @@ public sealed class StaticDatasetPublisherTests
                 Active = "3",
                 Recovery = "17",
                 OnHit = "+1",
-                OnBlock = "-2"
+                OnBlock = "-2",
+                OnCrouchingHit = onCrouchingHit
             }
         };
 

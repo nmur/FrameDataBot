@@ -62,14 +62,17 @@ public sealed class CharacterSectionParser
         var recoveryIndex = FindHeaderIndex(headers, "recovery");
         var onHitIndex = FindFirstHeaderIndex(headers, "onhit", "hitadv");
         var onBlockIndex = FindFirstHeaderIndex(headers, "onblock", "blockadv", "blkadv");
-        var frameAdvantageIndex = FindHeaderIndex(headers, "frameadvantage");
+        var onCrouchingHitIndex = FindFirstHeaderIndex(
+            headers,
+            "crhitadv",
+            "crhitadvantage",
+            "crouchhitadv",
+            "crouchhitadvantage",
+            "crouchinghitadv",
+            "crouchinghitadvantage");
         var motionIndex = FindHeaderIndex(headers, "motion");
         var damageIndex = FindFirstHeaderIndex(headers, "damage", "dmg");
         var stunIndex = FindHeaderIndex(headers, "stun");
-        if (frameAdvantageIndex < 0)
-        {
-            frameAdvantageIndex = onBlockIndex;
-        }
 
         foreach (var row in rows.Skip(1))
         {
@@ -99,7 +102,7 @@ public sealed class CharacterSectionParser
                 Recovery = GetCellValue(cells, recoveryIndex),
                 OnHit = GetCellValue(cells, onHitIndex),
                 OnBlock = GetCellValue(cells, onBlockIndex),
-                FrameAdvantage = GetCellValue(cells, frameAdvantageIndex),
+                OnCrouchingHit = GetCellValue(cells, onCrouchingHitIndex),
                 Motion = GetCellValue(cells, motionIndex),
                 Damage = GetCellValue(cells, damageIndex),
                 Stun = GetCellValue(cells, stunIndex)
@@ -242,7 +245,7 @@ public sealed class ParsedMoveEntry
     public string? Recovery { get; init; }
     public string? OnHit { get; init; }
     public string? OnBlock { get; init; }
-    public string? FrameAdvantage { get; init; }
+    public string? OnCrouchingHit { get; init; }
     public string? Motion { get; init; }
     public string? Damage { get; init; }
     public string? Stun { get; init; }

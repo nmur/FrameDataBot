@@ -171,7 +171,7 @@ public sealed class StaticFrameDataDatasetLoader
                 Recovery = move.FrameData.Recovery,
                 OnHit = move.FrameData.OnHit,
                 OnBlock = move.FrameData.OnBlock,
-                FrameAdvantage = move.FrameData.FrameAdvantage,
+                OnCrouchingHit = move.FrameData.OnCrouchingHit,
                 Notes = move.FrameData.Notes
             },
             Media = move.Media.Select(media => ToDomain(media, move.Id)).ToArray()

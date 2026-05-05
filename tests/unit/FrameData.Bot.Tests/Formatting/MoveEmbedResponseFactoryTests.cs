@@ -28,7 +28,8 @@ public sealed class MoveEmbedResponseFactoryTests
                 Active = "3",
                 Recovery = "21",
                 OnHit = "+2",
-                OnBlock = "-6"
+                OnBlock = "-6",
+                OnCrouchingHit = "+4"
             }
         });
 
@@ -48,7 +49,7 @@ public sealed class MoveEmbedResponseFactoryTests
         FieldValue(response, "Recovery").ShouldBe("21");
         FieldValue(response, "On-Hit").ShouldBe("+2");
         FieldValue(response, "On-Block").ShouldBe("-6");
-        FieldValue(response, "Frame Advantage").ShouldBe("?");
+        FieldValue(response, "Cr. On-Hit").ShouldBe("+4");
         response.IsEphemeral.ShouldBeFalse();
     }
 

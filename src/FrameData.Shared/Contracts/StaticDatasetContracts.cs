@@ -64,7 +64,7 @@ public sealed class StaticDatasetMoveFrameData
     public string? Recovery { get; init; }
     public string? OnHit { get; init; }
     public string? OnBlock { get; init; }
-    public string? FrameAdvantage { get; init; }
+    public string? OnCrouchingHit { get; init; }
     public string? Notes { get; init; }
 }
 
