@@ -46,19 +46,25 @@ public sealed class StaticDatasetComposeConfigTests
     }
 
     [Fact]
-    public void IngestionEnvExample_DeclaresSharedImageDatasetNetworkAndLoggingSettings()
+    public void IngestionEnvExample_DeclaresComposeReferencedSettings()
     {
         var root = ResolveRepositoryRoot();
         var env = File.ReadAllText(Path.Combine(root, ".env.ingestion.example"));
 
+        Assert.Contains("COMPOSE_PROJECT_NAME=framedatabot", env);
         Assert.Contains("FRAMEDATA_IMAGE_REPOSITORY=ghcr.io/nmur", env);
         Assert.Contains("FRAMEDATA_IMAGE_TAG=stable", env);
         Assert.Contains("FRAMEDATA_DATASET_HOST_ROOT=./data/framedata", env);
         Assert.Contains("FRAMEDATA_DATASET_ROOT=/data/framedata", env);
         Assert.Contains("FRAMEDATA_ACTIVE_DATASET_PATH=/data/framedata/active", env);
         Assert.Contains("FRAMEDATA_DOCKER_NETWORK=framedatabot", env);
+        Assert.Contains("INGESTION_SOURCE_BASE_URL=http://ensabahnur.free.fr/BastonNew/index.php", env);
+        Assert.Contains("INGESTION_CHARACTER_SCOPE=", env);
         Assert.Contains("INGESTION_MEDIA_PILOT_SCOPE=", env);
+        Assert.Contains("INGESTION_MEDIA_DUMMY_IMAGE_PATH=", env);
         Assert.Contains("SEQ_SERVER_URL=http://seq", env);
+        Assert.Contains("SEQ_API_KEY=", env);
+        Assert.Contains("SEQ_MINIMUM_LEVEL=Debug", env);
     }
 
     private static string ResolveRepositoryRoot()

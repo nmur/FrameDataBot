@@ -8,8 +8,10 @@
 .DS_Store
 Thumbs.db
 .env
-.env.prod
-.env.ingestion
+.env.bot.prod
+.env.bot.test
+.env.ingestion.prod
+.env.ingestion.test
 !.env.example
 !.env.prod.example
 !.env.ingestion.example
