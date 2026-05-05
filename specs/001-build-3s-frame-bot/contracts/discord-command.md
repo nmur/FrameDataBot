@@ -46,7 +46,7 @@ The default successful `/framedata` response uses a Discord embed with:
 - Color accent chosen by response type or move category
 - Section field
 - Startup / Active / Recovery fields
-- On-Hit / On-Block fields
+- On-Hit / Cr. On-Hit / On-Block fields
 - Optional source Motion, Damage, Stun, and notes fields when present
 - Optional image/media attachment when representative media exists
 - No duplicate plain-text message content for formatted move results

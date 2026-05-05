@@ -51,7 +51,7 @@ public sealed class MoveQueryContractTests
                 Recovery = "17",
                 OnHit = "+1",
                 OnBlock = "-2",
-                FrameAdvantage = "-2"
+                OnCrouchingHit = "+3"
             }
         };
 
@@ -63,5 +63,6 @@ public sealed class MoveQueryContractTests
         Assert.Equal("http://example.test/hitboxesDisplay.php?iMove=2", response.MoveHitboxDisplayUrl);
         Assert.Equal("http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html", response.GameRestaurantMoveUrl);
         Assert.Equal("6", response.FrameData.Startup);
+        Assert.Equal("+3", response.FrameData.OnCrouchingHit);
     }
 }

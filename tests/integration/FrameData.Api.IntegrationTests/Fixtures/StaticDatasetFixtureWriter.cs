@@ -84,6 +84,7 @@ internal static class StaticDatasetFixtureWriter
         string? motion = null,
         string? damage = null,
         string? stun = null,
+        string? onCrouchingHit = null,
         string? sourceHitboxPath = null,
         IReadOnlyList<StaticDatasetMoveMedia>? media = null)
         => new()
@@ -103,7 +104,8 @@ internal static class StaticDatasetFixtureWriter
                 Active = "3",
                 Recovery = "17",
                 OnHit = "+1",
-                OnBlock = "-2"
+                OnBlock = "-2",
+                OnCrouchingHit = onCrouchingHit
             },
             Media = media ?? []
         };

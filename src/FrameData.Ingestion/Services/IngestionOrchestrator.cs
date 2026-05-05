@@ -136,7 +136,7 @@ public sealed class IngestionOrchestrator
                 foreach (var move in domainMoves)
                 {
                     _logger.LogDebug(
-                        "Ingestion run {RunId}: parsed move {CharacterId}/{MoveId} {MoveName} ({Section}) motion={Motion} damage={Damage} stun={Stun} startup={Startup} active={Active} recovery={Recovery} onHit={OnHit} onBlock={OnBlock}.",
+                        "Ingestion run {RunId}: parsed move {CharacterId}/{MoveId} {MoveName} ({Section}) motion={Motion} damage={Damage} stun={Stun} startup={Startup} active={Active} recovery={Recovery} onHit={OnHit} onBlock={OnBlock} onCrouchingHit={OnCrouchingHit}.",
                         run.Id,
                         characterScope.CharacterId,
                         move.Id,
@@ -149,7 +149,8 @@ public sealed class IngestionOrchestrator
                         move.FrameData.Active,
                         move.FrameData.Recovery,
                         move.FrameData.OnHit,
-                        move.FrameData.OnBlock);
+                        move.FrameData.OnBlock,
+                        move.FrameData.OnCrouchingHit);
                 }
 
                 var character = new Character
@@ -300,7 +301,7 @@ public sealed class IngestionOrchestrator
                 Recovery = parsed.Recovery,
                 OnHit = parsed.OnHit,
                 OnBlock = parsed.OnBlock,
-                FrameAdvantage = parsed.FrameAdvantage
+                OnCrouchingHit = parsed.OnCrouchingHit
             }
         };
     }

@@ -14,8 +14,8 @@ public sealed class CharacterSectionParserTests
             <html><body>
               <h2>Normals</h2>
               <table>
-                <tr><th>Move</th><th>Startup</th><th>Active</th><th>Recovery</th><th>On Hit</th><th>On Block</th><th>Frame Advantage</th></tr>
-                <tr><td>2mk</td><td>6</td><td>3</td><td>17</td><td>+1</td><td>-2</td><td>-2</td></tr>
+                <tr><th>Move</th><th>Startup</th><th>Active</th><th>Recovery</th><th>On Hit</th><th>On Block</th></tr>
+                <tr><td>2mk</td><td>6</td><td>3</td><td>17</td><td>+1</td><td>-2</td></tr>
               </table>
               <h2>Specials</h2>
               <table>
@@ -64,10 +64,10 @@ public sealed class CharacterSectionParserTests
               <div id="content_char">
                 <table id="fd_table">
                   <thead>
-                    <tr><th></th><th>Name</th><th>Startup</th><th>Hit</th><th>Recovery</th><th>Blk. Adv.</th><th>Hit Adv.</th></tr>
+                    <tr><th></th><th>Name</th><th>Startup</th><th>Hit</th><th>Recovery</th><th>Blk. Adv.</th><th>Hit Adv.</th><th>Cr. Hit Adv.</th></tr>
                   </thead>
                   <tbody>
-                    <tr><td></td><td>Jab</td><td>4</td><td>2</td><td>9</td><td>1</td><td>1</td></tr>
+                    <tr><td></td><td>Jab</td><td>4</td><td>2</td><td>9</td><td>1</td><td>1</td><td>3</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -84,7 +84,7 @@ public sealed class CharacterSectionParserTests
         parsed[0].Recovery.ShouldBe("9");
         parsed[0].OnBlock.ShouldBe("1");
         parsed[0].OnHit.ShouldBe("1");
-        parsed[0].FrameAdvantage.ShouldBe("1");
+        parsed[0].OnCrouchingHit.ShouldBe("3");
     }
 
     [Fact]

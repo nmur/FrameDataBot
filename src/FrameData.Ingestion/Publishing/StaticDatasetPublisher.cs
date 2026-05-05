@@ -337,7 +337,7 @@ public sealed class StaticDatasetPublisher
                 Recovery = move.FrameData.Recovery,
                 OnHit = move.FrameData.OnHit,
                 OnBlock = move.FrameData.OnBlock,
-                FrameAdvantage = move.FrameData.FrameAdvantage,
+                OnCrouchingHit = move.FrameData.OnCrouchingHit,
                 Notes = move.FrameData.Notes
             },
             Media = media.Select(FromDomain).ToArray()

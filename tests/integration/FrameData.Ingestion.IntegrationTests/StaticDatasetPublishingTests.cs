@@ -15,8 +15,8 @@ public sealed class StaticDatasetPublishingTests
         <html><body>
           <h2>Normals</h2>
           <table>
-            <tr><th>Move</th><th>Startup</th><th>Active</th><th>Recovery</th><th>On Hit</th><th>On Block</th><th>Frame Advantage</th></tr>
-            <tr><td>2mk</td><td>6</td><td>3</td><td>17</td><td>+1</td><td>-2</td><td>-2</td></tr>
+            <tr><th>Move</th><th>Startup</th><th>Active</th><th>Recovery</th><th>On Hit</th><th>On Block</th><th>Cr. Hit Adv.</th></tr>
+            <tr><td>2mk</td><td>6</td><td>3</td><td>17</td><td>+1</td><td>-2</td><td>+3</td></tr>
           </table>
         </body></html>
         """;
@@ -44,6 +44,7 @@ public sealed class StaticDatasetPublishingTests
             var dataset = await new StaticFrameDataDatasetLoader().LoadAsync(Path.Combine(root, "active"));
             Assert.Equal(2, dataset.Characters.Count);
             Assert.Equal(2, dataset.Moves.Count);
+            Assert.All(dataset.Moves, move => Assert.Equal("+3", move.FrameData.OnCrouchingHit));
         }
         finally
         {

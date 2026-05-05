@@ -105,7 +105,7 @@
   - `recovery` (string, optional)
   - `onHit` (string, optional)
   - `onBlock` (string, optional)
-  - `frameAdvantage` (string, optional)
+  - `onCrouchingHit` (string, optional): source `Cr. Hit Adv.` value when available.
   - `notes` (string, optional)
 - Validation:
   - At least one key timing/advantage field must be present.
