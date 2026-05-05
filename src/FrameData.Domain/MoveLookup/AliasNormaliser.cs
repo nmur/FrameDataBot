@@ -133,9 +133,11 @@ public sealed class AliasNormaliser
                 AddAlias(aliases, move, $"down-forward {button}", MoveAliasType.Numpad);
                 break;
             case '4':
+                AddAlias(aliases, move, $"b.{button}", MoveAliasType.Abbreviation);
                 AddAlias(aliases, move, $"back {button}", MoveAliasType.Numpad);
                 break;
             case '6':
+                AddAlias(aliases, move, $"f.{button}", MoveAliasType.Abbreviation);
                 AddAlias(aliases, move, $"toward {button}", MoveAliasType.Numpad);
                 AddAlias(aliases, move, $"towards {button}", MoveAliasType.Numpad);
                 break;
