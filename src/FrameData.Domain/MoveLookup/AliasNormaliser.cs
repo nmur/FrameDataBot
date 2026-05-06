@@ -68,7 +68,7 @@ public sealed class AliasNormaliser
         ["universaloverhead"] = ["uoh", "leap"],
         ["yagyoudama"] = ["yagyou", "booger"],
         ["zenpoutenshin"] = ["zenpo", "command grab", "cmd grab"],
-        ["zesshouhohou"] = ["lunch punch"]
+        ["zesshouhohou"] = ["lunge punch"]
     };
 
     public string Normalise(string input) => AliasTextNormaliser.Normalise(input);

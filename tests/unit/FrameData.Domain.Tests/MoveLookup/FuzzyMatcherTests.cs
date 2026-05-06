@@ -119,7 +119,7 @@ public sealed class FuzzyMatcherTests
     [InlineData("command grab", "Yang", "Zenpou Tenshin", "commandgrab")]
     [InlineData("cmd grab", "Yang", "Zenpou Tenshin", "cmdgrab")]
     [InlineData("shoulder", "Yun", "Tetsu Zankou", "shoulder")]
-    [InlineData("lunch punch", "Yun", "Zesshou Hohou", "lunchpunch")]
+    [InlineData("lunge punch", "Yun", "Zesshou Hohou", "lungepunch")]
     [InlineData("zenpo", "Yun", "Zenpou Tenshin", "zenpo")]
     [InlineData("command grab", "Yun", "Zenpou Tenshin", "commandgrab")]
     [InlineData("cmd grab", "Yun", "Zenpou Tenshin", "cmdgrab")]
