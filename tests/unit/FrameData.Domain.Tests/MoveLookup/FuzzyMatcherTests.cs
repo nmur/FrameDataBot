@@ -119,7 +119,7 @@ public sealed class FuzzyMatcherTests
     [InlineData("command grab", "Yang", "Zenpou Tenshin", "commandgrab")]
     [InlineData("cmd grab", "Yang", "Zenpou Tenshin", "cmdgrab")]
     [InlineData("shoulder", "Yun", "Tetsu Zankou", "shoulder")]
-    [InlineData("lunch punch", "Yun", "Zesshou Hohou", "lunchpunch")]
+    [InlineData("lunge punch", "Yun", "Zesshou Hohou", "lungepunch")]
     [InlineData("zenpo", "Yun", "Zenpou Tenshin", "zenpo")]
     [InlineData("command grab", "Yun", "Zenpou Tenshin", "commandgrab")]
     [InlineData("cmd grab", "Yun", "Zenpou Tenshin", "cmdgrab")]
@@ -374,13 +374,15 @@ public sealed class FuzzyMatcherTests
         candidates[0].Score.ShouldBe(100);
     }
 
-    [Fact]
-    public void Rank_WhenInputUsesUniversalOverheadInitialism_RanksUniversalOverheadFirst()
+    [Theory]
+    [InlineData("uoh")]
+    [InlineData("leap")]
+    public void Rank_WhenInputUsesUniversalOverheadAlias_RanksUniversalOverheadFirst(string input)
     {
-        var candidates = _matcher.Rank("uoh", CreateSpecialMoves());
+        var candidates = _matcher.Rank(input, CreateSpecialMoves());
 
         candidates[0].CanonicalName.ShouldBe("Universal Overhead");
-        candidates[0].MatchedAlias.ShouldBe("uoh");
+        candidates[0].MatchedAlias.ShouldBe(input);
         candidates[0].Score.ShouldBe(100);
     }
 

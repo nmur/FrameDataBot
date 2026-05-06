@@ -65,10 +65,10 @@ public sealed class AliasNormaliser
         ["violencekneedrop"] = ["knee drop", "knee"],
         ["shipuujinraikyaku"] = ["shipu", "shippu"],
         ["tengustones"] = ["stones"],
-        ["universaloverhead"] = ["uoh"],
+        ["universaloverhead"] = ["uoh", "leap"],
         ["yagyoudama"] = ["yagyou", "booger"],
         ["zenpoutenshin"] = ["zenpo", "command grab", "cmd grab"],
-        ["zesshouhohou"] = ["lunch punch"]
+        ["zesshouhohou"] = ["lunge punch"]
     };
 
     public string Normalise(string input) => AliasTextNormaliser.Normalise(input);
