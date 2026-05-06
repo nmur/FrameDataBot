@@ -374,13 +374,15 @@ public sealed class FuzzyMatcherTests
         candidates[0].Score.ShouldBe(100);
     }
 
-    [Fact]
-    public void Rank_WhenInputUsesUniversalOverheadInitialism_RanksUniversalOverheadFirst()
+    [Theory]
+    [InlineData("uoh")]
+    [InlineData("leap")]
+    public void Rank_WhenInputUsesUniversalOverheadAlias_RanksUniversalOverheadFirst(string input)
     {
-        var candidates = _matcher.Rank("uoh", CreateSpecialMoves());
+        var candidates = _matcher.Rank(input, CreateSpecialMoves());
 
         candidates[0].CanonicalName.ShouldBe("Universal Overhead");
-        candidates[0].MatchedAlias.ShouldBe("uoh");
+        candidates[0].MatchedAlias.ShouldBe(input);
         candidates[0].Score.ShouldBe(100);
     }
 

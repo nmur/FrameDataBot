@@ -65,7 +65,7 @@ public sealed class AliasNormaliser
         ["violencekneedrop"] = ["knee drop", "knee"],
         ["shipuujinraikyaku"] = ["shipu", "shippu"],
         ["tengustones"] = ["stones"],
-        ["universaloverhead"] = ["uoh"],
+        ["universaloverhead"] = ["uoh", "leap"],
         ["yagyoudama"] = ["yagyou", "booger"],
         ["zenpoutenshin"] = ["zenpo", "command grab", "cmd grab"],
         ["zesshouhohou"] = ["lunch punch"]
