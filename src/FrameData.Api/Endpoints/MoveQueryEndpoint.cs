@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using FrameData.Domain.MoveLookup;
 using FrameData.Domain.Media;
 using FrameData.Api.Responses;
 using FrameData.Shared.Contracts;
+using FrameData.Shared.Logging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +22,7 @@ public static class MoveQueryEndpoint
             CancellationToken cancellationToken) =>
         {
             var logger = loggerFactory.CreateLogger("FrameData.Api.MoveQuery");
+            var started = Stopwatch.GetTimestamp();
             logger.LogInformation(
                 "Move query received for character {Character} and move input {MoveInput}.",
                 character,
@@ -33,6 +36,19 @@ public static class MoveQueryEndpoint
                     character,
                     moveInput,
                     result.Candidates.Count);
+                LogMoveQueryCompletedMetric(
+                    logger,
+                    character,
+                    moveInput,
+                    result.ErrorCode ?? "ambiguous_move",
+                    null,
+                    null,
+                    null,
+                    result.Candidates.Count,
+                    result.ErrorCode,
+                    false,
+                    null,
+                    Stopwatch.GetElapsedTime(started));
 
                 return Results.Json(
                     disambiguationResponseFactory.Create(result.Candidates),
@@ -46,6 +62,19 @@ public static class MoveQueryEndpoint
                     character,
                     moveInput,
                     result.ErrorCode ?? "not_found");
+                LogMoveQueryCompletedMetric(
+                    logger,
+                    character,
+                    moveInput,
+                    result.ErrorCode ?? "not_found",
+                    null,
+                    null,
+                    null,
+                    0,
+                    result.ErrorCode ?? "not_found",
+                    false,
+                    null,
+                    Stopwatch.GetElapsedTime(started));
 
                 return Results.NotFound(new ErrorResponse
                 {
@@ -64,6 +93,20 @@ public static class MoveQueryEndpoint
                 result.Move.Media.Count);
 
             var media = ToMediaContract(result.Move.Media);
+            LogMoveQueryCompletedMetric(
+                logger,
+                character,
+                moveInput,
+                "ok",
+                result.Move.CharacterName,
+                result.Move.CanonicalName,
+                result.MatchedBy ?? "Exact",
+                1,
+                null,
+                media is not null,
+                media?.CaptureStatus,
+                Stopwatch.GetElapsedTime(started));
+
             return Results.Ok(new MoveQueryResponse
             {
                 Character = result.Move.CharacterName,
@@ -92,6 +135,36 @@ public static class MoveQueryEndpoint
                 Media = media
             });
         });
+    }
+
+    private static void LogMoveQueryCompletedMetric(
+        ILogger logger,
+        string character,
+        string moveInput,
+        string resultCode,
+        string? matchedCharacter,
+        string? matchedMove,
+        string? matchedBy,
+        int candidateCount,
+        string? errorCode,
+        bool hasMedia,
+        string? mediaCaptureStatus,
+        TimeSpan elapsed)
+    {
+        logger.LogInformation(
+            "Metric {MetricName}: move query completed. ResultCode={ResultCode}; Character={Character}; MoveInput={MoveInput}; MatchedCharacter={MatchedCharacter}; MatchedMove={MatchedMove}; MatchedBy={MatchedBy}; CandidateCount={CandidateCount}; ErrorCode={ErrorCode}; HasMedia={HasMedia}; MediaCaptureStatus={MediaCaptureStatus}; ElapsedMs={ElapsedMs:0.000}.",
+            FrameDataMetricNames.MoveQueryCompleted,
+            resultCode,
+            character,
+            moveInput,
+            matchedCharacter,
+            matchedMove,
+            matchedBy,
+            candidateCount,
+            errorCode,
+            hasMedia,
+            mediaCaptureStatus,
+            elapsed.TotalMilliseconds);
     }
 
     private static MoveMediaContract? ToMediaContract(IReadOnlyList<MoveImage> media)

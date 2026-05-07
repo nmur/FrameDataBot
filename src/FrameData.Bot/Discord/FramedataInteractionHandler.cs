@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using Discord;
 using Discord.WebSocket;
 using FrameData.Bot.Api;
 using FrameData.Bot.Formatting;
 using FrameData.Shared.Contracts;
+using FrameData.Shared.Logging;
 using Microsoft.Extensions.Logging;
 
 namespace FrameData.Bot.Discord;
@@ -39,6 +41,7 @@ public sealed class FramedataInteractionHandler
         IDiscordInteractionResponder responder,
         CancellationToken cancellationToken = default)
     {
+        var started = Stopwatch.GetTimestamp();
         var mapped = _mapper.Map(commandName, options);
         if (!mapped.IsValid)
         {
@@ -46,6 +49,10 @@ public sealed class FramedataInteractionHandler
                 "Rejected Discord command {CommandName}: {ValidationError}.",
                 commandName,
                 mapped.Error);
+            LogDiscordInteractionRejectedMetric(
+                commandName,
+                mapped.Error,
+                Stopwatch.GetElapsedTime(started));
 
             await responder.RespondAsync(mapped.Error ?? "Invalid command.");
             return;
@@ -65,11 +72,6 @@ public sealed class FramedataInteractionHandler
             var issueContext = new MoveCorrectionIssueContext(invocation.Character, invocation.Move);
             var moveResponse = FormatQueryResult(result.Response, result.Ambiguous, result.Error, issueContext);
             LogMediaAttachment(result.Response, moveResponse.Attachment);
-            _logger.LogInformation(
-                "Discord /framedata interaction completed for character {Character} and move input {MoveInput} with result {ResultCode}.",
-                invocation.Character,
-                invocation.Move,
-                result.Response is not null ? "ok" : result.Ambiguous is not null ? "ambiguous" : result.Error?.Code ?? "error");
 
             await responder.FollowupAsync(
                 moveResponse.Content,
@@ -77,12 +79,118 @@ public sealed class FramedataInteractionHandler
                 moveResponse.IsEphemeral,
                 moveResponse.Attachment,
                 moveResponse.Components);
+            var resultCode = GetInteractionResultCode(result.Response, result.Ambiguous, result.Error);
+            _logger.LogInformation(
+                "Discord /framedata interaction completed for character {Character} and move input {MoveInput} with result {ResultCode}.",
+                invocation.Character,
+                invocation.Move,
+                resultCode);
+            LogDiscordInteractionCompletedMetric(
+                commandName,
+                invocation.Character,
+                invocation.Move,
+                resultCode,
+                result.Response?.Character,
+                result.Response?.MatchedMove,
+                result.Response?.MatchedBy,
+                result.Ambiguous?.Candidates.Count ?? 0,
+                result.Error?.Code,
+                moveResponse.IsEphemeral,
+                moveResponse.Attachment is not null,
+                Stopwatch.GetElapsedTime(started));
         }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Failed to handle Discord /framedata interaction.");
+            LogDiscordInteractionFailedMetric(
+                commandName,
+                invocation.Character,
+                invocation.Move,
+                exception.GetType().Name,
+                Stopwatch.GetElapsedTime(started));
             await responder.FollowupAsync("Unable to query frame data right now. Try again shortly.");
         }
+    }
+
+    private static string GetInteractionResultCode(
+        MoveQueryResponse? response,
+        MoveAmbiguousResponse? ambiguous,
+        ErrorResponse? error)
+    {
+        if (response is not null)
+        {
+            return "ok";
+        }
+
+        if (ambiguous is not null)
+        {
+            return "ambiguous_move";
+        }
+
+        return error?.Code ?? "error";
+    }
+
+    private void LogDiscordInteractionCompletedMetric(
+        string commandName,
+        string character,
+        string moveInput,
+        string resultCode,
+        string? matchedCharacter,
+        string? matchedMove,
+        string? matchedBy,
+        int candidateCount,
+        string? errorCode,
+        bool isEphemeral,
+        bool hasAttachment,
+        TimeSpan elapsed)
+    {
+        _logger.LogInformation(
+            "Metric {MetricName}: Discord /framedata interaction completed. CommandName={CommandName}; ResultCode={ResultCode}; Character={Character}; MoveInput={MoveInput}; MatchedCharacter={MatchedCharacter}; MatchedMove={MatchedMove}; MatchedBy={MatchedBy}; CandidateCount={CandidateCount}; ErrorCode={ErrorCode}; IsEphemeral={IsEphemeral}; HasAttachment={HasAttachment}; ElapsedMs={ElapsedMs:0.000}.",
+            FrameDataMetricNames.DiscordFramedataInteractionCompleted,
+            commandName,
+            resultCode,
+            character,
+            moveInput,
+            matchedCharacter,
+            matchedMove,
+            matchedBy,
+            candidateCount,
+            errorCode,
+            isEphemeral,
+            hasAttachment,
+            elapsed.TotalMilliseconds);
+    }
+
+    private void LogDiscordInteractionRejectedMetric(
+        string commandName,
+        string? validationError,
+        TimeSpan elapsed)
+    {
+        _logger.LogInformation(
+            "Metric {MetricName}: Discord command rejected. CommandName={CommandName}; ResultCode={ResultCode}; ValidationError={ValidationError}; ElapsedMs={ElapsedMs:0.000}.",
+            FrameDataMetricNames.DiscordFramedataInteractionRejected,
+            commandName,
+            "validation_error",
+            validationError,
+            elapsed.TotalMilliseconds);
+    }
+
+    private void LogDiscordInteractionFailedMetric(
+        string commandName,
+        string character,
+        string moveInput,
+        string exceptionType,
+        TimeSpan elapsed)
+    {
+        _logger.LogInformation(
+            "Metric {MetricName}: Discord /framedata interaction failed. CommandName={CommandName}; ResultCode={ResultCode}; Character={Character}; MoveInput={MoveInput}; ExceptionType={ExceptionType}; ElapsedMs={ElapsedMs:0.000}.",
+            FrameDataMetricNames.DiscordFramedataInteractionFailed,
+            commandName,
+            "exception",
+            character,
+            moveInput,
+            exceptionType,
+            elapsed.TotalMilliseconds);
     }
 
     private DiscordMoveResponse FormatQueryResult(
