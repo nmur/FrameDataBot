@@ -407,6 +407,18 @@ public sealed class FuzzyMatcherTests
         _matcher.IsAmbiguous(candidates).ShouldBeFalse();
     }
 
+    [Fact]
+    public void Rank_WhenStrengthQualifiedDdtCompetesWithAlexLkNormal_RanksSpiralDdt()
+    {
+        var candidates = _matcher.Rank("lk ddt", CreateAlexDdtMoves());
+
+        candidates[0].CanonicalName.ShouldBe("Spiral D.D.T. (LK)");
+        candidates[0].MatchedAlias.ShouldBe("lkddt");
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+        _matcher.IsAmbiguous(candidates).ShouldBeFalse();
+    }
+
     [Theory]
     [InlineData("shipu")]
     [InlineData("shippu")]
@@ -1343,6 +1355,17 @@ public sealed class FuzzyMatcherTests
             CreateTestMove("dudley-machine-gun-blow-strong", "dudley", "Dudley", "Specials", "Machine Gun Blow (Strong)", 2),
             CreateTestMove("dudley-machine-gun-blow-fierce", "dudley", "Dudley", "Specials", "Machine Gun Blow (Fierce)", 3),
             CreateTestMove("dudley-machine-gun-blow-ex", "dudley", "Dudley", "Specials", "Machine Gun Blow (EX)", 4)
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateAlexDdtMoves()
+    {
+        return
+        [
+            CreateTestMove("alex-lk", "alex", "Alex", "Normals", "LK", 1),
+            CreateTestMove("alex-spiral-ddt-lk", "alex", "Alex", "Specials", "Spiral D.D.T. (LK)", 2),
+            CreateTestMove("alex-spiral-ddt-mk", "alex", "Alex", "Specials", "Spiral D.D.T. (MK)", 3),
+            CreateTestMove("alex-spiral-ddt-hk", "alex", "Alex", "Specials", "Spiral D.D.T. (HK)", 4)
         ];
     }
 

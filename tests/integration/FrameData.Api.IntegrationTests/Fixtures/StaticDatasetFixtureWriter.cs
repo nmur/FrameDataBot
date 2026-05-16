@@ -80,6 +80,7 @@ internal static class StaticDatasetFixtureWriter
         string characterId,
         string canonicalName,
         int displayOrder = 1,
+        string section = "Normals",
         string startup = "6",
         string? motion = null,
         string? damage = null,
@@ -89,9 +90,9 @@ internal static class StaticDatasetFixtureWriter
         IReadOnlyList<StaticDatasetMoveMedia>? media = null)
         => new()
         {
-            Id = $"{characterId}-normals-{canonicalName}",
+            Id = $"{characterId}-{section}-{canonicalName}",
             CharacterId = characterId,
-            Section = "Normals",
+            Section = section,
             CanonicalName = canonicalName,
             DisplayOrder = displayOrder,
             Motion = motion,

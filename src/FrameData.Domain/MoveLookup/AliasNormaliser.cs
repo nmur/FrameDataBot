@@ -59,6 +59,7 @@ public sealed class AliasNormaliser
         ["shortswingblow"] = ["ssb"],
         ["shungokusatsu"] = ["demon"],
         ["shungokusastu"] = ["demon"],
+        ["spiralddt"] = ["ddt"],
         ["tatsumakisenpuukyaku"] = ["tatsu"],
         ["tetsuzankou"] = ["shoulder"],
         ["tourouzan"] = ["slashes", "rekkas", "mantis slash"],

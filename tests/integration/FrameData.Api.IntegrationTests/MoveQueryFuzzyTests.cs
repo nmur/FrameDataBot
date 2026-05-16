@@ -21,7 +21,15 @@ public sealed class MoveQueryFuzzyTests : IClassFixture<WebApplicationFactory<Pr
                 "Makoto",
                 ["mak"],
                 StaticDatasetFixtureWriter.Move("makoto", "2hk", displayOrder: 1, startup: "8"),
-                StaticDatasetFixtureWriter.Move("makoto", "5hk", displayOrder: 2, startup: "10"))).GetAwaiter().GetResult();
+                StaticDatasetFixtureWriter.Move("makoto", "5hk", displayOrder: 2, startup: "10")),
+            StaticDatasetFixtureWriter.Character(
+                "alex",
+                "Alex",
+                [],
+                StaticDatasetFixtureWriter.Move("alex", "LK", displayOrder: 1, startup: "4"),
+                StaticDatasetFixtureWriter.Move("alex", "Spiral D.D.T. (LK)", displayOrder: 2, section: "Specials", startup: "7"),
+                StaticDatasetFixtureWriter.Move("alex", "Spiral D.D.T. (MK)", displayOrder: 3, section: "Specials", startup: "7"),
+                StaticDatasetFixtureWriter.Move("alex", "Spiral D.D.T. (HK)", displayOrder: 4, section: "Specials", startup: "7"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -70,6 +78,19 @@ public sealed class MoveQueryFuzzyTests : IClassFixture<WebApplicationFactory<Pr
         Assert.NotNull(payload);
         Assert.Contains(payload.Candidates, candidate => candidate.MoveName == "2hk");
         Assert.Contains(payload.Candidates, candidate => candidate.MoveName == "5hk");
+    }
+
+    [Fact]
+    public async Task GetMoveQuery_WhenAlexDdtUsesStrengthAndShortName_ReturnsSpiralDdtSpecial()
+    {
+        var response = await _client.GetAsync("/v1/moves/query?character=alex&moveInput=lk%20ddt");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Spiral D.D.T. (LK)", payload.MatchedMove);
+        Assert.Equal("Specials", payload.Section);
+        Assert.Equal("Alias", payload.MatchedBy);
     }
 
     [Fact]
