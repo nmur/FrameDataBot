@@ -21,7 +21,17 @@ public sealed class MoveQueryFuzzyTests : IClassFixture<WebApplicationFactory<Pr
                 "Makoto",
                 ["mak"],
                 StaticDatasetFixtureWriter.Move("makoto", "2hk", displayOrder: 1, startup: "8"),
-                StaticDatasetFixtureWriter.Move("makoto", "5hk", displayOrder: 2, startup: "10"))).GetAwaiter().GetResult();
+                StaticDatasetFixtureWriter.Move("makoto", "5hk", displayOrder: 2, startup: "10")),
+            StaticDatasetFixtureWriter.Character(
+                "alex",
+                "Alex",
+                [],
+                StaticDatasetFixtureWriter.Move("alex", "LK", displayOrder: 1, startup: "4"),
+                StaticDatasetFixtureWriter.Move("alex", "MK", displayOrder: 2, startup: "5"),
+                StaticDatasetFixtureWriter.Move("alex", "HK", displayOrder: 3, startup: "7"),
+                StaticDatasetFixtureWriter.Move("alex", "Spiral D.D.T. (LK)", displayOrder: 4, section: "Specials", startup: "7"),
+                StaticDatasetFixtureWriter.Move("alex", "Spiral D.D.T. (MK)", displayOrder: 5, section: "Specials", startup: "7"),
+                StaticDatasetFixtureWriter.Move("alex", "Spiral D.D.T. (HK)", displayOrder: 6, section: "Specials", startup: "7"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -70,6 +80,24 @@ public sealed class MoveQueryFuzzyTests : IClassFixture<WebApplicationFactory<Pr
         Assert.NotNull(payload);
         Assert.Contains(payload.Candidates, candidate => candidate.MoveName == "2hk");
         Assert.Contains(payload.Candidates, candidate => candidate.MoveName == "5hk");
+    }
+
+    [Theory]
+    [InlineData("lk ddt", "Spiral D.D.T. (LK)")]
+    [InlineData("mk ddt", "Spiral D.D.T. (MK)")]
+    [InlineData("hk ddt", "Spiral D.D.T. (HK)")]
+    public async Task GetMoveQuery_WhenAlexDdtUsesStrengthAndShortName_ReturnsSpiralDdtSpecial(
+        string moveInput,
+        string expectedMove)
+    {
+        var response = await _client.GetAsync($"/v1/moves/query?character=alex&moveInput={Uri.EscapeDataString(moveInput)}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal(expectedMove, payload.MatchedMove);
+        Assert.Equal("Specials", payload.Section);
+        Assert.Equal("Alias", payload.MatchedBy);
     }
 
     [Fact]

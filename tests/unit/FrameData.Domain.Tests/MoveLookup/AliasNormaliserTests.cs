@@ -69,6 +69,7 @@ public sealed class AliasNormaliserTests
     [InlineData("DPM + Forward", "dpmmk")]
     [InlineData("dp mk", "dpmmk")]
     [InlineData("dp", "dp")]
+    [InlineData("D.D.T.", "ddt")]
     [InlineData("stomp", "stomp")]
     [InlineData("backbreaker", "backbreaker")]
     [InlineData("crab punch", "crabpunch")]

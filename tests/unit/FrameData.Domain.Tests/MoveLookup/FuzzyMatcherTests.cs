@@ -408,6 +408,24 @@ public sealed class FuzzyMatcherTests
     }
 
     [Theory]
+    [InlineData("lk ddt", "Spiral D.D.T. (LK)", "lkddt")]
+    [InlineData("mk ddt", "Spiral D.D.T. (MK)", "mkddt")]
+    [InlineData("hk ddt", "Spiral D.D.T. (HK)", "hkddt")]
+    public void Rank_WhenStrengthQualifiedDdtCompetesWithAlexKickNormal_RanksSpiralDdt(
+        string input,
+        string expectedMove,
+        string expectedAlias)
+    {
+        var candidates = _matcher.Rank(input, CreateAlexDdtMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(100);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+        _matcher.IsAmbiguous(candidates).ShouldBeFalse();
+    }
+
+    [Theory]
     [InlineData("shipu")]
     [InlineData("shippu")]
     public void Rank_WhenInputUsesShippuShortName_RanksShipuujinraiFirst(string input)
@@ -1343,6 +1361,19 @@ public sealed class FuzzyMatcherTests
             CreateTestMove("dudley-machine-gun-blow-strong", "dudley", "Dudley", "Specials", "Machine Gun Blow (Strong)", 2),
             CreateTestMove("dudley-machine-gun-blow-fierce", "dudley", "Dudley", "Specials", "Machine Gun Blow (Fierce)", 3),
             CreateTestMove("dudley-machine-gun-blow-ex", "dudley", "Dudley", "Specials", "Machine Gun Blow (EX)", 4)
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateAlexDdtMoves()
+    {
+        return
+        [
+            CreateTestMove("alex-lk", "alex", "Alex", "Normals", "LK", 1),
+            CreateTestMove("alex-mk", "alex", "Alex", "Normals", "MK", 2),
+            CreateTestMove("alex-hk", "alex", "Alex", "Normals", "HK", 3),
+            CreateTestMove("alex-spiral-ddt-lk", "alex", "Alex", "Specials", "Spiral D.D.T. (LK)", 4),
+            CreateTestMove("alex-spiral-ddt-mk", "alex", "Alex", "Specials", "Spiral D.D.T. (MK)", 5),
+            CreateTestMove("alex-spiral-ddt-hk", "alex", "Alex", "Specials", "Spiral D.D.T. (HK)", 6)
         ];
     }
 
