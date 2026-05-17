@@ -1,5 +1,6 @@
 using FrameData.Infrastructure.Dataset;
 using FrameData.Ingestion.Catalog;
+using FrameData.Ingestion.Customization;
 using FrameData.Ingestion.Media;
 using FrameData.Ingestion.Publishing;
 using FrameData.Ingestion.Services;
@@ -27,6 +28,7 @@ public static class IngestionWorkerServiceCollectionExtensions
         services.AddSingleton<HitboxDisplayParser>();
         services.AddSingleton<RepresentativeFrameSelector>();
         services.AddSingleton<HitboxCanvasRenderer>();
+        services.AddSingleton<CustomMoveOverlay>();
         services.AddSingleton<MoveImageDatasetStorageService>();
         services.AddHttpClient<SourceHttpClient>(client =>
         {

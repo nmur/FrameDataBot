@@ -119,4 +119,5 @@ public sealed class RepresentativeFrameSelectionOverride
 {
     public string? SelectedFrame { get; init; }
     public string? SelectionStrategy { get; init; }
+    public IReadOnlyList<string>? OverlayHitboxes { get; init; }
 }

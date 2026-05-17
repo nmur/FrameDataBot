@@ -166,6 +166,7 @@ public sealed class MoveImageDatasetStorageService
             sourceFrameImageUrl: selection.Frame.SourceFrameImageUrl,
             selectionStrategy: selection.SelectionStrategy,
             activeHitboxArea: selection.ActiveHitboxArea,
+            overlayHitboxes: moveOverride?.OverlayHitboxes,
             fallbackReason: null);
 
         _logger.LogInformation(
@@ -331,6 +332,7 @@ public sealed class MoveImageDatasetStorageService
             sourceFrameImageUrl: null,
             selectionStrategy: selectionStrategy ?? RepresentativeFrameSelectionPolicy.LargestActiveHitboxAreaStrategy,
             activeHitboxArea: activeHitboxArea,
+            overlayHitboxes: null,
             fallbackReason: fallbackReason);
 
         byte[] content;
@@ -377,6 +379,7 @@ public sealed class MoveImageDatasetStorageService
         string? sourceFrameImageUrl,
         string selectionStrategy,
         int? activeHitboxArea,
+        IReadOnlyList<string>? overlayHitboxes,
         string? fallbackReason)
         => new()
         {
@@ -389,7 +392,7 @@ public sealed class MoveImageDatasetStorageService
             SelectedFrame = selectedFrame,
             SelectionStrategy = selectionStrategy,
             ActiveHitboxArea = activeHitboxArea,
-            OverlayHitboxes = HitboxOverlayTypes.DefaultP1Overlays,
+            OverlayHitboxes = overlayHitboxes ?? HitboxOverlayTypes.DefaultP1Overlays,
             FallbackReason = SanitizeReason(fallbackReason),
             CapturedAt = DateTimeOffset.UtcNow,
             CaptureStatus = status

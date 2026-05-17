@@ -17,6 +17,7 @@ public sealed class AliasNormaliser
         ["dudley:towardshk"] = ["dart shot"],
         ["ken:2mp"] = ["emperor punch", "emperors punch", "emperor's punch"],
         ["necro:1hp"] = ["elbow cannon"],
+        ["oro:indecentexposure"] = ["🥜"],
         ["q:captureanddeadlyblow"] = ["command grab", "cmd grab"],
         ["q:dashingheadattack"] = ["dash punch"],
         ["q:dashingheadattackhold"] = ["overhead dash punch"],

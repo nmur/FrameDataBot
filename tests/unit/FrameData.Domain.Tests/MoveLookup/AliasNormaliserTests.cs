@@ -73,6 +73,7 @@ public sealed class AliasNormaliserTests
     [InlineData("stomp", "stomp")]
     [InlineData("backbreaker", "backbreaker")]
     [InlineData("crab punch", "crabpunch")]
+    [InlineData("🥜", "🥜")]
     public void Normalise_ConvertsCommonNotationToStableLookupForm(string input, string expected)
     {
         var normalised = _normaliser.Normalise(input);
@@ -126,5 +127,25 @@ public sealed class AliasNormaliserTests
         var aliases = _normaliser.CreateAliases(move);
 
         aliases.ShouldContain(alias => alias.Alias == "f.hp" && alias.NormalisedAlias == "6hp");
+    }
+
+    [Fact]
+    public void CreateAliases_WhenOroCustomPeanutMove_AddsPeanutAlias()
+    {
+        var move = new Move
+        {
+            Id = "oro-custom-peanut",
+            CharacterId = "oro",
+            Game = "sf3_3s",
+            CharacterName = "Oro",
+            Section = "Specials",
+            CanonicalName = "Indecent Exposure",
+            DisplayOrder = 1,
+            FrameData = new MoveFrameData()
+        };
+
+        var aliases = _normaliser.CreateAliases(move);
+
+        aliases.ShouldContain(alias => alias.Alias == "🥜" && alias.NormalisedAlias == "🥜");
     }
 }

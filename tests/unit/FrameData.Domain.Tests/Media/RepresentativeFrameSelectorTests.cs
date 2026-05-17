@@ -120,6 +120,24 @@ public sealed class RepresentativeFrameSelectorTests
         selected.ActiveHitboxArea.ShouldBe(1);
     }
 
+    [Fact]
+    public void Select_WhenOverrideSpecifiesUnpaddedFrame_UsesMatchingPaddedFrame()
+    {
+        var frames = new[]
+        {
+            Frame("021", Box("P1_A", width: 50, height: 50)),
+            Frame("022", Box("P1_A", width: 1, height: 1))
+        };
+
+        var selected = _selector.Select(
+            frames,
+            moveOverride: new RepresentativeFrameSelectionOverride { SelectedFrame = "22" });
+
+        selected.ShouldNotBeNull();
+        selected.Frame.FrameId.ShouldBe("022");
+        selected.ActiveHitboxArea.ShouldBe(1);
+    }
+
     private static HitboxFrame Frame(string frameId, params HitboxRectangle[] hitboxes)
         => new()
         {

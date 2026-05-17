@@ -82,7 +82,13 @@ internal static partial class AliasTextNormaliser
             return string.Empty;
         }
 
-        var value = input.Trim().ToLowerInvariant();
+        var trimmed = input.Trim();
+        if (trimmed == "🥜")
+        {
+            return trimmed;
+        }
+
+        var value = trimmed.ToLowerInvariant();
         value = ApplyMotionPhraseAliases(value);
         value = ApplyDirectionalPhraseAliases(value);
         foreach (var alias in AttackTermAliases.OrderByDescending(alias => alias.Key.Length))
