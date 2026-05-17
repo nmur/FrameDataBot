@@ -229,6 +229,28 @@ public sealed class MoveImageDatasetStorageTests
     }
 
     [Fact]
+    public void RenderPng_WhenOverlayListIsEmpty_DrawsNoHitboxGraphics()
+    {
+        var renderer = new HitboxCanvasRenderer();
+        var content = renderer.RenderPng(
+            new HitboxFrame
+            {
+                FrameId = "004",
+                Hitboxes =
+                [
+                    new HitboxRectangle { Type = "P1_A", X = 10, Y = 20, Width = 8, Height = 8 }
+                ]
+            },
+            [],
+            new DecodedPngImage(384, 224, 6, 8, CreateSolidFramePixels(0, 0, 0)));
+
+        renderer.TryDecodePng(content, out var rendered, out var decodeError).ShouldBeTrue(decodeError);
+        rendered.ShouldNotBeNull();
+        AssertPixel(rendered, 10, 20, 0, 0, 0);
+        AssertPixel(rendered, 12, 22, 0, 0, 0);
+    }
+
+    [Fact]
     public void CaptureRepresentativeImage_WhenMoveOutsidePilotScope_ReturnsNull()
     {
         var asset = _storage.CaptureRepresentativeImage(
@@ -306,6 +328,24 @@ public sealed class MoveImageDatasetStorageTests
             .ToArray();
 
         renderedTypes.ShouldBe(["P1_P", "P1_V", "P1_A", "P1_T", "P1_TA"]);
+    }
+
+    [Fact]
+    public void GetRenderableHitboxes_WhenOverlayListIsEmpty_ReturnsNoHitboxes()
+    {
+        var renderer = new HitboxCanvasRenderer();
+        var frame = new HitboxFrame
+        {
+            FrameId = "001",
+            Hitboxes =
+            [
+                new HitboxRectangle { Type = "P1_P", Width = 1, Height = 1 },
+                new HitboxRectangle { Type = "P1_A", Width = 1, Height = 1 },
+                new HitboxRectangle { Type = "P1_T", Width = 1, Height = 1 }
+            ]
+        };
+
+        renderer.GetRenderableHitboxes(frame, []).ShouldBeEmpty();
     }
 
     private static Move CreateMove(string characterId, string moveId)

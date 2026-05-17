@@ -3,6 +3,7 @@ using FrameData.Domain.Ingestion;
 using FrameData.Domain.Media;
 using FrameData.Domain.Moves;
 using FrameData.Ingestion.Catalog;
+using FrameData.Ingestion.Customization;
 using FrameData.Ingestion.Hosting;
 using FrameData.Ingestion.Media;
 using FrameData.Ingestion.Publishing;
@@ -25,6 +26,7 @@ public sealed class IngestionOrchestrator
     private readonly ISupportedCharacterCatalog? _catalog;
     private readonly IHitboxSourceClient? _hitboxSourceClient;
     private readonly MoveImageDatasetStorageService? _moveImageStorageService;
+    private readonly CustomMoveOverlay _customMoveOverlay;
     private readonly ILogger<IngestionOrchestrator> _logger;
 
     public IngestionOrchestrator(
@@ -35,6 +37,7 @@ public sealed class IngestionOrchestrator
         ISupportedCharacterCatalog? catalog = null,
         IHitboxSourceClient? hitboxSourceClient = null,
         MoveImageDatasetStorageService? moveImageStorageService = null,
+        CustomMoveOverlay? customMoveOverlay = null,
         ILogger<IngestionOrchestrator>? logger = null)
     {
         _sourceClient = sourceClient;
@@ -45,6 +48,7 @@ public sealed class IngestionOrchestrator
         _catalog = catalog;
         _hitboxSourceClient = hitboxSourceClient;
         _moveImageStorageService = moveImageStorageService;
+        _customMoveOverlay = customMoveOverlay ?? new CustomMoveOverlay();
         _logger = logger ?? NullLogger<IngestionOrchestrator>.Instance;
     }
 
@@ -129,8 +133,15 @@ public sealed class IngestionOrchestrator
                     characterScope.CharacterId,
                     sectionCounts);
 
-                var domainMoves = MapMoves(characterScope, parsedMoves);
-                var characterMediaAssets = await CaptureRepresentativeImagesAsync(run.Id, domainMoves, cancellationToken);
+                var domainMoves = _customMoveOverlay.Apply(characterScope.CharacterId, MapMoves(characterScope, parsedMoves));
+                var representativeFramePolicy = _customMoveOverlay.ApplyRepresentativeFrameOverrides(
+                    _options.RepresentativeFramePolicy,
+                    domainMoves);
+                var characterMediaAssets = await CaptureRepresentativeImagesAsync(
+                    run.Id,
+                    domainMoves,
+                    representativeFramePolicy,
+                    cancellationToken);
                 mediaAssets.AddRange(characterMediaAssets);
 
                 foreach (var move in domainMoves)
@@ -380,6 +391,7 @@ public sealed class IngestionOrchestrator
     private async Task<IReadOnlyList<MoveImageDatasetAsset>> CaptureRepresentativeImagesAsync(
         string runId,
         IReadOnlyList<Move> moves,
+        RepresentativeFrameSelectionPolicy representativeFramePolicy,
         CancellationToken cancellationToken)
     {
         if (_hitboxSourceClient is null || _moveImageStorageService is null)
@@ -395,7 +407,7 @@ public sealed class IngestionOrchestrator
 
         var assets = new List<MoveImageDatasetAsset>();
         var eligibleMoveCount = 0;
-        if (_options.RepresentativeFramePolicy.PilotMoveScope.Count == 0)
+        if (representativeFramePolicy.PilotMoveScope.Count == 0)
         {
             _logger.LogInformation(
                 "Ingestion run {RunId}: evaluating representative media for all {MoveCount} move(s).",
@@ -408,12 +420,12 @@ public sealed class IngestionOrchestrator
                 "Ingestion run {RunId}: evaluating representative media for {MoveCount} move(s) with {MediaScopeCount} configured media scope key(s).",
                 runId,
                 moves.Count,
-                _options.RepresentativeFramePolicy.PilotMoveScope.Count);
+                representativeFramePolicy.PilotMoveScope.Count);
         }
 
         foreach (var move in moves)
         {
-            if (!_options.RepresentativeFramePolicy.IsMoveInScope(move.CharacterId, move.Id))
+            if (!representativeFramePolicy.IsMoveInScope(move.CharacterId, move.Id))
             {
                 _logger.LogDebug(
                     "Ingestion run {RunId}: skipping representative media for {CharacterId}/{MoveId} because it is outside the configured media scope.",
@@ -471,7 +483,7 @@ public sealed class IngestionOrchestrator
                 move,
                 sourceUrl,
                 hitboxHtml,
-                _options.RepresentativeFramePolicy,
+                representativeFramePolicy,
                 cancellationToken);
 
             if (asset is not null)

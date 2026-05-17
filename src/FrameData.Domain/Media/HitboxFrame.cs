@@ -78,9 +78,10 @@ public static class HitboxOverlayTypes
         }
 
         var normalised = Normalise(type);
-        return overlays.Any(overlay => string.Equals(Normalise(overlay), normalised, StringComparison.Ordinal))
+        return overlays.Count > 0
+            && (overlays.Any(overlay => string.Equals(Normalise(overlay), normalised, StringComparison.Ordinal))
             || IsActiveAreaHitbox(normalised)
-            || IsActiveThrowHitbox(normalised);
+            || IsActiveThrowHitbox(normalised));
     }
 
     public static string Normalise(string value)

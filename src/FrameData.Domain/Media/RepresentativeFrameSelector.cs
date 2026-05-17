@@ -16,10 +16,7 @@ public sealed class RepresentativeFrameSelector
         {
             var overridden = frames
                 .OrderBy(frame => FrameSortKey(frame.FrameId))
-                .FirstOrDefault(frame => string.Equals(
-                    frame.FrameId,
-                    moveOverride.SelectedFrame,
-                    StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(frame => FrameIdMatches(frame.FrameId, moveOverride.SelectedFrame));
 
             return overridden is null
                 ? null
@@ -125,6 +122,18 @@ public sealed class RepresentativeFrameSelector
 
     private static int FrameSortKey(string frameId)
         => int.TryParse(frameId, out var parsed) ? parsed : int.MaxValue;
+
+    private static bool FrameIdMatches(string frameId, string selectedFrame)
+    {
+        if (string.Equals(frameId, selectedFrame, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return int.TryParse(frameId, out var parsedFrameId)
+            && int.TryParse(selectedFrame, out var parsedSelectedFrame)
+            && parsedFrameId == parsedSelectedFrame;
+    }
 }
 
 public sealed class RepresentativeFrameSelection
