@@ -9,6 +9,8 @@ namespace FrameData.Api.Endpoints;
 
 public static class MoveQueryEndpoint
 {
+    private const string PublicSourceBaseUrl = "http://baston.esn3s.com";
+
     public static void MapMoveQueryEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/v1/moves/query", async (
@@ -73,12 +75,8 @@ public static class MoveQueryEndpoint
                 Motion = result.Move.Motion,
                 Damage = result.Move.Damage,
                 Stun = result.Move.Stun,
-                CharacterFrameDataUrl = BuildCharacterFrameDataUrl(
-                    result.Move.SourceBaseUrl,
-                    result.Move.SourceCharacterId),
-                MoveHitboxDisplayUrl = ResolveSourceUrl(
-                    result.Move.SourceBaseUrl,
-                    result.Move.SourceHitboxPath),
+                CharacterFrameDataUrl = BuildCharacterFrameDataUrl(result.Move.SourceCharacterId),
+                MoveHitboxDisplayUrl = BuildHitboxViewerUrl(result.Move.SourceHitboxPath),
                 GameRestaurantMoveUrl = GameRestaurantUrlResolver.Resolve(result.Move),
                 FrameData = new FrameDataContract
                 {
@@ -112,44 +110,68 @@ public static class MoveQueryEndpoint
         };
     }
 
-    private static string? BuildCharacterFrameDataUrl(string? sourceBaseUrl, int? sourceCharacterId)
-    {
-        if (string.IsNullOrWhiteSpace(sourceBaseUrl) || sourceCharacterId is null)
-        {
-            return null;
-        }
+    private static string? BuildCharacterFrameDataUrl(int? sourceCharacterId)
+        => sourceCharacterId is null
+            ? null
+            : $"{PublicSourceBaseUrl}/index.php?id={sourceCharacterId.Value}";
 
-        if (!Uri.TryCreate(sourceBaseUrl, UriKind.Absolute, out var uri))
-        {
-            return null;
-        }
-
-        var separator = string.IsNullOrEmpty(uri.Query) ? "?" : "&";
-        return $"{uri.GetLeftPart(UriPartial.Path)}{uri.Query}{separator}id={sourceCharacterId.Value}";
-    }
-
-    private static string? ResolveSourceUrl(string? sourceBaseUrl, string? sourcePathOrUrl)
+    private static string? BuildHitboxViewerUrl(string? sourcePathOrUrl)
     {
         if (string.IsNullOrWhiteSpace(sourcePathOrUrl))
         {
             return null;
         }
 
-        if (Uri.TryCreate(sourcePathOrUrl, UriKind.Absolute, out var absoluteUri))
-        {
-            return absoluteUri.ToString();
-        }
-
-        if (string.IsNullOrWhiteSpace(sourceBaseUrl)
-            || !Uri.TryCreate(sourceBaseUrl, UriKind.Absolute, out var baseUri))
+        var query = ExtractQuery(sourcePathOrUrl);
+        if (string.IsNullOrWhiteSpace(query))
         {
             return null;
         }
 
-        var resolved = sourcePathOrUrl.StartsWith("?", StringComparison.Ordinal)
-            ? new Uri($"{baseUri.GetLeftPart(UriPartial.Path)}{sourcePathOrUrl}")
-            : new Uri(baseUri, sourcePathOrUrl);
+        var sourceCharacterId = ReadQueryParameter(query, "iChar");
+        var sourceMoveType = ReadQueryParameter(query, "sMoveType");
+        var sourceMoveId = ReadQueryParameter(query, "iMove");
+        if (string.IsNullOrWhiteSpace(sourceCharacterId)
+            || string.IsNullOrWhiteSpace(sourceMoveType)
+            || string.IsNullOrWhiteSpace(sourceMoveId))
+        {
+            return null;
+        }
 
-        return resolved.ToString();
+        return $"{PublicSourceBaseUrl}/hitboxesDisplay_spritesheet.php"
+            + $"?iChar={Uri.EscapeDataString(sourceCharacterId)}"
+            + $"&sMoveType={Uri.EscapeDataString(sourceMoveType)}"
+            + $"&iMove={Uri.EscapeDataString(sourceMoveId)}";
+    }
+
+    private static string? ExtractQuery(string sourcePathOrUrl)
+    {
+        if (Uri.TryCreate(sourcePathOrUrl, UriKind.Absolute, out var uri))
+        {
+            return uri.Query.TrimStart('?');
+        }
+
+        var questionMarkIndex = sourcePathOrUrl.IndexOf('?', StringComparison.Ordinal);
+        return questionMarkIndex < 0 || questionMarkIndex == sourcePathOrUrl.Length - 1
+            ? null
+            : sourcePathOrUrl[(questionMarkIndex + 1)..];
+    }
+
+    private static string? ReadQueryParameter(string query, string name)
+    {
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var equalsIndex = pair.IndexOf('=', StringComparison.Ordinal);
+            var key = equalsIndex < 0 ? pair : pair[..equalsIndex];
+            if (!string.Equals(Uri.UnescapeDataString(key), name, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = equalsIndex < 0 ? string.Empty : pair[(equalsIndex + 1)..];
+            return Uri.UnescapeDataString(value.Replace('+', ' '));
+        }
+
+        return null;
     }
 }

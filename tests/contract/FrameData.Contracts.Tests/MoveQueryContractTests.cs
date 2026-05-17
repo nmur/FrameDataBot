@@ -42,7 +42,7 @@ public sealed class MoveQueryContractTests
             Damage = "60",
             Stun = "7",
             CharacterFrameDataUrl = "http://example.test/source.php?id=1",
-            MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay.php?iMove=2",
+            MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay_spritesheet.php?iChar=1&sMoveType=fd_normals&iMove=2",
             GameRestaurantMoveUrl = "http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html",
             FrameData = new FrameDataContract
             {
@@ -60,7 +60,7 @@ public sealed class MoveQueryContractTests
         Assert.Equal("60", response.Damage);
         Assert.Equal("7", response.Stun);
         Assert.Equal("http://example.test/source.php?id=1", response.CharacterFrameDataUrl);
-        Assert.Equal("http://example.test/hitboxesDisplay.php?iMove=2", response.MoveHitboxDisplayUrl);
+        Assert.Equal("http://example.test/hitboxesDisplay_spritesheet.php?iChar=1&sMoveType=fd_normals&iMove=2", response.MoveHitboxDisplayUrl);
         Assert.Equal("http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html", response.GameRestaurantMoveUrl);
         Assert.Equal("6", response.FrameData.Startup);
         Assert.Equal("+3", response.FrameData.OnCrouchingHit);

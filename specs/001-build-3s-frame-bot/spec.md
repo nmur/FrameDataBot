@@ -8,6 +8,10 @@
 
 ## Clarifications
 
+### Session 2026-05-17
+
+- Q: Should the ingestion source move to the newer Baston site? → A: No. Keep frame-data and image ingestion on `http://ensabahnur.free.fr/BastonNew/index.php`; only public documentation and Discord/API embed links should point to `http://baston.esn3s.com/` and its `hitboxesDisplay_spritesheet.php` hitbox viewer.
+
 ### Session 2026-03-31
 
 - Q: Which security validation gate should define "secure containerized hosting" readiness? → A: Mandatory pre-production checklist gate: dependency scan + container image scan + secrets scan + manual least-privilege review, all with zero critical findings. Superseded for this closed plan by the 2026-04-29 deferral.

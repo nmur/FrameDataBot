@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/nmur/FrameDataBot/actions/workflows/ci.yml/badge.svg)](https://github.com/nmur/FrameDataBot/actions/workflows/ci.yml)
 
-A Discord bot for looking up 3rd Strike frame data sourced from http://ensabahnur.free.fr/BastonNew/index.php.
+A Discord bot for looking up 3rd Strike frame data, with source and hitbox viewer links pointing to http://baston.esn3s.com/.
 
 ![12 frames lol good luck](docs/assets/dartshot.png)
 
@@ -23,5 +23,5 @@ Street Fighter III: 3rd Strike is the property of its respective rights holders.
 
 ## Acknowledgements
 
-- Huge thanks to [ESN](http://ensabahnur.free.fr/) for their very valuable [frame data website](http://ensabahnur.free.fr/BastonNew/index.php) as well as their permission to use their data and assets for this project.
+- Huge thanks to [ESN](http://baston.esn3s.com/) for their very valuable [frame data website](http://baston.esn3s.com/) as well as their permission to use their data and assets for this project.
 - Developed using [Spec Kit](https://github.com/github/spec-kit) and Codex with GPT-5.3-codex/5.5.
