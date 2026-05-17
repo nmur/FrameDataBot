@@ -211,7 +211,7 @@ public sealed class MoveEmbedResponseFactory
         var builder = new ComponentBuilder();
 
         AddLinkButton(builder, "Frame Data", characterFrameDataUrl);
-        AddLinkButton(builder, "Full Animation", moveHitboxDisplayUrl);
+        AddLinkButton(builder, "Hitbox Viewer", moveHitboxDisplayUrl);
         AddLinkButton(builder, "Games Restaurant", gameRestaurantMoveUrl);
         builder.WithButton("Source", style: ButtonStyle.Link, url: RepositoryUrl);
 

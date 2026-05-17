@@ -20,7 +20,7 @@ public sealed class MoveEmbedResponseFactoryTests
             Section = "Specials",
             MatchedBy = "Exact",
             CharacterFrameDataUrl = "http://example.test/source.php?id=17",
-            MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay.php?iMove=42",
+            MoveHitboxDisplayUrl = "http://example.test/hitboxesDisplay_spritesheet.php?iChar=1&sMoveType=fd_normals&iMove=42",
             GameRestaurantMoveUrl = "http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html",
             FrameData = new FrameDataContract
             {
@@ -38,7 +38,7 @@ public sealed class MoveEmbedResponseFactoryTests
         response.Embed.Title.ShouldBe("Makoto - Hayate (Specials)");
         AssertRepositoryButton(response.Components);
         AssertLinkButton(response.Components, "Frame Data", "http://example.test/source.php?id=17");
-        AssertLinkButton(response.Components, "Full Animation", "http://example.test/hitboxesDisplay.php?iMove=42");
+        AssertLinkButton(response.Components, "Hitbox Viewer", "http://example.test/hitboxesDisplay_spritesheet.php?iChar=1&sMoveType=fd_normals&iMove=42");
         AssertLinkButton(response.Components, "Games Restaurant", "http://gere.stars.ne.jp/01_3rd/kouryaku/makoto/makoto_h1.html");
         response.Embed.Fields.ShouldNotContain(field => field.Name == "Section");
         response.Embed.Fields.ShouldContain(field => field.Name == "\u200B" && field.Value == "\u200B");
