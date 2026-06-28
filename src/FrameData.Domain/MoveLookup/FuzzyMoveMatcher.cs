@@ -7,7 +7,7 @@ public sealed class FuzzyMoveMatcher
 {
     public const decimal MinimumScore = 80;
     public const decimal AmbiguityScoreDelta = 5;
-    private const int PrefixPartialScore = 96;
+    private const int PrefixPartialScore = 98;
     private const int MinimumPrefixPartialLength = 4;
     private const int PartialSubstringScoreCap = 92;
 

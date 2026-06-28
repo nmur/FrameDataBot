@@ -322,8 +322,33 @@ public sealed class FuzzyMatcherTests
 
         candidates[0].CanonicalName.ShouldBe("Kongou Kokuretsu Zan");
         candidates[0].MatchedAlias.ShouldBe("kongoukokuretsuzan");
-        candidates[0].Score.ShouldBe(96);
+        candidates[0].Score.ShouldBe(98);
         candidates[0].ThresholdPassed.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("lp hadou", "Gou Hadouken (Jab)", "lphadouken", 98)]
+    [InlineData("lp hadouken", "Gou Hadouken (Jab)", "lphadouken", 100)]
+    [InlineData("lp fireball", "Gou Hadouken (Jab)", "lpfireball", 100)]
+    [InlineData("mp hadou", "Gou Hadouken (Strong)", "mphadouken", 98)]
+    [InlineData("mp hadouken", "Gou Hadouken (Strong)", "mphadouken", 100)]
+    [InlineData("mp fireball", "Gou Hadouken (Strong)", "mpfireball", 100)]
+    [InlineData("hp hadou", "Gou Hadouken (Fierce)", "hphadouken", 98)]
+    [InlineData("hp hadouken", "Gou Hadouken (Fierce)", "hphadouken", 100)]
+    [InlineData("hp fireball", "Gou Hadouken (Fierce)", "hpfireball", 100)]
+    public void Rank_WhenAkumaGouHadoukenUsesPlayerShortName_RanksSpecialAboveButtonNormal(
+        string input,
+        string expectedMove,
+        string expectedAlias,
+        int expectedScore)
+    {
+        var candidates = _matcher.Rank(input, CreateAkumaHadoukenMoves());
+
+        candidates[0].CanonicalName.ShouldBe(expectedMove);
+        candidates[0].MatchedAlias.ShouldBe(expectedAlias);
+        candidates[0].Score.ShouldBe(expectedScore);
+        candidates[0].ThresholdPassed.ShouldBeTrue();
+        _matcher.IsAmbiguous(candidates).ShouldBeFalse();
     }
 
     [Theory]
@@ -1384,6 +1409,20 @@ public sealed class FuzzyMatcherTests
             CreateTestMove("makoto-hayate-lp", "makoto", "Makoto", "Specials", "Hayate (LP)", 1),
             CreateTestMove("makoto-hayate-mp", "makoto", "Makoto", "Specials", "Hayate (MP)", 2),
             CreateTestMove("makoto-hayate-hp", "makoto", "Makoto", "Specials", "Hayate (HP)", 3)
+        ];
+    }
+
+    private static IReadOnlyList<Move> CreateAkumaHadoukenMoves()
+    {
+        return
+        [
+            CreateTestMove("akuma-lp", "akuma", "Akuma", "Normals", "LP", 1),
+            CreateTestMove("akuma-mp", "akuma", "Akuma", "Normals", "MP", 2),
+            CreateTestMove("akuma-hp", "akuma", "Akuma", "Normals", "HP", 3),
+            CreateTestMove("akuma-gou-hadouken-jab", "akuma", "Akuma", "Specials", "Gou Hadouken (Jab)", 4),
+            CreateTestMove("akuma-gou-hadouken-strong", "akuma", "Akuma", "Specials", "Gou Hadouken (Strong)", 5),
+            CreateTestMove("akuma-gou-hadouken-fierce", "akuma", "Akuma", "Specials", "Gou Hadouken (Fierce)", 6),
+            CreateTestMove("akuma-shakunetsu-hadouken", "akuma", "Akuma", "Specials", "Shakunetsu Hadouken", 7)
         ];
     }
 

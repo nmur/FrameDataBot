@@ -33,6 +33,7 @@ public sealed class AliasNormaliser
         ["gigasbreaker"] = ["720"],
         ["giantpalmbomber"] = ["clap"],
         ["geneijin"] = ["geneijin"],
+        ["gouhadouken"] = ["hadouken", "fireball"],
         ["hadouken"] = ["fireball"],
         ["hammerfrenzy"] = ["hammer mountain"],
         ["hyakuretsukyaku"] = ["lightning legs"],
