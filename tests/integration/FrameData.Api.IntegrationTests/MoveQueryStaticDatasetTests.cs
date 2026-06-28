@@ -56,7 +56,18 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
                 [],
                 StaticDatasetFixtureWriter.Move("makoto", "Hayate (LP)", displayOrder: 1, startup: "12"),
                 StaticDatasetFixtureWriter.Move("makoto", "Hayate (MP)", displayOrder: 2, startup: "15"),
-                StaticDatasetFixtureWriter.Move("makoto", "Hayate (HP)", displayOrder: 3, startup: "19"))).GetAwaiter().GetResult();
+                StaticDatasetFixtureWriter.Move("makoto", "Hayate (HP)", displayOrder: 3, startup: "19")),
+            StaticDatasetFixtureWriter.Character(
+                "akuma",
+                "Akuma",
+                [],
+                StaticDatasetFixtureWriter.Move("akuma", "LP", displayOrder: 1, section: "Normals", startup: "3"),
+                StaticDatasetFixtureWriter.Move("akuma", "MP", displayOrder: 2, section: "Normals", startup: "4"),
+                StaticDatasetFixtureWriter.Move("akuma", "HP", displayOrder: 3, section: "Normals", startup: "5"),
+                StaticDatasetFixtureWriter.Move("akuma", "Gou Hadouken (Jab)", displayOrder: 4, section: "Specials", startup: "11"),
+                StaticDatasetFixtureWriter.Move("akuma", "Gou Hadouken (Strong)", displayOrder: 5, section: "Specials", startup: "12"),
+                StaticDatasetFixtureWriter.Move("akuma", "Gou Hadouken (Fierce)", displayOrder: 6, section: "Specials", startup: "13"),
+                StaticDatasetFixtureWriter.Move("akuma", "Shakunetsu Hadouken", displayOrder: 7, section: "Specials", startup: "14"))).GetAwaiter().GetResult();
 
         _configuredFactory = factory.WithWebHostBuilder(builder =>
         {
@@ -139,6 +150,30 @@ public sealed class MoveQueryStaticDatasetTests : IClassFixture<WebApplicationFa
         var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
         Assert.NotNull(payload);
         Assert.Equal("Hayate (LP)", payload.MatchedMove);
+        Assert.Equal("Alias", payload.MatchedBy);
+    }
+
+    [Theory]
+    [InlineData("lp%20hadou", "Gou Hadouken (Jab)")]
+    [InlineData("lp%20hadouken", "Gou Hadouken (Jab)")]
+    [InlineData("lp%20fireball", "Gou Hadouken (Jab)")]
+    [InlineData("mp%20hadou", "Gou Hadouken (Strong)")]
+    [InlineData("mp%20hadouken", "Gou Hadouken (Strong)")]
+    [InlineData("mp%20fireball", "Gou Hadouken (Strong)")]
+    [InlineData("hp%20hadou", "Gou Hadouken (Fierce)")]
+    [InlineData("hp%20hadouken", "Gou Hadouken (Fierce)")]
+    [InlineData("hp%20fireball", "Gou Hadouken (Fierce)")]
+    public async Task GetMoveQuery_WhenGoukiInputUsesAbbreviatedHadoukenAlias_ReturnsAkumaGouHadouken(
+        string moveInput,
+        string expectedMove)
+    {
+        var response = await _client.GetAsync($"/v1/moves/query?character=gouki&moveInput={moveInput}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<MoveQueryResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("Akuma", payload.Character);
+        Assert.Equal(expectedMove, payload.MatchedMove);
         Assert.Equal("Alias", payload.MatchedBy);
     }
 
